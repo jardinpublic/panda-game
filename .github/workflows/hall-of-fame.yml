@@ -1,0 +1,58 @@
+# The gang's Hall of Fame. The game opens a pre-filled issue titled
+# "[Pandadventures] <score> pts"; this workflow checks the score with the game's
+# own rules, updates hall-of-fame/hall-of-fame.json on main, replies and closes
+# the issue. The game reads the board from raw.githubusercontent.com.
+# The issue text is untrusted: it only ever reaches tools/hof/accept.mjs
+# through the event file, never a shell command.
+name: Hall of Fame
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+# One score at a time, so two sends never overwrite each other's board
+concurrency:
+  group: hall-of-fame
+  cancel-in-progress: false
+
+jobs:
+  accept:
+    if: startsWith(github.event.issue.title, '[Pandadventures]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check the score and update the board
+        env:
+          REPLY_FILE: ${{ runner.temp }}/reply.md
+        run: node tools/hof/accept.mjs
+
+      - name: Save the board
+        run: |
+          if git diff --quiet -- hall-of-fame; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add hall-of-fame
+          git commit -m "chore: hall of fame update (#${{ github.event.issue.number }})"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
+
+      - name: Reply and close
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/reply.md"
+          gh issue close "$NUMBER" --repo "$GITHUB_REPOSITORY"

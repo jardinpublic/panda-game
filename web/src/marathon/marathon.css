@@ -101,3 +101,10 @@ button { font-family: var(--font); cursor: pointer; border: 0; }
 .m-record-score { font-size: 22px; font-weight: 700; }
 .m-record-meta { font-size: 13px; color: #6a6580; }
 .m-empty { color: #6a6580; text-align: center; }
+
+.m-send { margin-top: 10px; font-size: 15px; }
+.m-send:disabled { opacity: 0.7; }
+.m-hint { font-size: 13px; color: #6a6580; text-align: center; margin: 12px 8px 0; }
+.m-podium-1 .m-record-rank { color: #e8a317; font-size: 22px; }
+.m-podium-2 .m-record-rank { color: #9aa3b5; font-size: 20px; }
+.m-podium-3 .m-record-rank { color: #c27a4a; font-size: 20px; }

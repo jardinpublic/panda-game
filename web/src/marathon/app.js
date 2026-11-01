@@ -15,6 +15,7 @@ import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
 import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
+import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
 import './texts.js';
 
 const params = new URLSearchParams(location.search);
@@ -310,6 +311,7 @@ function gameOver() {
   persist();
   askPersist();
   r.result = res;
+  r.endedAt = Date.now();
   A.screen = 'over';
   setGroove(84, 0.2);
   if (res.newBest && r.m.score > 0) {
@@ -811,6 +813,11 @@ function renderOver() {
   };
   const share = el('button', 'm-btn m-ghost', row, `💬 ${t('m.share')}`);
   share.onclick = () => brag(r);
+  if (r.m.score > 0) {
+    const send = el('button', 'm-btn m-ghost m-send', ui, r.sent ? `✅ ${t('m.sent')}` : `📤 ${t('m.send')}`);
+    send.disabled = !!r.sent;
+    send.onclick = () => sendScore(r, send);
+  }
 }
 
 async function brag(r) {
@@ -873,20 +880,72 @@ function openMissions() {
   }
 }
 
-function openRecords() {
+function recordRow(panel, rank, hero, title, meta) {
+  const row = el('div', 'm-record', panel);
+  el('b', 'm-record-rank', row, `${rank}`);
+  const img = el('img', '', row);
+  img.src = `${import.meta.env.BASE_URL}cast/${CAST_IDS.includes(hero) ? hero : 'panda'}.svg`;
+  img.alt = '';
+  const mid = el('div', 'm-record-mid', row);
+  el('div', 'm-record-score', mid).textContent = title;
+  el('div', 'm-record-meta', mid).textContent = meta;
+  return row;
+}
+
+function openRecords(tab = 'mine') {
   sfx.click();
   const panel = sheet(`🏆 ${t('m.records')}`);
-  if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
-  A.meta.scores.forEach((x, i) => {
-    const row = el('div', 'm-record', panel);
-    el('b', 'm-record-rank', row, `${i + 1}`);
-    const img = el('img', '', row);
-    img.src = `${import.meta.env.BASE_URL}cast/${x.hero || 'panda'}.svg`;
-    img.alt = '';
-    const mid = el('div', 'm-record-mid', row);
-    el('div', 'm-record-score', mid, String(x.score));
-    el('div', 'm-record-meta', mid, `${t('m.reached', { n: x.level })} · ${x.at ? new Date(x.at).toLocaleDateString(locale()) : ''}`);
+  const tabs = el('div', 'm-tabs', panel);
+  for (const id of ['mine', 'gang']) {
+    const b = el('button', `m-tab${id === tab ? ' on' : ''}`, tabs, t(`m.tab_${id}`));
+    b.onclick = () => {
+      ui.querySelector('.m-sheet-back')?.remove();
+      panel.remove();
+      openRecords(id);
+    };
+  }
+  const date = (at) => (at ? new Date(at).toLocaleDateString(locale()) : '');
+  if (tab === 'mine') {
+    if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
+    A.meta.scores.forEach((x, i) => recordRow(panel, i + 1, x.hero, String(x.score), `${t('m.reached', { n: x.level })} · ${date(x.at)}`));
+    return;
+  }
+  const status = el('p', 'm-empty', panel, t('m.loading'));
+  loadBoard().then((board) => {
+    status.remove();
+    const players = ranking(board);
+    if (!players.length) el('p', 'm-empty', panel, t('m.gang_empty'));
+    players.forEach((p, i) => {
+      const row = recordRow(panel, i + 1, p.best.hero, `${p.best.score}  ·  ${p.login}`, `${t('m.reached', { n: p.best.level })} · ${date(p.best.at)}`);
+      if (i < 3) row.classList.add(`m-podium-${i + 1}`);
+    });
+    el('p', 'm-hint', panel, t('m.gang_hint'));
+  }).catch(() => {
+    status.textContent = t('m.gang_offline');
   });
+}
+
+/** The online board, fresh from GitHub (a few minutes behind at most). */
+async function loadBoard() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const res = await fetch(`${BOARD_URL}?t=${Math.floor(Date.now() / 60000)}`, { signal: ctrl.signal, cache: 'no-store' });
+    if (res.status === 404) return emptyBoard();
+    if (!res.ok) throw new Error(String(res.status));
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function sendScore(r, button) {
+  const payload = buildPayload({ score: r.m.score, level: r.m.level, bestStreak: r.m.bestStreak, hero: A.meta.hero, at: r.endedAt });
+  window.open(issueUrl(payload, locale()), '_blank', 'noopener');
+  r.sent = true;
+  button.disabled = true;
+  button.textContent = `✅ ${t('m.sent')}`;
+  toast(t('m.send_help'));
 }
 
 function openShop(tab) {
