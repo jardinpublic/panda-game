@@ -183,3 +183,8 @@ $RECYCLE.BIN/
 
 # === Game builds ===
 /build/
+
+# === Web game ===
+/web/node_modules/
+/web/dist/
+/web/dist-*/

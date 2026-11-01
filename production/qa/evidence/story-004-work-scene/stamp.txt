@@ -1,0 +1,12 @@
+Reviewed-Content-Hash: src/scenes/work/work_scene.gd e5d4c5bf232b18da65b721ea9d2d185562f66b07
+Reviewed-Content-Hash: src/scenes/work/watcher.gd 2b0a3852b8bc14a906cf6c1c97e22777c43ed433
+Reviewed-Content-Hash: src/scenes/work/cone_layer.gd 0f224c01c45f502c8867a32c15d89ac242fc1904
+Reviewed-Content-Hash: src/scenes/work/office_prop.gd 3637129b564ba4acf6dd3002e7f957e7a2ee9660
+Reviewed-Content-Hash: src/scenes/work/office_backdrop.gd cd18241660e1329e647fae2997a2b836e6cbb6b8
+Reviewed-Content-Hash: src/scenes/work/suspicion_model.gd 16a699d426103db563f8c3f2560573281feeac73
+Reviewed-Content-Hash: src/scenes/work/work_day_model.gd 81a2f1d1640d270f9f6e0e45018e0759d64bdaa7
+Reviewed-Content-Hash: src/scenes/work/work_tuning.gd 56f76d33887ebd848477d699f8ce969c5ab66028
+Reviewed-Content-Hash: src/ui/speech_bubbles.gd c4a467531d3701317ff5c888ed0be89e793e86ab
+Reviewed-Content-Hash: src/characters/caricature.gd 9a68d99300a2adc534f5cd3762e12baf627fbcff
+Reviewed-Content-Hash: src/characters/cast_looks.gd 0cac8b195d7fe147d4ecd4824ca8349c1b8d48e0
+Reviewed-Content-Hash: assets/i18n/strings.csv 8676e989f21ccba01b4d13b50040f2422d8243d2

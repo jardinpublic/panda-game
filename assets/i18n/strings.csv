@@ -9,3 +9,80 @@ LINE_HOHO,Hoho!,Hoho !
 LINE_BAGNOLE,Hoho my bagnole!,Hoho my bagnole !
 ROTATE_HINT,Turn your phone sideways,Tourne ton téléphone
 FPS_LABEL,FPS,IPS
+OFFICE_SIGN,Government Administration,Administration publique
+WORK_TITLE,The Office,Le Bureau
+WORK_INTRO,8:00 to 15:00. Do as little as possible. Don't get caught by Romain.,8h à 15h. En faire le moins possible. Sans se faire griller par Romain.
+WORK_HOWTO,"Desk = working, safe. Coffee x2, sofa x3. Toilets and plant = hidden. Romain checks your desk on his rounds!","Bureau = tu bosses, sûr. Café x2, canapé x3. Toilettes et plante = caché. Romain vérifie ton bureau pendant sa ronde !"
+BTN_START,Start the day,Commencer la journée
+BTN_FAKE,Fake it,Faire semblant
+BTN_HOHO,Hoho!,Hoho !
+BTN_RETRY,Try again,Recommencer
+BTN_REPLAY,Play again,Rejouer
+HUD_SUSPICION,Suspicion,Soupçons
+HUD_LAZINESS,Farniente,Farniente
+ZONE_DESK,At your desk: you're working (ugh),À ton bureau : tu bosses (beurk)
+ZONE_COFFEE,Coffee machine: farniente x2,Machine à café : farniente x2
+ZONE_SOFA,Sofa: nap x3,Canapé : sieste x3
+ZONE_HIDDEN,Hidden. Nobody can see you.,Caché. Personne ne te voit.
+ZONE_OPEN,Slacking in the open,Tu glandes à découvert
+RANK_0,Agent,Agent
+RANK_1,Senior Coffee Analyst,Analyste café senior
+RANK_2,Head of Breaks,Chef des pauses
+RANK_3,Director of Nothing,Directeur de Rien
+PROMO,PROMOTION! %s,PROMOTION ! %s
+PROMO_MISSED,Promotion missed: too suspicious,Promotion ratée : trop de soupçons
+CAUGHT_TITLE,Caught!,Grillé !
+CAUGHT_LINE,"Ah, you want to see work? Well, here you go.","Ah, te veux voir du travail ? Eh bien en voilà."
+WIN_TITLE,"15:00! Hoho, beach time!","15h00 ! Hoho, à la plage !"
+WIN_SUMMARY,Pay: %d €   Promotions: %d   Farniente: %d,Salaire : %d €   Promotions : %d   Farniente : %d
+LINE_FAKE_1,"Hoho, yes boss, I'm on the file!","Hoho, oui chef, je suis sur le dossier !"
+LINE_FAKE_2,"Hoho, I'm in a video call!","Hoho, je suis en visio !"
+LINE_FAKE_3,"Hoho, I deny everything!","Hoho, je nie tout en bloc !"
+LINE_HOHO_1,Hoho!,Hoho !
+LINE_HOHO_2,"Hoho, drinks at 11:30, then lunch, then nap.","Hoho, un pot à 11h30, après pause repas, et sieste."
+LINE_HOHO_3,"Hoho, I'm New Panda, a reformed man.","Hoho, y est New Panda, un repenti."
+LINE_OUCH,Ouch! Babar!,Aïe ! Babar !
+BABAR_LIGHTER,*lighter tap*,*coup de briquet*
+BABAR_SPIT,*spits on your back*,*crache dans le dos*
+BABAR_SEARCH,Where'd he go?,Ou qu't'es don' ?
+ROMAIN_DESK,"Where are you, Panda?!","Ou qu't'es don', Panda ?!"
+ROMAIN_SEEN,Look at that…,R'gard' don'…
+VICTOR_SEEN,"Get to work, Panda!","Bosse don', Panda !"
+MAMAR_SEEN,Aïe aïe aïe aïe,Aïe aïe aïe aïe
+COUS_SOFA,"Be wise, Panda…","Sois sage, Panda…"
+ZZZ,Zzz,Zzz
+ARC_TITLE,Office Mayhem,Bureau en folie
+ARC_INTRO,"8:00 to 15:00. Your colleagues want to give you work. Paper-ball them!","8h à 15h. Tes collègues veulent te refiler du boulot. Boulettes de papier !"
+ARC_HOWTO,"Move: drag on screen or WASD / arrows. Panda throws on his own. Grab the euros. Full yellow bar = HOHO! (Space)","Bouge : glisse sur l'écran ou ZQSD / flèches. Panda lance tout seul. Ramasse les euros. Barre jaune pleine = HOHO ! (Espace)"
+ARC_HINT,Drag to move · Panda throws on his own,Glisse pour bouger · Panda lance tout seul
+ARC_HOHO_BTN,HOHO!,HOHO !
+ARC_WAVE,%s,%s
+ARC_BOSS,ROMAIN IS COMING!,ROMAIN DÉBARQUE !
+ARC_BOSS_DOWN,BOSS DOWN! Hoho!,BOSS À TERRE ! Hoho !
+ARC_BOSS_LOSE,Arf… Looool,Arf… Looool
+ARC_COMBO,COMBO x%d,COMBO x%d
+ARC_FILE,"Here, a file!","Tiens, un dossier !"
+ARC_OUCH_1,Ouch!,Aïe !
+ARC_OUCH_2,"Hoho, no!","Hoho, non !"
+ARC_OUCH_3,Not a file!,Pas un dossier !
+ARC_ENEMY_HIT_1,Aïe!,Aïe !
+ARC_ENEMY_HIT_2,Arf!,Arf !
+ARC_ENEMY_HIT_3,Vin diou!,Vin diou !
+ARC_ENEMY_HIT_4,Hey!,Eh !
+ARC_RUM,"Hoho! Rum!","Hoho ! Du rhum !"
+ARC_SANDWICH,"Mamar's sandwich!","Le sandwich du Mamar !"
+ARC_PIG,"Guinea pig, attack!","Cochon d'Inde, attaque !"
+ARC_COUS,"Be wise… here!","Sois sage… tiens !"
+ARC_BABAR,Shave it all off!,Rase z'y tout !
+ARC_OVER_TEXT,"Burn-out at %s. Earned: %d €. Best combo: %d","Burn-out à %s. Gagné : %d €. Meilleur combo : %d"
+ARC_WIN_TEXT,"Earned: %d €. Best combo: %d","Gagné : %d €. Meilleur combo : %d"
+PF_TITLE,15:00 sharp!,15h pétantes !
+PF_INTRO,Panda escapes the office to reach his beach hammock. Stomp the colleagues and grab the euros!,Panda s'évade du bureau pour rejoindre son hamac sur la plage. Écrase les collègues et ramasse les euros !
+PF_HOWTO,"PC: arrows / ZQSD to run, Space to jump. Phone: big buttons. Jump on the Fiat Panda!","PC : flèches / ZQSD pour courir, Espace pour sauter. Téléphone : gros boutons. Saute sur la Fiat Panda !"
+PF_LEVEL_1,15:00 sharp!,15h pétantes !
+PF_START,"Hoho, 15:00! Beach time!","Hoho, 15h ! À la plage !"
+PF_FALL,"Hoho, that was close…","Hoho, c'était moins une…"
+PF_CHECKPOINT,Checkpoint!,Point de contrôle !
+PF_OVER_TITLE,Back to the office!,Retour au bureau !
+PF_OVER_TEXT,Euros: %d / %d,Euros : %d / %d
+PF_WIN_TEXT,"Euros: %d / %d   Time: %.0f s","Euros : %d / %d   Temps : %.0f s"

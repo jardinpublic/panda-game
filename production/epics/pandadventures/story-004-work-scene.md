@@ -6,7 +6,7 @@
 > **Type**: Logic
 > **Estimate**: L
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-11-01 (implemented and playable; awaiting play-test and sign-off)
 
 ## Context
 
@@ -62,10 +62,14 @@
 
 ## Files
 
-- `src/scenes/work/work_scene.tscn`
-- `src/scenes/work/suspicion_model.gd`
-- `src/scenes/work/work_tuning.tres`
-- `tests/unit/work-scene/work_scene_detection_test.gd`
+- `src/scenes/work/work_scene.gd`, `work_scene.tscn` (main scene for now)
+- `src/scenes/work/suspicion_model.gd`, `work_day_model.gd`, `work_tuning.gd`, `work_tuning.tres`
+- `src/scenes/work/watcher.gd`, `cone_layer.gd`, `office_prop.gd`, `office_backdrop.gd`
+- `src/ui/speech_bubbles.gd`
+- `src/characters/caricature.gd`, `character_look.gd`, `cast_looks.gd` (illustrated heads on drawn bodies)
+- `assets/art/characters/*/head.svg` (from `tools/art/caricatures.py --heads`)
+- `assets/i18n/strings.csv` (office lines, EN/FR)
+- `tests/unit/work-scene/work_scene_detection_test.gd` (28 checks, plain Godot script until `/test-setup` installs gdUnit4)
 
 ---
 
@@ -80,7 +84,7 @@
 **Story Type**: Logic
 **Required evidence**: `tests/unit/work-scene/work_scene_detection_test.gd` must exist (tests are waived at `qa.level: minimal`, but the scene still needs a retained screenshot as it is player-observable).
 
-**Status**: [ ] Not yet created
+**Status**: [x] test passes (28 checks) · [x] screenshots in `production/qa/evidence/story-004-work-scene/`
 
 ---
 

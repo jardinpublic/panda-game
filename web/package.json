@@ -1,0 +1,20 @@
+{
+  "name": "pandadventures",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pandadventures: arcade worlds starring Panda and friends (web 3D, three.js)",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 8070",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 8071",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
