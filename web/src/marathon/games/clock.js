@@ -31,6 +31,9 @@ export default {
   title: { en: "15h pétantes", fr: "15h pétantes" },
   howto: { en: "Watch the clock. Tap exactly when it hits 15:00 to bolt out of the office.", fr: "Regarde l'horloge. Touche pile à 15h pour filer du bureau." },
   winLine: { en: "15h on the dot, see you!", fr: "15h pile, à plus !" },
+  rival: ["romain", "victor"],
+  rivalLine: { en: "Already 15h?! Who files all this now?", fr: "Déjà 15h ?! Qui va classer tout ça ?" },
+  loseLine: { en: "Hoho, I deny everything!", fr: "Hoho, je nie tout en bloc !" },
   create(g) {
     const { W, H } = g;
     const halfTime = TUNE.windowTime / g.speed ** TUNE.windowCurve;

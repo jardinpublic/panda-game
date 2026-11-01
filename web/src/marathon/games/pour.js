@@ -53,6 +53,9 @@ export default {
   title: { en: "The right dose", fr: "La bonne dose" },
   howto: { en: "Hold to pour the rum. Let go between the two lines.", fr: "Maintiens pour verser le rhum. Lâche entre les deux traits." },
   winLine: { en: "Perfect ti-punch!", fr: "Ti-punch parfait !" },
+  rival: ["greg", "cous"],
+  rivalLine: { en: "I was hoping you'd spill it…", fr: "J'espérais que tu déborderais…" },
+  loseLine: { en: "Hoho… still thirsty!", fr: "Hoho… j'ai encore soif !" },
   create(g) {
     const friend = g.friend();
     const gy = g.H * 0.62; // glass bottom

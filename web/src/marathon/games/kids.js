@@ -47,6 +47,9 @@ export default {
   title: { en: "Hoho my bagnole!", fr: "Hoho ma bagnole !" },
   howto: { en: "Kids are running at the Fiat Panda. Tap each kid to shoo it away.", fr: "Des gamins foncent sur la Fiat Panda. Touche chaque gamin pour le chasser." },
   winLine: { en: "Not a scratch on the Panda!", fr: "Pas une rayure sur la Panda !" },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "I paid those kids for nothing…", fr: "J'avais payé les gamins pour rien…" },
+  loseLine: { en: "Hoho ma bagnole!!!", fr: "Hoho ma bagnole !!!" },
   create(g) {
     const total = g.boss ? 10 : 3 + Math.min(2, Math.floor((g.speed - 1) * 2));
     const carX = 200;

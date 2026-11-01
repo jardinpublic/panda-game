@@ -32,6 +32,9 @@ export default {
   title: { en: "Carottés dans l'Silo", fr: "Carottés dans l'Silo" },
   howto: { en: "Tap to jump onto the ledge when it slides right above you.", fr: "Touche pour sauter sur la corniche quand elle passe au-dessus de toi." },
   winLine: { en: "Top of the silo!", fr: "En haut du silo !" },
+  rival: ["romain", "aline"],
+  rivalLine: { en: "I bet he'd never make it…", fr: "J'avais parié qu'il y arriverait jamais…" },
+  loseLine: { en: "Hoho… do it for the silo, they said!", fr: "Hoho… Do it for the silo, qu'ils disaient !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;

@@ -112,10 +112,14 @@ function micro() {
 
 canvas.addEventListener('pointerdown', (e) => {
   unlock();
-  canvas.setPointerCapture?.(e.pointerId);
+  try {
+    canvas.setPointerCapture?.(e.pointerId);
+  } catch {
+    // Some browsers refuse capture for synthetic or stale pointers: play on.
+  }
   const [x, y] = toLogical(e);
   Object.assign(touch, { id: e.pointerId, x0: x, y0: y, t0: performance.now(), swiped: false });
-  if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result')) skipPhase();
+  if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result' || A.run.phase === 'outcome')) skipPhase();
   else micro()?.input('press', x, y);
   e.preventDefault();
 });
@@ -168,7 +172,9 @@ document.addEventListener('visibilitychange', () => {
 // Intro and result can be skipped with a tap once they have been up a moment.
 
 const READY_LEN = 2.2;
-const OUTCOME_LEN = 1.3;
+// The ending scene of each mini-game: the hero cheers or sulks, the rival reacts.
+const OUTCOME_LEN = 5;
+const OUTCOME_SKIP = 1.5;
 // Taps right after a scene opens are ignored, so a late tap from the game
 // never skips the scene you wanted to read.
 const SKIP_AFTER = 0.9;
@@ -196,7 +202,8 @@ function startRun() {
   const pool = DEBUG_GAME ? [DEBUG_GAME] : GAMES.map((d) => d.id);
   const m = createMarathon({ pool });
   m.level = START_LEVEL;
-  A.run = { m, phase: 'ready', phaseT: 0, micro: null, last: null, banner: null, cameo: nextCameo(), quote: '', lifeLostT: 9, lifeGainT: 9, seen: new Set(), shownScore: 0, gained: 0 };
+  const heroLine = A.meta.hero === 'panda' ? t('m.lascars') : t(`quote_${A.meta.hero}`);
+  A.run = { heroLine, m, phase: 'ready', phaseT: 0, micro: null, last: null, banner: null, cameo: nextCameo(), quote: '', lifeLostT: 9, lifeGainT: 9, seen: new Set(), shownScore: 0, gained: 0 };
   A.fx.clear();
   A.screen = 'run';
   A.paused = false;
@@ -263,6 +270,8 @@ function finishMicroGame() {
   r.m.report(won);
   r.last = won ? 'win' : 'lose';
   r.outcomeWord = t(won ? 'm.win' : 'm.lose');
+  r.rival = r.micro.g.cast(...(r.def.rival || ['cous']));
+  r.endFx = 0;
   r.phase = 'outcome';
   r.phaseT = 0;
   if (won) {
@@ -283,7 +292,7 @@ function showResult() {
   r.phaseT = 0;
   r.cameo = nextCameo();
   r.quote = t(`quote_${r.cameo}`);
-  r.resultLen = r.last === 'win' ? 6 : 6.5;
+  r.resultLen = r.last === 'win' ? 4.5 : 5;
   if (r.last === 'win') {
     sfx.good();
     A.fx.burst(200, A.H * 0.3, { kind: 'confetti', n: 36, speed: 340 });
@@ -301,6 +310,7 @@ function skipPhase() {
   const r = A.run;
   if (!r || A.paused || r.phaseT < SKIP_AFTER) return;
   if (r.phase === 'intro') startPlay();
+  else if (r.phase === 'outcome' && r.phaseT >= OUTCOME_SKIP) showResult();
   else if (r.phase === 'result') afterResult();
 }
 
@@ -477,6 +487,7 @@ function drawReady(r) {
   art.person(c, r.cameo, 300, H * 0.88, 180, 'dance', A.t + 2, { flip: true });
   banner(t('m.ready'), H * 0.32, r.phaseT, PAL.mango, 60);
   drawLives(200, H * 0.45, 16, r.m.lives, 9, 9);
+  if (r.phaseT > 0.4) art.bubble(c, r.heroLine, 160, H * 0.9 - 240, { size: 16, maxW: 300 });
 }
 
 /** Intro: the frozen first frame behind a card that says what to do. */
@@ -511,7 +522,7 @@ function drawIntro(r) {
   y += 34;
   lines.forEach((ln, i) => art.text(c, ln, 0, y + i * 26, { size: 20, weight: 500, color: r.boss ? '#e8defa' : '#4a4560', shadow: false }));
   y += lines.length * 26 + 44;
-  drawGesture(r.def.input, 0, y, k, ink);
+  drawGesture(r.def.input, 0, y, k, ink, r.def.axis);
   c.restore();
   // The intro waits for the player: a pulsing hint says how to go on.
   if (k > SKIP_AFTER) art.text(c, t('m.tap_to_go'), 200, H - 52, { size: 22, weight: 500, color: `rgba(255,255,255,${0.6 + 0.4 * Math.sin(A.t * 5)})` });
@@ -520,7 +531,7 @@ function drawIntro(r) {
 }
 
 /** Small animated hand showing the gesture: tap, swipe, hold, drag or mash. */
-function drawGesture(input, x, y, k, ink) {
+function drawGesture(input, x, y, k, ink, axis = 'x') {
   const t2 = A.t;
   c.save();
   c.translate(x, y);
@@ -542,6 +553,18 @@ function drawGesture(input, x, y, k, ink) {
     hy = Math.abs(Math.sin(t2 * 18)) * -8;
     ring(0, -18, t2 * 4);
     ring(0, -18, t2 * 4 + 0.5);
+  } else if (input === 'swipe' && axis === 'y') {
+    hy = Math.sin(t2 * 3) * 34;
+    c.strokeStyle = 'rgba(18, 194, 201, 0.6)';
+    c.lineWidth = 4;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(60, -50);
+    c.lineTo(60, 20);
+    c.stroke();
+    art.text(c, '▲', 60, -62, { size: 20, color: PAL.lagoon, shadow: false });
+    art.text(c, '▼', 60, 32, { size: 20, color: PAL.lagoon, shadow: false });
+    hx = 0;
   } else if (input === 'swipe') {
     hx = Math.sin(t2 * 3) * 70;
     c.strokeStyle = 'rgba(18, 194, 201, 0.6)';
@@ -693,23 +716,80 @@ function drawGo(r) {
   c.restore();
 }
 
+/**
+ * The ending scene (5 s) over the game's own last frames: cinema bars, the
+ * hero comes up big. Win: the rival sulks with a sore-loser line. Lose: the
+ * hero complains ("Hoho…") while the rival laughs.
+ */
 function drawOutcome(r) {
+  const H = A.H;
   const k = r.phaseT;
   const won = r.last === 'win';
-  if (!won) {
-    const g = c.createRadialGradient(200, A.H / 2, A.H * 0.25, 200, A.H / 2, A.H * 0.75);
-    g.addColorStop(0, 'rgba(239,45,107,0)');
-    g.addColorStop(1, `rgba(239,45,107,${0.45 * Math.min(1, k * 4)})`);
-    c.fillStyle = g;
-    c.fillRect(0, 0, 400, A.H);
+  const g = r.micro.g;
+  // Mood over the scene.
+  const mood = Math.min(1, Math.max(0, (k - 0.6) * 2));
+  c.fillStyle = won ? `rgba(255, 210, 120, ${0.18 * mood})` : `rgba(40, 30, 70, ${0.35 * mood})`;
+  c.fillRect(0, 0, 400, H);
+  if (won) {
+    const glow = c.createRadialGradient(120, H * 0.7, 10, 120, H * 0.7, 260);
+    glow.addColorStop(0, `rgba(255, 236, 160, ${0.55 * mood})`);
+    glow.addColorStop(1, 'rgba(255, 236, 160, 0)');
+    c.fillStyle = glow;
+    c.fillRect(0, 0, 400, H);
+    if (k > 0.8 && r.endFx === 0) { r.endFx = 1; A.fx.burst(120, H * 0.55, { kind: 'confetti', n: 40, speed: 380 }); }
+    if (k > 2.6 && r.endFx === 1) { r.endFx = 2; A.fx.burst(300, H * 0.5, { kind: 'petal', n: 20, speed: 260 }); }
+  } else {
+    // Rain.
+    c.strokeStyle = `rgba(200, 220, 255, ${0.45 * mood})`;
+    c.lineWidth = 2;
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 53 + A.t * 60) % 420 - 10;
+      const y = (i * 97 + A.t * 520) % (H + 40) - 20;
+      c.beginPath();
+      c.moveTo(x, y);
+      c.lineTo(x - 4, y + 16);
+      c.stroke();
+    }
   }
+  // Cinema bars.
+  const bar = 64 * easeOutBack(Math.min(1, Math.max(0, (k - 0.5) * 3)));
+  c.fillStyle = 'rgba(12, 8, 24, 0.92)';
+  c.fillRect(0, 0, 400, bar);
+  c.fillRect(0, H - bar, 400, bar);
+  // The hero comes up big; the rival slides in.
+  const heroIn = easeOutBack(Math.min(1, Math.max(0, (k - 0.7) * 2.2)));
+  const rivalIn = easeOutBack(Math.min(1, Math.max(0, (k - 1.1) * 2.2)));
+  const heroFeet = H + 10 + (1 - heroIn) * 320;
+  const rivalFeet = H + 10;
+  const hop = won ? Math.abs(Math.sin(k * 7)) * 18 : 0;
+  if (!won) {
+    // A little storm cloud over the hero.
+    const cy = heroFeet - 330;
+    art.ellipse(c, 115, cy, 58, 24, 'rgba(90, 95, 120, 0.85)');
+    art.circle(c, 90, cy - 12, 26, 'rgba(90, 95, 120, 0.85)');
+    art.circle(c, 132, cy - 18, 30, 'rgba(90, 95, 120, 0.85)');
+  }
+  art.person(c, r.rival, 300 + (1 - rivalIn) * 260, rivalFeet, 250, won ? 'sad' : 'point', A.t + 3, { flip: true });
+  art.person(c, A.meta.hero, 120, heroFeet - hop, 310, won ? 'cheer' : 'sad', A.t, { hat: A.meta.hat });
+  // Lines.
+  const heroHeadTop = heroFeet - 300;
+  const rivalHeadTop = rivalFeet - 245;
+  if (won) {
+    if (k > 1.6) art.bubble(c, g.tr(r.def.rivalLine), 300, rivalHeadTop, { size: 17, maxW: 250 });
+    if (k > 0.9) art.text(c, g.tr(r.def.winLine), 200, bar + 70, { size: 22, color: '#fff', stroke: PAL.palm, max: 380 });
+  } else {
+    if (k > 1.2) art.bubble(c, g.tr(r.def.loseLine), 150, heroHeadTop, { size: 18, maxW: 260 });
+    if (k > 2.2) art.bubble(c, g.tr({ en: 'Hahaha!', fr: 'Hahaha !' }), 320, rivalHeadTop, { size: 16 });
+  }
+  // The stamp.
   const s = 0.3 + 0.7 * easeOutBack(Math.min(1, k * 5));
   c.save();
-  c.translate(200, A.H * 0.18);
-  c.rotate(won ? -0.08 : 0.06);
+  c.translate(200, bar + 30);
+  c.rotate(won ? -0.06 : 0.05);
   c.scale(s, s);
-  art.text(c, r.outcomeWord, 0, 0, { size: 50, color: '#fff', stroke: won ? PAL.palm : PAL.hibiscus });
+  art.text(c, r.outcomeWord, 0, 0, { size: 46, color: '#fff', stroke: won ? PAL.palm : PAL.hibiscus });
   c.restore();
+  if (k > OUTCOME_SKIP) art.text(c, t('m.tap_to_go'), 200, H - bar / 2, { size: 15, weight: 500, color: 'rgba(255,255,255,0.75)' });
 }
 
 function drawOverBg() {

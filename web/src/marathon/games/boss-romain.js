@@ -92,6 +92,7 @@ export default {
   id: 'boss-romain',
   world: 'w01',
   input: 'swipe',
+  axis: 'y', // swipes are up/down
   base: 10,
   survive: true,
   boss: true,
@@ -99,6 +100,9 @@ export default {
   title: { en: "BOSS: 3 pm escape", fr: "BOSS : la fuite de 15h" },
   howto: { en: "Romain's chasing you with a file. Swipe up and down to dodge everything until the exit.", fr: "Romain te court après avec un dossier. Glisse en haut et en bas pour tout éviter jusqu'à la sortie." },
   winLine: { en: "Freedom! See you tomorrow!", fr: "Liberté ! À demain !" },
+  rival: ["romain", "greg"],
+  rivalLine: { en: "Fine… tomorrow then.", fr: "Bon… demain alors." },
+  loseLine: { en: "Hoho, OK, one last thing then…", fr: "Hoho, bon, une dernière chose alors…" },
   create(g) {
     const K = 1 / Math.sqrt(g.speed);
     const chaser = g.cast('romain', 'greg');

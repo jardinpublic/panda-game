@@ -123,6 +123,9 @@ export default {
   title: { en: "Lionfish hunt", fr: "Chasse au poisson-lion" },
   howto: { en: "Tap to fire when the lionfish crosses the line. Never shoot the turtle!", fr: "Touche pour tirer quand le poisson-lion passe la ligne. Jamais la tortue !" },
   winLine: { en: "Lionfish for dinner!", fr: "Poisson-lion au dîner !" },
+  rival: ["mamar", "babar"],
+  rivalLine: { en: "Lucky shot, that's all!", fr: "Coup de chance, c'est tout !" },
+  loseLine: { en: "Hoho… the lionfish is laughing at me.", fr: "Hoho… le poisson-lion se moque de moi." },
   create(g) {
     const buddy = g.friend();
     const heroY = g.H * 0.9;

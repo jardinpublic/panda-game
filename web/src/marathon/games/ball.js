@@ -27,6 +27,9 @@ export default {
   title: { en: "Mamar's ball", fr: "La boule de Mamar" },
   howto: { en: "Mamar caught you in his ball. Tap like crazy to break out before the third click.", fr: "Mamar t'a capturé dans sa boule. Tapote comme un fou pour sortir avant le troisième clic." },
   winLine: { en: "Free! Not today, Mamar!", fr: "Libre ! Pas aujourd'hui, Mamar !" },
+  rival: ["mamar", "babar"],
+  rivalLine: { en: "Batistuta would never have escaped!", fr: "Batistuta, il se serait jamais échappé !" },
+  loseLine: { en: "Hoho, let me out, Mamar!", fr: "Hoho, laisse-moi sortir, Mamar !" },
   create(g) {
     const W = g.W;
     const H = g.H;

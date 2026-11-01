@@ -61,6 +61,9 @@ export default {
   title: { en: "The video-call concert", fr: "Le concert en visio" },
   howto: { en: "Panda's about to burp on the call. Tap MUTE right when the burp starts, not before.", fr: "Panda va roter en pleine visio. Touche MUET pile quand le rot part, pas avant." },
   winLine: { en: "Nobody heard a thing!", fr: "Personne n'a rien entendu !" },
+  rival: ["romain", "victor"],
+  rivalLine: { en: "I was so sure I'd hear it…", fr: "J'étais sûr de l'entendre…" },
+  loseLine: { en: "Hoho… that was the dog!", fr: "Hoho… c'était le chien !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;

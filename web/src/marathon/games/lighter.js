@@ -84,6 +84,9 @@ export default {
   title: { en: "Babar's lighter", fr: "Le briquet de Babar" },
   howto: { en: "Babar sneaks up with his lighter. Tap to turn around once he's in the red zone.", fr: "Babar approche avec son briquet. Touche pour te retourner quand il est dans la zone rouge." },
   winLine: { en: "Caught red-handed!", fr: "Pris la main dans le sac !" },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "What do I have to do with it?!", fr: "Qué don' qu' j'ai à voir ?!" },
+  loseLine: { en: "Hoho, my shoulder!", fr: "Hoho, mon épaule !" },
   create(g) {
     const sp = g.speed;
     const villain = g.cast('babar', 'mamar');

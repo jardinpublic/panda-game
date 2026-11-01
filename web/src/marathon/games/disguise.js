@@ -224,6 +224,9 @@ export default {
   title: { en: "Soirée fauve", fr: "Soirée fauve" },
   howto: { en: "Everyone's in animal costume. Watch for the tiny \"Hoho\" and tap the real you.", fr: "Tout le monde est déguisé. Repère le petit « Hoho » et touche le vrai toi." },
   winLine: { en: "Found you, wild one!", fr: "Trouvé, le fauve !" },
+  rival: ["cous", "greg"],
+  rivalLine: { en: "My disguise plan failed…", fr: "Mon plan déguisement a raté…" },
+  loseLine: { en: "Hoho, y'est me! Under the mask!", fr: "Hoho, y'est me ! Sous le masque !" },
   create(g) {
     const W = g.W;
     const H = g.H;

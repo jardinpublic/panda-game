@@ -243,6 +243,9 @@ export default {
   title: { en: 'Emille-pattes!', fr: 'Emille-pattes !' },
   howto: { en: 'A giant centipede is crawling to Cous’s bare feet. Tap it to flip it away with a sandal.', fr: 'Une scolopendre fonce vers les pieds nus de Cous. Touche-la pour l’envoyer valser à coups de tong.' },
   winLine: { en: 'Emille et une nuit… of fear!', fr: 'Emille et une nuit… de terreur !' },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "I brought that centipede for nothing…", fr: "J'ai ramené ce mille-pattes pour rien…" },
+  loseLine: { en: "Hoho… EMILLE-PATTES!!!", fr: "Hoho… EMILLE-PATTES !!!" },
   create(g) {
     const screamer = g.cast('cous', 'greg');
     const deckY = g.H * 0.36;

@@ -160,6 +160,9 @@ export default {
   title: { en: 'Pole fitness', fr: 'Pole fitness' },
   howto: { en: 'Violaine is coaching you on the pole. Tap the left or right side to lean back and stay upright.', fr: 'Violaine te coache à la barre. Touche à gauche ou à droite pour te redresser et tenir debout.' },
   winLine: { en: 'Gainage level: legend!', fr: 'Gainage niveau légende !' },
+  rival: ["violaine", "aline"],
+  rivalLine: { en: "Fine… that was almost decent.", fr: "Bon… c'était presque correct." },
+  loseLine: { en: "Hoho, the pole was slippery!", fr: "Hoho, la barre glissait !" },
   create(g) {
     const coach = g.cast('violaine', 'aline');
     const heroName = NAMES[g.hero] || 'Panda';

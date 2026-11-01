@@ -105,10 +105,14 @@ export default {
   base: 5.5,
   min: 3.2,
   survive: false,
-  verb: { en: 'LEGAL SIZE?', fr: 'TAILLE LÉGALE ?' },
+  verb: { en: 'KEEP OR THROW BACK?', fr: 'GARDER OU RELÂCHER ?' },
+  axis: 'y', // swipes are up/down
   title: { en: "Legal size?", fr: "Taille légale ?" },
-  howto: { en: "Check the lobster against the MIN line. Swipe up to keep it, down to throw it back.", fr: "Compare la langouste à la ligne MIN. Glisse en haut pour la garder, en bas pour la relâcher." },
+  howto: { en: "Does the lobster's head reach the GREEN zone of the ruler? Keep it: swipe up or tap KEEP. Head in the RED zone? Too small: swipe down or tap THROW BACK.", fr: "La t\u00eate de la langouste arrive dans la zone VERTE de la r\u00e8gle ? Garde-la : glisse en haut ou touche GARDE. T\u00eate dans le ROUGE ? Trop petite : glisse en bas ou touche REL\u00c2CHE." },
   winLine: { en: "No fine today!", fr: "Pas d'amende aujourd'hui !" },
+  rival: ["victor", "greg"],
+  rivalLine: { en: "No fine today… what a shame.", fr: "Pas d'amende aujourd'hui… dommage." },
+  loseLine: { en: "Hoho, it was THIS big underwater!", fr: "Hoho, sous l'eau elle était grosse comme ça !" },
   create(g) {
     const total = g.boss ? 4 : g.speed >= 1.9 ? 3 : 2;
     const guard = g.cast('victor', 'greg');
@@ -207,6 +211,11 @@ export default {
       swipe(dir) {
         if (dir === 'up' || dir === 'down') answer(dir);
       },
+      press(x, y) {
+        // The two big buttons: KEEP above the ruler, THROW BACK below it.
+        if (y < rulerY - 70) answer('up');
+        else if (y > rulerY + 90 && y < heroY - 40) answer('down');
+      },
       draw(c) {
         scene.lagoon(c, g.W, g.H, s.t);
         // Counter: catch n / total.
@@ -244,13 +253,19 @@ export default {
           c.stroke();
         }
         c.restore();
-        // Hints: up = keep, down = throw back.
+        // Two big buttons: KEEP (up) and THROW BACK (down).
         const pulse = 0.6 + 0.4 * Math.sin(s.t * 6);
         if (!g.done) {
-          c.globalAlpha = 0.55 + 0.35 * pulse;
-          text(c, `▲ ${g.tr({ en: 'KEEP', fr: 'GARDE' })}`, 200, g.H * 0.2, { size: 26, color: PAL.mango, stroke: 'rgba(6,63,92,0.6)' });
-          text(c, `▼ ${g.tr({ en: 'THROW BACK', fr: 'RELÂCHE' })}`, 270, g.H * 0.64, { size: 24, color: '#bff4ff', stroke: 'rgba(6,63,92,0.6)' });
-          c.globalAlpha = 1;
+          const btn = (y, label, col, dy) => {
+            shadowed(c, () => {
+              rrect(c, 70, y - 26, 260, 52, 26);
+              c.fillStyle = col;
+              c.fill();
+            }, 14, 5);
+            text(c, label, 200, y + 1 + dy * pulse * 2, { size: 24, color: '#fff', shadow: false });
+          };
+          btn(rulerY - 185, `✅ ${g.tr({ en: 'KEEP', fr: 'GARDE' })}  ▲`, '#18a96b', -1);
+          btn(rulerY + 130, `🌊 ${g.tr({ en: 'THROW BACK', fr: 'RELÂCHE' })}  ▼`, '#1c86c9', 1);
         }
         // The legal size gauge.
         shadowed(c, () => {
@@ -258,6 +273,15 @@ export default {
           c.fillStyle = vgrad(c, rulerY, rulerY + 38, ['#ffe08a', '#f5b942']);
           c.fill();
         }, 12, 5);
+        // Red = too small, green = legal: where the head lands is the answer.
+        c.save();
+        rrect(c, RULER_X0 - 8, rulerY, RULER_X1 - RULER_X0 + 16, 38, 10);
+        c.clip();
+        c.fillStyle = 'rgba(239, 45, 107, 0.55)';
+        c.fillRect(RULER_X0 - 8, rulerY, LINE_X - RULER_X0 + 8, 38);
+        c.fillStyle = 'rgba(22, 170, 100, 0.6)';
+        c.fillRect(LINE_X, rulerY, RULER_X1 - LINE_X + 8, 38);
+        c.restore();
         c.strokeStyle = 'rgba(80,50,10,0.55)';
         c.lineWidth = 2;
         for (let x = RULER_X0, n = 0; x <= RULER_X1; x += 16, n++) {
@@ -287,7 +311,8 @@ export default {
         c.fillStyle = PAL.hibiscus;
         c.fill();
         text(c, 'MIN', LINE_X, rulerY - 139, { size: 16, color: '#fff', shadow: false });
-        text(c, g.tr({ en: 'legal size', fr: 'taille légale' }), RULER_X0 + 70, rulerY + 26, { size: 14, color: 'rgba(80,50,10,0.75)', shadow: false, weight: 600 });
+        text(c, g.tr({ en: 'TOO SMALL', fr: 'TROP PETITE' }), (RULER_X0 + LINE_X) / 2, rulerY + 27, { size: 14, color: '#fff', shadow: false, weight: 700 });
+        text(c, g.tr({ en: 'OK', fr: 'OK' }) + ' ✓', (LINE_X + RULER_X1) / 2, rulerY + 27, { size: 14, color: '#fff', shadow: false, weight: 700 });
         // The lobsters.
         for (const l of catches) {
           if (l.state === 'wait') continue;

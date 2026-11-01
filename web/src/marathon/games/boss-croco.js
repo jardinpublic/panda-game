@@ -233,6 +233,9 @@ export default {
   title: { en: "BOSS: Georges the Lézarde", fr: "BOSS : Georges la Lézarde" },
   howto: { en: "Swipe to dodge his lunges, then tap his snout. Three bonks and he's done.", fr: "Glisse pour esquiver ses attaques, puis touche son museau. Trois coups et c'est fini." },
   winLine: { en: "Georges is KO!", fr: "Georges est KO !" },
+  rival: ["victor", "greg"],
+  rivalLine: { en: "My Georges… knocked out…", fr: "Mon Georges… KO…" },
+  loseLine: { en: "Hoho, he bit me!", fr: "Hoho, il m'a mordu !" },
   create(g) {
     const K = 1 / Math.sqrt(g.speed);
     const T = { intro: 1.0 * K, lunge: 0.2 * K, stun: 0.8 * K, hurt: 0.4 * K, gap: 0.3 * K, banner: 1.3 * K };

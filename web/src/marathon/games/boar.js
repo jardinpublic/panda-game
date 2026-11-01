@@ -123,6 +123,9 @@ export default {
   title: { en: "Babar's pet boar", fr: 'Le sanglier domestique de Babar' },
   howto: { en: 'The boar paws the ground, then charges. Tap (or swipe up) to jump over it!', fr: 'Le sanglier gratte le sol, puis il charge. Touche (ou glisse vers le haut) pour sauter par-dessus !' },
   winLine: { en: 'Olé! Not even a scratch!', fr: 'Olé ! Même pas une égratignure !' },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "Ah ben mon Romain… now my boar's sulking.", fr: "Ah ben mon Romain… mon sanglier boude." },
+  loseLine: { en: "Hoho, your boar's a tank!", fr: "Hoho, ton sanglier, c'est un tank !" },
   create(g) {
     const babar = g.cast('babar', 'mamar');
     const groundY = g.H * 0.8;

@@ -135,24 +135,29 @@ export function text(c, str, x, y, { size = 28, color = PAL.white, weight = 700,
 export function bubble(c, str, x, y, { size = 17, color = PAL.ink, bg = PAL.white, maxW = 230 } = {}) {
   c.save();
   c.font = `600 ${size}px ${FONT}`;
-  const w = Math.min(maxW, (c.measureText(str).width || str.length * size * 0.5) + 24);
-  const h = size + 16;
+  const widthOf = (t) => c.measureText(t).width || t.length * size * 0.5;
+  // Long lines wrap onto several rows instead of being squeezed.
+  const lines = widthOf(str) + 24 > maxW ? wrap(c, str, maxW - 24, size) : [str];
+  const w = Math.min(maxW, Math.max(...lines.map(widthOf)) + 24);
+  const lh = size * 1.2;
+  const h = lines.length * lh + 14;
   const bx = Math.max(6, Math.min(400 - w - 6, x - w / 2));
   const by = y - h - 10;
+  const tx = Math.max(bx + 14, Math.min(bx + w - 14, x));
   shadowed(c, () => {
-    rrect(c, bx, by, w, h, h / 2);
+    rrect(c, bx, by, w, h, Math.min(h / 2, 18));
     c.fillStyle = bg;
     c.fill();
     c.beginPath();
-    c.moveTo(x - 7, by + h - 1);
-    c.lineTo(x, y);
-    c.lineTo(x + 7, by + h - 1);
+    c.moveTo(tx - 7, by + h - 1);
+    c.lineTo(tx, y);
+    c.lineTo(tx + 7, by + h - 1);
     c.fill();
   }, 10, 4);
   c.fillStyle = color;
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.fillText(str, bx + w / 2, by + h / 2 + 1, w - 16);
+  lines.forEach((ln, i) => c.fillText(ln, bx + w / 2, by + 7 + lh * (i + 0.5) + 1, w - 16));
   c.restore();
 }
 

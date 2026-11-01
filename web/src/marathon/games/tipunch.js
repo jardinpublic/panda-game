@@ -71,6 +71,9 @@ export default {
   title: { en: "Ti-punch slide", fr: "Le ti-punch glissé" },
   howto: { en: "The ti-punch slides down the bar. Tap to stop it in the glowing ring.", fr: "Le ti-punch glisse sur le bar. Touche pour l'arrêter dans le cercle lumineux." },
   winLine: { en: "Right in front of you. Santé!", fr: "Pile devant toi. Santé !" },
+  rival: ["victor", "mamar"],
+  rivalLine: { en: "I wanted to drink it myself…", fr: "Je voulais le boire moi-même…" },
+  loseLine: { en: "Hoho, my ti-punch!", fr: "Hoho, mon ti-punch !" },
   create(g) {
     const bartender = g.friend();
     const dancer = g.friend([bartender]);

@@ -95,6 +95,9 @@ export default {
   title: { en: "Victor's giant aubergines", fr: 'Les aubergines géantes de Victor' },
   howto: { en: 'The aubergines keep growing and shrinking. Tap the biggest one while it is the biggest!', fr: 'Les aubergines grossissent et rapetissent. Touche la plus grosse pendant qu\'elle est la plus grosse !' },
   winLine: { en: 'Biggest aubergine in Martinique!', fr: 'La plus grosse aubergine de la Martinique !' },
+  rival: ["victor", "greg"],
+  rivalLine: { en: "You took my finest one…", fr: "Tu m'as pris la plus belle…" },
+  loseLine: { en: "Hoho, they all look the same!", fr: "Hoho, elles se ressemblent toutes !" },
   create(g) {
     const villain = g.cast('victor', 'greg');
     const n = g.boss || g.speed >= 1.6 ? 4 : 3;

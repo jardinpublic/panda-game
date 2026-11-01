@@ -65,6 +65,9 @@ export default {
   title: { en: "Coconut rain", fr: "Pluie de cocos" },
   howto: { en: "Coconuts shake before they fall. Drag the beach chair out of the way.", fr: "Les cocos tremblent avant de tomber. Fais glisser le transat pour les éviter." },
   winLine: { en: "Not a single bump!", fr: "Pas une bosse !" },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "I shook that palm for nothing…", fr: "J'ai secoué le cocotier pour rien…" },
+  loseLine: { en: "Hoho, my head!", fr: "Hoho, ma tête !" },
   create(g) {
     const friend = g.friend();
     const seatY = g.H * 0.74;

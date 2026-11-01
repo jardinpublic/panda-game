@@ -14,6 +14,9 @@ export default {
   title: { en: "Babar's spit", fr: "Le crachat de Babar" },
   howto: { en: "Babar is loading a spit. Swipe left or right to dodge every one.", fr: "Babar prépare un crachat. Glisse à gauche ou à droite pour les esquiver tous." },
   winLine: { en: "Dry as a bone!", fr: "Sec comme un os !" },
+  rival: ["babar", "mamar"],
+  rivalLine: { en: "Pfff… I'm out of spit.", fr: "Pfff… J'ai plus de salive." },
+  loseLine: { en: "Hoho… right in the face!", fr: "Hoho… en pleine face !" },
   create(g) {
     const villain = g.cast('babar', 'mamar');
     const total = g.boss ? 6 : 3;

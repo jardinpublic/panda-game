@@ -33,6 +33,9 @@ export default {
   title: { en: "Sneak out", fr: "Filer en douce" },
   howto: { en: "Hold to tiptoe to the door. Let go when Romain turns around.", fr: "Maintiens pour avancer sur la pointe des pieds. Lâche quand Romain se retourne." },
   winLine: { en: "Out without a sound!", fr: "Sorti sans un bruit !" },
+  rival: ["romain", "victor"],
+  rivalLine: { en: "Gone again?! Every single day!", fr: "Il est encore parti ?! Tous les jours !" },
+  loseLine: { en: "Hoho, I was just going to the coffee machine!", fr: "Hoho, j'allais juste à la machine à café !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;
