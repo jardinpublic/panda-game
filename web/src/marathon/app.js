@@ -13,7 +13,7 @@ import { createFx } from './fx.js';
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
-import { loadMeta, saveMeta, refillMissions, applyRun, buy, HEROES, HATS } from './meta.js';
+import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import './texts.js';
 
@@ -21,6 +21,8 @@ const params = new URLSearchParams(location.search);
 const DEBUG_GAME = params.get('game');
 const START_LEVEL = Number(params.get('level') || 0);
 const FORCE_BOSS = params.has('boss');
+// Test links (?game, ?level, ?boss, ?coins) never write the player's save.
+const VOLATILE = ['game', 'level', 'boss', 'coins'].some((k) => params.has(k));
 const ALL_DEFS = [...GAMES, ...BOSSES];
 const byId = (id) => ALL_DEFS.find((d) => d.id === id);
 
@@ -57,8 +59,20 @@ const A = {
   cameoOrder: [],
 };
 if (params.get('coins')) A.meta.coins = Number(params.get('coins'));
+
+/** Stores the save (merged with other tabs). Test links keep it in memory only. */
+function persist() {
+  if (!VOLATILE) A.meta = saveMeta(A.meta);
+}
+if (!VOLATILE) {
+  onMetaChanged((stored) => {
+    if (A.screen === 'run') return;
+    A.meta = stored;
+    if (!document.querySelector('.m-sheet')) renderUI();
+  });
+}
 A.meta = refillMissions(A.meta, pickGameId);
-saveMeta(A.meta);
+persist();
 
 function pickGameId() {
   return GAMES[Math.floor(Math.random() * GAMES.length)]?.id || 'spit';
@@ -291,9 +305,10 @@ function afterResult() {
 
 function gameOver() {
   const r = A.run;
-  const res = applyRun(A.meta, { level: r.m.level, bestStreak: r.m.bestStreak, coins: r.m.coins, score: r.m.score, stats: r.m.stats });
+  const res = applyRun(A.meta, { level: r.m.level, bestStreak: r.m.bestStreak, coins: r.m.coins, score: r.m.score, stats: r.m.stats, hero: A.meta.hero });
   A.meta = refillMissions(res.meta, pickGameId);
-  saveMeta(A.meta);
+  persist();
+  askPersist();
   r.result = res;
   A.screen = 'over';
   setGroove(84, 0.2);
@@ -748,6 +763,8 @@ function renderHome() {
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
+  const records = el('button', 'm-btn m-ghost', row, `🏆`);
+  records.onclick = () => openRecords();
   const shop = el('button', 'm-btn m-ghost', row, `🛍️ ${t('m.shop')}`);
   shop.onclick = () => openShop('heroes');
 }
@@ -780,6 +797,7 @@ function renderOver() {
   const stats = el('div', 'm-stats', card);
   el('span', '', stats, t('m.reached', { n: r.m.level }));
   el('span', '', stats, t('m.streak', { n: r.m.bestStreak }));
+  if (res.rank > 0 && r.m.score > 0) el('span', 'm-gold', stats, `🏆 ${t('m.rank', { n: res.rank })}`);
   el('span', 'm-gold', stats, `<i class="m-coin"></i>${t('m.coins_won', { n: r.m.coins })}`);
   for (const mission of res.completed) el('div', 'm-done', card, `🎯 ${missionText(mission)} — ${t('m.mission_done', { n: mission.reward })}`);
   const replay = el('button', 'm-btn m-play', ui, t('m.replay'));
@@ -855,6 +873,22 @@ function openMissions() {
   }
 }
 
+function openRecords() {
+  sfx.click();
+  const panel = sheet(`🏆 ${t('m.records')}`);
+  if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
+  A.meta.scores.forEach((x, i) => {
+    const row = el('div', 'm-record', panel);
+    el('b', 'm-record-rank', row, `${i + 1}`);
+    const img = el('img', '', row);
+    img.src = `${import.meta.env.BASE_URL}cast/${x.hero || 'panda'}.svg`;
+    img.alt = '';
+    const mid = el('div', 'm-record-mid', row);
+    el('div', 'm-record-score', mid, String(x.score));
+    el('div', 'm-record-meta', mid, `${t('m.reached', { n: x.level })} · ${x.at ? new Date(x.at).toLocaleDateString(locale()) : ''}`);
+  });
+}
+
 function openShop(tab) {
   sfx.click();
   const panel = sheet(`🛍️ ${t('m.shop')}`);
@@ -897,7 +931,7 @@ function openShop(tab) {
       } else sfx.click();
       if (tab === 'heroes') A.meta.hero = item.id;
       else A.meta.hat = item.id;
-      saveMeta(A.meta);
+      persist();
       ui.querySelector('.m-sheet-back')?.remove();
       panel.remove();
       openShop(tab);

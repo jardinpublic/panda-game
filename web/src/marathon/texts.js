@@ -51,6 +51,9 @@ registerTexts('m', {
     rotate: 'Turn your phone upright',
     tap_to_go: 'Tap to go',
     go: 'GO!',
+    records: 'My best runs',
+    no_records: 'No runs yet. Go play!',
+    rank: '#{n} of your best',
   },
   fr: {
     tagline: 'Des micro-jeux avec la bande. Vite. Et encore plus vite.',
@@ -100,5 +103,8 @@ registerTexts('m', {
     rotate: 'Tiens ton téléphone droit',
     tap_to_go: 'Touche pour y aller',
     go: 'GO !',
+    records: 'Mes meilleures parties',
+    no_records: 'Pas encore de partie. Va jouer !',
+    rank: 'N°{n} de tes records',
   },
 });

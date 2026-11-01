@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createMarathon, BOSS_EVERY } from '../src/marathon/rules.js';
-import { emptyMeta, applyRun, buy, refillMissions } from '../src/marathon/meta.js';
+import { emptyMeta, applyRun, buy, refillMissions, normalizeMeta, mergeMeta, topScores, TOP_SIZE } from '../src/marathon/meta.js';
 
 const seq = (values) => { let i = 0; return () => values[i++ % values.length]; };
 
@@ -96,5 +96,49 @@ describe('meta progression', () => {
     expect(after.owned).toContain('cous');
     expect(buy(after, 'cous')).toBe(null);
     expect(buy(rich, 'nobody')).toBe(null);
+  });
+});
+
+describe('save durability', () => {
+  it('repairs a broken or old save and keeps unknown fields', () => {
+    const m = normalizeMeta({ coins: -5, best: 'x', hero: 'greg', owned: ['panda'], future: 42 });
+    expect(m.coins).toBe(0);
+    expect(m.best).toBe(0);
+    expect(m.hero).toBe('panda'); // not owned
+    expect(m.owned).toContain('none');
+    expect(m.future).toBe(42);
+    expect(m.scores).toEqual([]);
+    expect(normalizeMeta(null)).toEqual(emptyMeta());
+  });
+
+  it('keeps the top runs, best first, without duplicates', () => {
+    const list = Array.from({ length: 15 }, (_, i) => ({ score: i * 10, at: i }));
+    const top = topScores([...list, list[14]]);
+    expect(top.length).toBe(TOP_SIZE);
+    expect(top[0].score).toBe(140);
+    expect(new Set(top.map((x) => x.at)).size).toBe(TOP_SIZE);
+  });
+
+  it('records each run and its rank', () => {
+    let meta = emptyMeta();
+    const a = applyRun(meta, { level: 5, bestStreak: 2, coins: 3, score: 50, stats: {}, hero: 'panda', at: 1 });
+    const b = applyRun(a.meta, { level: 9, bestStreak: 4, coins: 3, score: 90, stats: {}, hero: 'cous', at: 2 });
+    expect(a.rank).toBe(1);
+    expect(b.rank).toBe(1);
+    expect(b.meta.scores.map((x) => x.score)).toEqual([90, 50]);
+    expect(b.meta.scores[0].hero).toBe('cous');
+  });
+
+  it('merges two tabs without losing anything earned', () => {
+    const tabA = { ...emptyMeta(), coins: 10, best: 300, owned: ['panda', 'none', 'cous'], scores: [{ score: 300, at: 1 }], runs: 4, updated: 100 };
+    const tabB = { ...emptyMeta(), coins: 2, best: 120, owned: ['panda', 'none', 'bakoua'], scores: [{ score: 120, at: 2 }], runs: 6, hat: 'bakoua', updated: 200 };
+    const m = mergeMeta(normalizeMeta(tabA), normalizeMeta(tabB));
+    expect(m.coins).toBe(2); // the newer tab spent coins
+    expect(m.hat).toBe('bakoua');
+    expect(m.owned).toEqual(expect.arrayContaining(['cous', 'bakoua']));
+    expect(m.best).toBe(300);
+    expect(m.runs).toBe(6);
+    expect(m.scores.map((x) => x.score)).toEqual([300, 120]);
+    expect(mergeMeta(normalizeMeta(tabB), normalizeMeta(tabA))).toEqual(m);
   });
 });
