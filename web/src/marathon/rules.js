@@ -9,6 +9,7 @@
 
 export const LIVES = 3;
 export const BOSS_EVERY = 10;
+export const MAX_SPEED = 2.2;
 
 export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
   const s = {
@@ -23,9 +24,9 @@ export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
     stats: {}, // id -> {won, lost}
     current: null,
 
-    /** Speed multiplier: 1 at the start, +6% per micro-game, capped at 2.4. */
+    /** Speed multiplier: 1 at the start, +3.5% per micro-game, capped at MAX_SPEED. */
     speed() {
-      return Math.min(2.4, 1 + s.level * 0.06);
+      return Math.min(MAX_SPEED, 1 + s.level * 0.035);
     },
     /** Seconds allowed for the current micro-game (base seconds / speed, never under 1.6 s). */
     duration(base = 5) {

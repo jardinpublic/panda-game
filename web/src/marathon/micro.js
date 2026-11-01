@@ -11,9 +11,13 @@ import { bubble } from './art.js';
 export const MIN_SECONDS = 1.6;
 
 /** Seconds a micro-game lasts at this speed. Bosses slow down less. */
+/** Every game gets this much more time than its `base` says: room to breathe. */
+export const PACE = 1.2;
+
 export function microDuration(def, speed, boss = false) {
-  const min = def.min ?? MIN_SECONDS;
-  return boss ? Math.max(min, def.base / Math.sqrt(speed)) : Math.max(min, def.base / speed);
+  const min = (def.min ?? MIN_SECONDS) * PACE;
+  const base = def.base * PACE;
+  return boss ? Math.max(min, base / Math.sqrt(speed)) : Math.max(min, base / speed);
 }
 
 export function startMicro(def, opts) {

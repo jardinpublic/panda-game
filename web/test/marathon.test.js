@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMarathon, BOSS_EVERY } from '../src/marathon/rules.js';
+import { createMarathon, BOSS_EVERY, MAX_SPEED } from '../src/marathon/rules.js';
 import { emptyMeta, applyRun, buy, refillMissions, normalizeMeta, mergeMeta, topScores, TOP_SIZE } from '../src/marathon/meta.js';
 
 const seq = (values) => { let i = 0; return () => values[i++ % values.length]; };
@@ -19,7 +19,7 @@ describe('marathon rules', () => {
     expect(run.speed()).toBe(1);
     expect(run.duration(5)).toBe(5);
     for (let i = 0; i < 100; i++) { run.next(); run.report(true); }
-    expect(run.speed()).toBe(2.4);
+    expect(run.speed()).toBe(MAX_SPEED);
     expect(run.duration(3)).toBe(1.6);
   });
 

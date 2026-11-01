@@ -167,9 +167,13 @@ document.addEventListener('visibilitychange', () => {
 // -> result (success / fail scene) -> intro ... -> game over.
 // Intro and result can be skipped with a tap once they have been up a moment.
 
-const READY_LEN = 1.5;
-const OUTCOME_LEN = 0.9;
-const SKIP_AFTER = 0.55;
+const READY_LEN = 2.2;
+const OUTCOME_LEN = 1.3;
+// Taps right after a scene opens are ignored, so a late tap from the game
+// never skips the scene you wanted to read.
+const SKIP_AFTER = 0.9;
+// The intro waits for a tap; after this long it starts by itself.
+const INTRO_MAX = 12;
 
 function shuffled(list) {
   const out = [...list];
@@ -224,7 +228,8 @@ function prepareIntro() {
   else sfx.whoosh();
   const firstTime = !r.seen.has(def.id);
   r.seen.add(def.id);
-  r.introLen = Math.max(1.6, (firstTime ? 3.6 : 2.3) - (r.m.speed() - 1) * 0.35) + (r.banner ? 0.6 : 0);
+  r.introLen = INTRO_MAX;
+  void firstTime;
   r.micro = startMicro(def, {
     W: 400,
     H: A.H,
@@ -278,7 +283,7 @@ function showResult() {
   r.phaseT = 0;
   r.cameo = nextCameo();
   r.quote = t(`quote_${r.cameo}`);
-  r.resultLen = r.last === 'win' ? 2.1 : 2.4;
+  r.resultLen = r.last === 'win' ? 6 : 6.5;
   if (r.last === 'win') {
     sfx.good();
     A.fx.burst(200, A.H * 0.3, { kind: 'confetti', n: 36, speed: 340 });
@@ -508,17 +513,8 @@ function drawIntro(r) {
   y += lines.length * 26 + 44;
   drawGesture(r.def.input, 0, y, k, ink);
   c.restore();
-  // Time bar and skip hint.
-  const p = Math.min(1, k / r.introLen);
-  c.save();
-  art.rrect(c, 90, H - 70, 220, 8, 4);
-  c.fillStyle = 'rgba(255,255,255,0.25)';
-  c.fill();
-  art.rrect(c, 90, H - 70, Math.max(8, 220 * p), 8, 4);
-  c.fillStyle = PAL.mango;
-  c.fill();
-  c.restore();
-  if (k > SKIP_AFTER) art.text(c, t('m.tap_to_go'), 200, H - 42, { size: 17, weight: 500, color: `rgba(255,255,255,${0.6 + 0.4 * Math.sin(A.t * 5)})` });
+  // The intro waits for the player: a pulsing hint says how to go on.
+  if (k > SKIP_AFTER) art.text(c, t('m.tap_to_go'), 200, H - 52, { size: 22, weight: 500, color: `rgba(255,255,255,${0.6 + 0.4 * Math.sin(A.t * 5)})` });
   if (r.banner) banner(t(r.banner === 'boss' ? 'm.boss' : 'm.faster'), H * 0.12, k, r.banner === 'boss' ? PAL.hibiscus : PAL.mango, 46);
   drawLivesTop(r);
 }
