@@ -172,6 +172,8 @@ document.addEventListener('visibilitychange', () => {
 // Intro and result can be skipped with a tap once they have been up a moment.
 
 const READY_LEN = 2.2;
+// 3, 2, 1, GO! before each game: the scene shows, nothing moves yet.
+const GETSET_LEN = 2.4;
 // The ending scene of each mini-game: the hero cheers or sulks, the rival reacts.
 const OUTCOME_LEN = 5;
 const OUTCOME_SKIP = 1.5;
@@ -256,10 +258,17 @@ function prepareIntro() {
 
 function startPlay() {
   const r = A.run;
+  r.phase = 'getset';
+  r.phaseT = 0;
+  r.lastCount = 4;
+}
+
+function go() {
+  const r = A.run;
   r.phase = 'play';
   r.phaseT = 0;
   r.lastTick = 99;
-  sfx.tap();
+  sfx.good();
 }
 
 function finishMicroGame() {
@@ -353,6 +362,14 @@ function update(dt) {
     r.lifeGainT += dt;
     if (r.phase === 'ready' && r.phaseT >= READY_LEN) prepareIntro();
     else if (r.phase === 'intro' && r.phaseT >= r.introLen) startPlay();
+    else if (r.phase === 'getset') {
+      const n = Math.ceil(3 - (r.phaseT / GETSET_LEN) * 3);
+      if (n !== r.lastCount && n > 0) {
+        r.lastCount = n;
+        sfx.tick(false);
+      }
+      if (r.phaseT >= GETSET_LEN) go();
+    }
     else if (r.phase === 'play') {
       r.micro.step(dt);
       const left = r.micro.g.left;
@@ -476,6 +493,7 @@ function drawRun() {
   r.micro.draw(c);
   if (r.phase === 'intro') return drawIntro(r);
   drawHud(r);
+  if (r.phase === 'getset') drawCountdown(r);
   if (r.phase === 'play') drawGo(r);
   if (r.phase === 'outcome') drawOutcome(r);
 }
@@ -677,7 +695,7 @@ function drawHud(r) {
   art.text(c, String(r.m.score), 71, 32, { size: 22, color: '#fff', shadow: false });
   if (r.m.multiplier() > 1) chip(`x${r.m.multiplier()}`, 150, 31, PAL.hibiscus);
   drawLivesTop(r);
-  if (r.phase === 'play') {
+  if (r.phase === 'play' || r.phase === 'getset') {
     const g = r.micro.g;
     const k = g.left / g.duration;
     const x = 24;
@@ -701,6 +719,23 @@ function drawHud(r) {
     art.circle(c, sx, y + 7, 9 + Math.sin(A.t * 30) * 2, 'rgba(255, 220, 120, 0.6)');
     art.circle(c, sx, y + 7, 5, '#fff7c2');
   }
+}
+
+/** 3, 2, 1 over the still scene, with the order as a reminder. */
+function drawCountdown(r) {
+  const k = r.phaseT;
+  const n = Math.max(1, Math.ceil(3 - (k / GETSET_LEN) * 3));
+  const f = (k / GETSET_LEN) * 3 % 1;
+  c.fillStyle = 'rgba(18, 10, 36, 0.25)';
+  c.fillRect(0, 0, 400, A.H);
+  c.save();
+  c.translate(200, A.H * 0.42);
+  const s = 0.6 + 0.6 * easeOutBack(Math.min(1, f * 4));
+  c.scale(s, s);
+  c.globalAlpha = 1 - Math.max(0, f - 0.75) * 4;
+  art.text(c, String(n), 0, 0, { size: 110, color: '#fff', stroke: r.boss ? PAL.hibiscus : PAL.coral });
+  c.restore();
+  art.text(c, r.micro.g.tr(r.def.verb), 200, A.H * 0.2, { size: 30, color: '#fff', stroke: 'rgba(20,12,40,0.6)', max: 380 });
 }
 
 /** A short "GO!" as the game starts (the intro already explained it). */
