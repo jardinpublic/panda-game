@@ -175,3 +175,11 @@ $RECYCLE.BIN/
 # the project root. Anchored so a reports/ folder elsewhere stays tracked.
 /reports/
 /test-results/
+
+# === Private reference material ===
+# Photos and personal details of real friends. Never committed, never shipped
+# (reference/.gdignore keeps Godot from importing it).
+/reference/
+
+# === Game builds ===
+/build/

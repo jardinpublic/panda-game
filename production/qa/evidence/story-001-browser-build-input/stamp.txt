@@ -1,0 +1,8 @@
+Reviewed-Content-Hash: src/main.gd 3f46243212ba2c2af4833706153d1e98625cb23a
+Reviewed-Content-Hash: src/main.tscn d867912706ac708defd4d938c0015235f6da8048
+Reviewed-Content-Hash: src/core/game_input.gd 0c1aa04364704c40103ed13b58f95034b886ac11
+Reviewed-Content-Hash: src/core/locale_manager.gd df2b29cf0bbec6d70f0b99a0e08c050f122c3d41
+Reviewed-Content-Hash: src/characters/placeholder_panda.gd 66673f30bf8f1677cf163157a1c68ce7f2a825e1
+Reviewed-Content-Hash: assets/i18n/strings.csv db00b5d4207c4b845bf523ae2d6e2bc07b9f6009
+Reviewed-Content-Hash: project.godot 2c95c9b382727a98ad5663286b3002c56941e3ec
+Reviewed-Content-Hash: export_presets.cfg c569de1dcdfb71f1f5dcd4fb9c59913898d2ea00
