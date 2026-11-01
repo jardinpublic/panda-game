@@ -20,6 +20,9 @@ export default {
   survive: true,
   boss: true,
   verb: { en: 'SURVIVE BABAR!', fr: 'SURVIS À BABAR !' },
+  title: { en: "BOSS: Babar unleashed", fr: "BOSS : Babar déchaîné" },
+  howto: { en: "Spits and lighter charges from every lane. Swipe to dodge until he runs out of breath.", fr: "Crachats et charges au briquet de partout. Glisse pour esquiver jusqu'à ce qu'il soit à bout de souffle." },
+  winLine: { en: "Babar is out of breath!", fr: "Babar est à bout de souffle !" },
   create(g) {
     const K = 1 / Math.sqrt(g.speed);
     const villain = g.cast('babar', 'mamar');

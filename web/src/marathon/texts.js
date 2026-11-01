@@ -49,6 +49,8 @@ registerTexts('m', {
     sound: 'Sound',
     lang: 'FR',
     rotate: 'Turn your phone upright',
+    tap_to_go: 'Tap to go',
+    go: 'GO!',
   },
   fr: {
     tagline: 'Des micro-jeux avec la bande. Vite. Et encore plus vite.',
@@ -96,5 +98,7 @@ registerTexts('m', {
     sound: 'Son',
     lang: 'EN',
     rotate: 'Tiens ton téléphone droit',
+    tap_to_go: 'Touche pour y aller',
+    go: 'GO !',
   },
 });

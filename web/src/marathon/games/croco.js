@@ -192,6 +192,9 @@ export default {
   base: 4.5,
   survive: false,
   verb: { en: 'WAIT… PULL!', fr: 'ATTENDS… TIRE !' },
+  title: { en: "Georges the croco", fr: "Georges le croco" },
+  howto: { en: "Georges has your sandal. Ignore the fake twitches and pull out when his eyes go red.", fr: "Georges a ta sapate. Ignore les fausses alertes et tire quand ses yeux deviennent rouges." },
+  winLine: { en: "Sandal saved, fingers too!", fr: "Sapate sauvée, doigts aussi !" },
   create(g) {
     const sp = g.speed;
     const hx = 318;

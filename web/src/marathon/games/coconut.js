@@ -62,6 +62,9 @@ export default {
   base: 5,
   survive: true,
   verb: { en: 'DODGE THE COCONUTS!', fr: 'ESQUIVE LES COCOS !' },
+  title: { en: "Coconut rain", fr: "Pluie de cocos" },
+  howto: { en: "Coconuts shake before they fall. Drag the beach chair out of the way.", fr: "Les cocos tremblent avant de tomber. Fais glisser le transat pour les éviter." },
+  winLine: { en: "Not a single bump!", fr: "Pas une bosse !" },
   create(g) {
     const friend = g.friend();
     const seatY = g.H * 0.74;

@@ -92,6 +92,9 @@ export default {
   base: 4.5,
   survive: true,
   verb: { en: 'STAY AWAKE!', fr: 'RESTE ÉVEILLÉ !' },
+  title: { en: "4 am at Le Molière", fr: "4h du mat' au Molière" },
+  howto: { en: "Panda's falling asleep on the sofa. Tap again and again to keep his eyes open.", fr: "Panda s'endort sur le canapé. Tapote encore et encore pour garder ses yeux ouverts." },
+  winLine: { en: "Still up at 5 am!", fr: "Encore debout à 5h !" },
   create(g) {
     const W = g.W;
     const H = g.H;

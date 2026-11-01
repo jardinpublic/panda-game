@@ -165,6 +165,9 @@ export default {
   base: 4,
   survive: false,
   verb: { en: 'GET IN!', fr: 'RENTRE !' },
+  title: { en: "The bouncer", fr: "Le videur" },
+  howto: { en: "The bouncer slides in front of the door. Tap to dash in when the way is clear.", fr: "Le videur bouge devant la porte. Touche pour foncer quand le passage est libre." },
+  winLine: { en: "You're in!", fr: "T'es dedans !" },
   create(g) {
     const W = g.W;
     const H = g.H;

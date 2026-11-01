@@ -24,6 +24,9 @@ export default {
   base: 4.2,
   survive: false,
   verb: { en: 'BREAK FREE!', fr: 'LIBÈRE-TOI !' },
+  title: { en: "Mamar's ball", fr: "La boule de Mamar" },
+  howto: { en: "Mamar caught you in his ball. Tap like crazy to break out before the third click.", fr: "Mamar t'a capturé dans sa boule. Tapote comme un fou pour sortir avant le troisième clic." },
+  winLine: { en: "Free! Not today, Mamar!", fr: "Libre ! Pas aujourd'hui, Mamar !" },
   create(g) {
     const W = g.W;
     const H = g.H;

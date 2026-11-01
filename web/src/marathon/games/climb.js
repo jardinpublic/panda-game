@@ -29,6 +29,9 @@ export default {
   base: 5.5,
   survive: false,
   verb: { en: 'JUMP UP!', fr: 'SAUTE !' },
+  title: { en: "Carottés dans l'Silo", fr: "Carottés dans l'Silo" },
+  howto: { en: "Tap to jump onto the ledge when it slides right above you.", fr: "Touche pour sauter sur la corniche quand elle passe au-dessus de toi." },
+  winLine: { en: "Top of the silo!", fr: "En haut du silo !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;

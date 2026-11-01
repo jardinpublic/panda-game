@@ -106,6 +106,9 @@ export default {
   min: 3.2,
   survive: false,
   verb: { en: 'LEGAL SIZE?', fr: 'TAILLE LÉGALE ?' },
+  title: { en: "Legal size?", fr: "Taille légale ?" },
+  howto: { en: "Check the lobster against the MIN line. Swipe up to keep it, down to throw it back.", fr: "Compare la langouste à la ligne MIN. Glisse en haut pour la garder, en bas pour la relâcher." },
+  winLine: { en: "No fine today!", fr: "Pas d'amende aujourd'hui !" },
   create(g) {
     const total = g.boss ? 4 : g.speed >= 1.9 ? 3 : 2;
     const guard = g.cast('victor', 'greg');

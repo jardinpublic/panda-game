@@ -48,6 +48,7 @@ const A = {
   W: 400,
   H: 800,
   scale: 1,
+  dpr: 1,
   t: 0,
   meta: loadMeta(),
   fx: createFx(),
@@ -65,6 +66,8 @@ function pickGameId() {
 
 function resize() {
   const rect = phone.getBoundingClientRect();
+  // A tab loaded in the background can report a zero size: keep the last good one.
+  if (rect.width < 10 || rect.height < 10) return;
   const dpr = Math.min(2.5, window.devicePixelRatio || 1);
   A.scale = rect.width / 400;
   A.H = Math.round(Math.min(900, Math.max(640, rect.height / A.scale)));
@@ -76,6 +79,7 @@ function resize() {
   A.dpr = dpr;
 }
 window.addEventListener('resize', resize);
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(phone);
 resize();
 
 // ---- input ----------------------------------------------------------------------
@@ -96,7 +100,8 @@ canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture?.(e.pointerId);
   const [x, y] = toLogical(e);
   Object.assign(touch, { id: e.pointerId, x0: x, y0: y, t0: performance.now(), swiped: false });
-  micro()?.input('press', x, y);
+  if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result')) skipPhase();
+  else micro()?.input('press', x, y);
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
@@ -126,7 +131,10 @@ window.addEventListener('keydown', (e) => {
   unlock();
   if (KEY_SWIPE[e.code]) micro()?.input('swipe', KEY_SWIPE[e.code]);
   if (e.code === 'Space' || e.code === 'Enter') {
-    if (A.screen === 'run') micro()?.input('press', 200, A.H * 0.55);
+    if (A.screen === 'run') {
+      if (micro()) micro().input('press', 200, A.H * 0.55);
+      else skipPhase();
+    }
     else if (A.screen !== 'run' && !document.querySelector('.m-sheet')) startRun();
     e.preventDefault();
   }
@@ -140,6 +148,13 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ---- run ------------------------------------------------------------------------
+// Phases: ready -> intro (what to do) -> play -> outcome (stamp over the game)
+// -> result (success / fail scene) -> intro ... -> game over.
+// Intro and result can be skipped with a tap once they have been up a moment.
+
+const READY_LEN = 1.5;
+const OUTCOME_LEN = 0.9;
+const SKIP_AFTER = 0.55;
 
 function shuffled(list) {
   const out = [...list];
@@ -150,7 +165,7 @@ function shuffled(list) {
   return out;
 }
 
-/** Next friend to cameo on the between-screen: cycles so everyone shows up. */
+/** Next friend to cameo: cycles so everyone shows up. */
 function nextCameo() {
   if (!A.cameoOrder.length) A.cameoOrder = shuffled(CAST_IDS.filter((id) => id !== A.meta.hero));
   return A.cameoOrder.pop();
@@ -162,40 +177,39 @@ function startRun() {
   const pool = DEBUG_GAME ? [DEBUG_GAME] : GAMES.map((d) => d.id);
   const m = createMarathon({ pool });
   m.level = START_LEVEL;
-  A.run = { m, phase: 'between', phaseT: 0, first: true, micro: null, last: null, banner: null, cameo: nextCameo(), quote: '', lifeLostT: 9, lifeGainT: 9, prevLives: m.lives, outcomeWord: '' };
+  A.run = { m, phase: 'ready', phaseT: 0, micro: null, last: null, banner: null, cameo: nextCameo(), quote: '', lifeLostT: 9, lifeGainT: 9, seen: new Set(), shownScore: 0, gained: 0 };
   A.fx.clear();
   A.screen = 'run';
   A.paused = false;
-  prepareBetween();
   startGroove(96, 0.4);
   renderUI();
 }
 
-function prepareBetween() {
+/** Picks and builds the next micro-game, shown frozen behind its intro card. */
+function prepareIntro() {
   const r = A.run;
-  r.phase = 'between';
+  r.phase = 'intro';
   r.phaseT = 0;
   r.boss = !DEBUG_GAME && (FORCE_BOSS || r.m.isBoss()) && BOSSES.length > 0;
-  if (DEBUG_GAME && byId(DEBUG_GAME)?.boss) r.boss = true;
-  r.banner = r.boss ? 'boss' : r.m.level > 0 && r.m.level % 5 === 0 && r.last ? 'faster' : null;
-  if (r.banner === 'boss') sfx.boss();
-  else if (r.banner === 'faster') sfx.speedup();
-  r.cameo = nextCameo();
-  r.quote = t(`quote_${r.cameo}`);
-  r.betweenLen = r.first ? 1.7 : Math.max(0.9, Math.min(1.5, 1.45 / Math.sqrt(r.m.speed()))) + (r.banner ? 0.5 : 0);
-  setGroove(92 + (r.m.speed() - 1) * 46, Math.min(1, 0.3 + r.m.level * 0.03));
-}
-
-function startMicroGame() {
-  const r = A.run;
   let def;
-  if (r.boss) {
-    def = DEBUG_GAME ? byId(DEBUG_GAME) : BOSSES[Math.floor(Math.random() * BOSSES.length)];
-    r.m.current = def.id;
+  if (DEBUG_GAME) {
+    def = byId(DEBUG_GAME);
+    r.boss = !!def?.boss;
+    r.m.next();
+  } else if (r.boss) {
+    def = BOSSES[Math.floor(Math.random() * BOSSES.length)];
   } else {
     def = byId(r.m.next());
   }
+  r.m.current = def.id;
   r.def = def;
+  r.banner = r.boss ? 'boss' : r.m.level > 0 && r.m.level % 5 === 0 ? 'faster' : null;
+  if (r.banner === 'boss') sfx.boss();
+  else if (r.banner === 'faster') sfx.speedup();
+  else sfx.whoosh();
+  const firstTime = !r.seen.has(def.id);
+  r.seen.add(def.id);
+  r.introLen = Math.max(1.6, (firstTime ? 3.6 : 2.3) - (r.m.speed() - 1) * 0.35) + (r.banner ? 0.6 : 0);
   r.micro = startMicro(def, {
     W: 400,
     H: A.H,
@@ -210,16 +224,22 @@ function startMicroGame() {
     sfx,
     level: r.m.level,
   });
+  setGroove(92 + (r.m.speed() - 1) * 46, Math.min(1, 0.3 + r.m.level * 0.03));
+}
+
+function startPlay() {
+  const r = A.run;
   r.phase = 'play';
   r.phaseT = 0;
-  r.first = false;
   r.lastTick = 99;
+  sfx.tap();
 }
 
 function finishMicroGame() {
   const r = A.run;
   const won = r.micro.g.won;
-  r.prevLives = r.m.lives;
+  const before = r.m.coins;
+  r.shownScore = r.m.score;
   r.m.report(won);
   r.last = won ? 'win' : 'lose';
   r.outcomeWord = t(won ? 'm.win' : 'm.lose');
@@ -227,17 +247,46 @@ function finishMicroGame() {
   r.phaseT = 0;
   if (won) {
     sfx.coin();
-    A.fx.text(70, 70, `+${10 * r.m.multiplier()}`, { size: 26, color: PAL.mango });
     if (r.boss) {
       r.m.heal();
       r.m.coins += 5;
+    }
+  } else {
+    A.fx.flash('rgba(239, 45, 107, 0.35)', 0.25);
+  }
+  r.gained = r.m.coins - before;
+}
+
+function showResult() {
+  const r = A.run;
+  r.phase = 'result';
+  r.phaseT = 0;
+  r.cameo = nextCameo();
+  r.quote = t(`quote_${r.cameo}`);
+  r.resultLen = r.last === 'win' ? 2.1 : 2.4;
+  if (r.last === 'win') {
+    sfx.good();
+    A.fx.burst(200, A.H * 0.3, { kind: 'confetti', n: 36, speed: 340 });
+    if (r.boss) {
       r.lifeGainT = 0;
       sfx.life();
     }
   } else {
     r.lifeLostT = 0;
-    A.fx.flash('rgba(239, 45, 107, 0.35)', 0.25);
+    sfx.bad();
   }
+}
+
+function skipPhase() {
+  const r = A.run;
+  if (!r || A.paused || r.phaseT < SKIP_AFTER) return;
+  if (r.phase === 'intro') startPlay();
+  else if (r.phase === 'result') afterResult();
+}
+
+function afterResult() {
+  if (A.run.m.isOver()) gameOver();
+  else prepareIntro();
 }
 
 function gameOver() {
@@ -248,9 +297,10 @@ function gameOver() {
   r.result = res;
   A.screen = 'over';
   setGroove(84, 0.2);
-  if (res.newBest && r.m.score > 0) sfx.best();
-  else sfx.over();
-  if (res.newBest && r.m.score > 0) A.fx.burst(200, A.H * 0.3, { kind: 'petal', n: 30, speed: 320 });
+  if (res.newBest && r.m.score > 0) {
+    sfx.best();
+    A.fx.burst(200, A.H * 0.3, { kind: 'petal', n: 30, speed: 320 });
+  } else sfx.over();
   renderUI();
 }
 
@@ -269,7 +319,8 @@ function update(dt) {
     r.phaseT += dt;
     r.lifeLostT += dt;
     r.lifeGainT += dt;
-    if (r.phase === 'between' && r.phaseT >= r.betweenLen) startMicroGame();
+    if (r.phase === 'ready' && r.phaseT >= READY_LEN) prepareIntro();
+    else if (r.phase === 'intro' && r.phaseT >= r.introLen) startPlay();
     else if (r.phase === 'play') {
       r.micro.step(dt);
       const left = r.micro.g.left;
@@ -283,10 +334,10 @@ function update(dt) {
       if (r.micro.g.done) finishMicroGame();
     } else if (r.phase === 'outcome') {
       r.micro.step(dt);
-      if (r.phaseT >= 0.8) {
-        if (r.m.isOver()) gameOver();
-        else prepareBetween();
-      }
+      if (r.phaseT >= OUTCOME_LEN) showResult();
+    } else if (r.phase === 'result') {
+      r.shownScore += (r.m.score - r.shownScore) * Math.min(1, dt * 6);
+      if (r.phaseT >= r.resultLen) afterResult();
     }
   }
   A.fx.update(dt);
@@ -328,15 +379,15 @@ function drawHome() {
   art.person(c, A.meta.hero, 200, H * 0.76, 230, 'idle', A.t, { hat: A.meta.hat });
 }
 
-function stageBg(level) {
+/** Colourful animated backdrop: a gradient, slow sun rays, a madras ribbon, petals. */
+function stageBg(colors) {
   const H = A.H;
-  const [a, b] = BG[Math.floor(level / 3) % BG.length];
+  const [a, b] = colors;
   const g = c.createRadialGradient(200, H * 0.35, 20, 200, H * 0.45, H * 0.8);
   g.addColorStop(0, a);
   g.addColorStop(1, b);
   c.fillStyle = g;
   c.fillRect(0, 0, 400, H);
-  // Slow rotating sun rays.
   c.save();
   c.translate(200, H * 0.3);
   c.rotate(A.t * 0.15);
@@ -350,27 +401,29 @@ function stageBg(level) {
     c.fill();
   }
   c.restore();
-  // Two madras ribbons.
   c.save();
   c.globalAlpha = 0.9;
-  c.translate(0, H * 0.53);
+  c.translate(0, H * 0.58);
   c.rotate(-0.12);
   art.madrasBand(c, -40, 0, 480, 16, 0.4);
   c.restore();
-  for (let i = 0; i < 6; i++) art.hibiscus(c, (i * 83 + A.t * 12) % 440 - 20, H * 0.12 + ((i * 131) % (H * 0.3)), 9 + (i % 3) * 3, A.t * 0.5 + i, 'rgba(255,255,255,0.18)');
+  for (let i = 0; i < 6; i++) art.hibiscus(c, ((i * 83 + A.t * 12) % 440) - 20, H * 0.12 + ((i * 131) % (H * 0.3)), 9 + (i % 3) * 3, A.t * 0.5 + i, 'rgba(255,255,255,0.18)');
 }
+
+const levelColors = (level) => BG[Math.floor(level / 3) % BG.length];
 
 function drawLives(x, y, size, lives, lostT, gainT) {
   for (let i = 0; i < 3; i++) {
     const alive = i < lives;
-    const justLost = i === lives && lostT < 0.8;
+    const justLost = i === lives && lostT < 0.9;
     const justGained = i === lives - 1 && gainT < 0.6;
     let s = size;
     let yy = y;
     let alpha = 1;
     if (justLost) {
-      yy += lostT * lostT * 220;
-      alpha = 1 - lostT / 0.8;
+      const k = Math.max(0, lostT - 0.25);
+      yy += k * k * 260;
+      alpha = 1 - k / 0.65;
     }
     if (justGained) s *= 1 + Math.sin(gainT * 10) * 0.3;
     const xx = x + (i - 1) * size * 2.3;
@@ -378,73 +431,199 @@ function drawLives(x, y, size, lives, lostT, gainT) {
       art.hibiscus(c, xx, y, s, 0, 'rgba(255,255,255,0.25)');
       continue;
     }
-    c.globalAlpha = alpha;
-    art.hibiscus(c, xx, yy, s, justLost ? lostT * 6 : Math.sin(A.t * 2 + i) * 0.15);
+    c.globalAlpha = Math.max(0, alpha);
+    art.hibiscus(c, xx, yy, s * (justLost && lostT < 0.25 ? 1 + lostT * 2 : 1), justLost ? lostT * 6 : Math.sin(A.t * 2 + i) * 0.15);
     c.globalAlpha = 1;
   }
 }
 
 function drawRun() {
   const r = A.run;
-  const H = A.H;
-  if (r.phase === 'between') {
-    drawBetween(r);
-    return;
-  }
+  if (r.phase === 'ready') return drawReady(r);
+  if (r.phase === 'result') return drawResult(r);
   r.micro.draw(c);
+  if (r.phase === 'intro') return drawIntro(r);
   drawHud(r);
-  if (r.phase === 'play') drawOrder(r);
+  if (r.phase === 'play') drawGo(r);
   if (r.phase === 'outcome') drawOutcome(r);
-  void H;
 }
 
-function drawBetween(r) {
+function drawReady(r) {
+  const H = A.H;
+  stageBg(levelColors(0));
+  art.person(c, A.meta.hero, 150, H * 0.9, 230, 'cheer', A.t, { hat: A.meta.hat });
+  art.person(c, r.cameo, 300, H * 0.88, 180, 'dance', A.t + 2, { flip: true });
+  banner(t('m.ready'), H * 0.32, r.phaseT, PAL.mango, 60);
+  drawLives(200, H * 0.45, 16, r.m.lives, 9, 9);
+}
+
+/** Intro: the frozen first frame behind a card that says what to do. */
+function drawIntro(r) {
   const H = A.H;
   const k = r.phaseT;
-  stageBg(r.m.level);
-  // Medallion with the next game number.
-  const pop = Math.min(1, k * 5);
-  const s = 0.6 + 0.4 * easeOutBack(pop);
+  c.fillStyle = 'rgba(18, 10, 36, 0.58)';
+  c.fillRect(0, 0, 400, H);
+  const pop = easeOutBack(Math.min(1, k * 4));
+  const cardW = 340;
+  const lines = art.wrap(c, r.micro.g.tr(r.def.howto), cardW - 50, 20, 500);
+  const cardH = 250 + lines.length * 26;
+  const cx = 200;
+  const cy = H * 0.47;
   c.save();
-  c.translate(200, H * 0.27);
-  c.scale(s, s);
-  art.shadowed(c, () => art.circle(c, 0, 0, 74, 'rgba(255,255,255,0.95)'), 26, 10);
-  art.circle(c, 0, 0, 62, r.boss ? PAL.night : PAL.cream);
-  art.text(c, t('m.game'), 0, -28, { size: 16, color: r.boss ? PAL.mango : PAL.coral, shadow: false, weight: 600 });
-  art.text(c, String(r.m.level + 1), 0, 12, { size: 54, color: r.boss ? '#fff' : PAL.ink, shadow: false });
+  c.translate(cx, cy);
+  c.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop);
+  c.globalAlpha = Math.min(1, k * 5);
+  art.shadowed(c, () => {
+    art.rrect(c, -cardW / 2, -cardH / 2, cardW, cardH, 28);
+    c.fillStyle = r.boss ? '#24133f' : 'rgba(255, 250, 242, 0.97)';
+    c.fill();
+  }, 30, 12);
+  art.madrasBand(c, -cardW / 2, -cardH / 2, cardW, 14, 0.4);
+  const ink = r.boss ? '#fff' : PAL.ink;
+  let y = -cardH / 2 + 44;
+  chip(`${t('m.game')} ${r.m.level + 1}`, 0, y - 6, r.boss ? PAL.hibiscus : PAL.lagoon);
+  y += 40;
+  art.text(c, r.micro.g.tr(r.def.title), 0, y, { size: 28, color: ink, shadow: false, max: cardW - 30 });
+  y += 38;
+  art.text(c, r.micro.g.tr(r.def.verb), 0, y, { size: 22, color: r.boss ? PAL.mango : PAL.coral, shadow: false, max: cardW - 30 });
+  y += 34;
+  lines.forEach((ln, i) => art.text(c, ln, 0, y + i * 26, { size: 20, weight: 500, color: r.boss ? '#e8defa' : '#4a4560', shadow: false }));
+  y += lines.length * 26 + 44;
+  drawGesture(r.def.input, 0, y, k, ink);
   c.restore();
-  drawLives(200, H * 0.42, 15, r.m.lives, r.lifeLostT, r.lifeGainT);
-  art.text(c, String(r.m.score), 200, H * 0.48, { size: 26, color: '#fff' });
-  // The hero reacts to the last game, a friend cameos with a punchline.
-  const pose = r.last === 'win' ? 'cheer' : r.last === 'lose' ? 'sad' : 'idle';
-  art.person(c, A.meta.hero, 150, H * 0.9, 220, pose, A.t, { hat: A.meta.hat });
-  const slide = easeOutBack(Math.min(1, k * 3));
-  const fx = 470 - slide * 155;
-  art.person(c, r.cameo, fx, H * 0.88, 170, r.last === 'lose' ? 'point' : 'dance', A.t + 2, { flip: true });
-  if (k > 0.25) art.bubble(c, r.quote, Math.min(fx, 330), H * 0.88 - 175, { size: 16 });
-  if (r.first) {
-    banner(t('m.ready'), H * 0.62, k, PAL.mango);
-  } else if (r.banner) {
-    banner(t(r.banner === 'boss' ? 'm.boss' : 'm.faster'), H * 0.62, k, r.banner === 'boss' ? PAL.hibiscus : PAL.mango);
-  }
-  if (r.m.multiplier() > 1) chip(`x${r.m.multiplier()}`, 200, H * 0.53, PAL.hibiscus);
+  // Time bar and skip hint.
+  const p = Math.min(1, k / r.introLen);
+  c.save();
+  art.rrect(c, 90, H - 70, 220, 8, 4);
+  c.fillStyle = 'rgba(255,255,255,0.25)';
+  c.fill();
+  art.rrect(c, 90, H - 70, Math.max(8, 220 * p), 8, 4);
+  c.fillStyle = PAL.mango;
+  c.fill();
+  c.restore();
+  if (k > SKIP_AFTER) art.text(c, t('m.tap_to_go'), 200, H - 42, { size: 17, weight: 500, color: `rgba(255,255,255,${0.6 + 0.4 * Math.sin(A.t * 5)})` });
+  if (r.banner) banner(t(r.banner === 'boss' ? 'm.boss' : 'm.faster'), H * 0.12, k, r.banner === 'boss' ? PAL.hibiscus : PAL.mango, 46);
+  drawLivesTop(r);
 }
 
-function banner(str, y, k, color) {
+/** Small animated hand showing the gesture: tap, swipe, hold, drag or mash. */
+function drawGesture(input, x, y, k, ink) {
+  const t2 = A.t;
+  c.save();
+  c.translate(x, y);
+  const ring = (rx, ry, phase) => {
+    const p = phase % 1;
+    c.strokeStyle = `rgba(18, 194, 201, ${1 - p})`;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(rx, ry, 8 + p * 26, 0, Math.PI * 2);
+    c.stroke();
+  };
+  let hx = 0;
+  let hy = 0;
+  if (input === 'tap') {
+    const p = (t2 * 1.4) % 1;
+    hy = p < 0.25 ? -8 + p * 32 : 0;
+    ring(0, -18, t2 * 1.4);
+  } else if (input === 'mash') {
+    hy = Math.abs(Math.sin(t2 * 18)) * -8;
+    ring(0, -18, t2 * 4);
+    ring(0, -18, t2 * 4 + 0.5);
+  } else if (input === 'swipe') {
+    hx = Math.sin(t2 * 3) * 70;
+    c.strokeStyle = 'rgba(18, 194, 201, 0.6)';
+    c.lineWidth = 4;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(-80, -18);
+    c.lineTo(80, -18);
+    c.stroke();
+    art.text(c, '◀', -94, -18, { size: 20, color: PAL.lagoon, shadow: false });
+    art.text(c, '▶', 94, -18, { size: 20, color: PAL.lagoon, shadow: false });
+  } else if (input === 'drag') {
+    hx = Math.sin(t2 * 1.6) * 80;
+    c.setLineDash([4, 8]);
+    c.strokeStyle = 'rgba(18, 194, 201, 0.7)';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(-90, -18);
+    c.lineTo(90, -18);
+    c.stroke();
+    c.setLineDash([]);
+  } else if (input === 'hold') {
+    const p = (t2 * 0.6) % 1;
+    c.strokeStyle = 'rgba(18, 194, 201, 0.25)';
+    c.lineWidth = 6;
+    c.beginPath();
+    c.arc(0, -18, 26, 0, Math.PI * 2);
+    c.stroke();
+    c.strokeStyle = PAL.lagoon;
+    c.beginPath();
+    c.arc(0, -18, 26, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+    c.stroke();
+  }
+  art.text(c, '👆', hx, hy, { size: 38, shadow: false });
+  art.text(c, t(`m.${input}`), 0, 40, { size: 16, color: ink, weight: 600, shadow: false });
+  c.restore();
+  void k;
+}
+
+function drawLivesTop(r) {
+  c.save();
+  art.rrect(c, 290, 12, 98, 38, 19);
+  c.fillStyle = 'rgba(20, 12, 40, 0.38)';
+  c.fill();
+  c.restore();
+  drawLives(339, 31, 9, r.m.lives, r.lifeLostT, r.lifeGainT);
+}
+
+/** Result: a full scene after each game. Success = party, fail = a friend teases. */
+function drawResult(r) {
+  const H = A.H;
+  const k = r.phaseT;
+  const won = r.last === 'win';
+  stageBg(won ? (r.boss ? ['#ffd166', '#ef8a17'] : ['#2fd6b0', '#0a7f9e']) : ['#ff8a7a', '#b8235a']);
+  // Title.
+  banner(r.outcomeWord, H * 0.13, k, won ? PAL.palm : PAL.hibiscus, 58);
+  const line = won ? r.micro.g.tr(r.def.winLine) : r.micro.g.tr(r.def.title);
+  if (k > 0.2) art.text(c, line, 200, H * 0.22, { size: 21, color: '#fff', weight: 600, max: 370 });
+  // Score, coins, streak.
+  art.text(c, String(Math.round(r.shownScore)), 200, H * 0.31, { size: 52, color: '#fff' });
+  if (won && r.gained > 0 && k > 0.3) {
+    const cy = H * 0.37;
+    art.circle(c, 176, cy, 10, '#ffc83d');
+    art.circle(c, 173, cy - 3, 4, '#fff3b0');
+    art.text(c, `+${r.gained}`, 210, cy + 1, { size: 22, color: '#fff3b0' });
+  }
+  if (won && r.m.streak >= 3) chip(`🔥 ${r.m.streak}  ·  x${r.m.multiplier()}`, 200, H * 0.42, PAL.hibiscus);
+  drawLives(200, H * 0.48, 16, r.m.lives, r.lifeLostT, r.lifeGainT);
+  if (r.boss && won && k > 0.4) art.text(c, t('m.life'), 200, H * 0.53, { size: 20, color: '#fff', stroke: PAL.hibiscus });
+  // The hero and a friend reacting with a punchline.
+  const heroPose = won ? 'cheer' : 'sad';
+  const hop = won ? Math.abs(Math.sin(k * 7)) * 14 : 0;
+  art.person(c, A.meta.hero, 135, H * 0.93 - hop, 230, heroPose, A.t, { hat: A.meta.hat });
+  const slide = easeOutBack(Math.min(1, k * 2.5));
+  const fx = 480 - slide * 175;
+  art.person(c, r.cameo, fx, H * 0.91, 180, won ? 'dance' : 'point', A.t + 2, { flip: true });
+  if (k > 0.45) art.bubble(c, r.quote, Math.min(fx - 10, 320), H * 0.91 - 190, { size: 16 });
+  if (k > SKIP_AFTER) art.text(c, t('m.tap_to_go'), 200, H - 26, { size: 15, weight: 500, color: 'rgba(255,255,255,0.75)' });
+}
+
+function banner(str, y, k, color, size = 52) {
   const p = Math.min(1, k * 4);
   const s = 0.3 + 0.7 * easeOutBack(p);
   c.save();
   c.translate(200, y);
-  c.rotate(-0.06 + Math.sin(A.t * 6) * 0.02);
+  c.rotate(-0.05 + Math.sin(A.t * 6) * 0.015);
   c.scale(s, s);
-  art.text(c, str, 0, 0, { size: 52, color: '#fff', stroke: color });
+  art.text(c, str, 0, 0, { size, color: '#fff', stroke: color, max: 380 });
   c.restore();
 }
 
 function chip(str, x, y, color) {
   c.save();
   c.font = `700 18px ${art.FONT}`;
-  const w = (c.measureText(str).width || 30) + 22;
+  const w = (c.measureText(str).width || 30) + 24;
   art.rrect(c, x - w / 2, y - 15, w, 30, 15);
   c.fillStyle = color;
   c.fill();
@@ -454,7 +633,6 @@ function chip(str, x, y, color) {
 
 function drawHud(r) {
   const H = A.H;
-  // Score pill.
   c.save();
   art.rrect(c, 12, 12, 118, 38, 19);
   c.fillStyle = 'rgba(20, 12, 40, 0.38)';
@@ -462,14 +640,7 @@ function drawHud(r) {
   c.restore();
   art.text(c, String(r.m.score), 71, 32, { size: 22, color: '#fff', shadow: false });
   if (r.m.multiplier() > 1) chip(`x${r.m.multiplier()}`, 150, 31, PAL.hibiscus);
-  // Lives.
-  c.save();
-  art.rrect(c, 290, 12, 98, 38, 19);
-  c.fillStyle = 'rgba(20, 12, 40, 0.38)';
-  c.fill();
-  c.restore();
-  drawLives(339, 31, 9, r.m.lives, r.lifeLostT, r.lifeGainT);
-  // Fuse timer.
+  drawLivesTop(r);
   if (r.phase === 'play') {
     const g = r.micro.g;
     const k = g.left / g.duration;
@@ -496,23 +667,16 @@ function drawHud(r) {
   }
 }
 
-const INPUT_ICON = { tap: '👆', swipe: '👈 👉', hold: '✊', drag: '☝️', mash: '👆👆👆' };
-
-function drawOrder(r) {
+/** A short "GO!" as the game starts (the intro already explained it). */
+function drawGo(r) {
   const k = r.phaseT;
-  const len = Math.max(0.55, 0.85 / Math.sqrt(r.m.speed()));
-  if (k > len) return;
-  const out = Math.max(0, (k - len * 0.7) / (len * 0.3));
-  const s = (0.4 + 0.6 * easeOutBack(Math.min(1, k * 6))) * (1 - out * 0.3);
+  if (k > 0.5) return;
   c.save();
-  c.globalAlpha = 1 - out;
+  c.globalAlpha = 1 - Math.max(0, (k - 0.3) / 0.2);
   c.translate(200, A.H * 0.2);
-  c.rotate(-0.05);
+  const s = 0.5 + 0.5 * easeOutBack(Math.min(1, k * 7));
   c.scale(s, s);
-  const verb = r.micro.g.tr(r.def.verb);
-  const size = verb.length > 14 ? 34 : 46;
-  art.text(c, verb, 0, 0, { size, color: '#fff', stroke: r.boss ? PAL.hibiscus : PAL.coral, max: 380 });
-  art.text(c, `${INPUT_ICON[r.def.input] || ''}  ${t(`m.${r.def.input}`)}`, 0, size * 0.95, { size: 18, color: '#fff', stroke: 'rgba(20,12,40,0.5)' });
+  art.text(c, t('m.go'), 0, 0, { size: 56, color: '#fff', stroke: r.boss ? PAL.hibiscus : PAL.coral });
   c.restore();
 }
 
@@ -536,7 +700,7 @@ function drawOutcome(r) {
 }
 
 function drawOverBg() {
-  stageBg(A.run?.m.level || 0);
+  stageBg(levelColors(A.run?.m.level || 0));
   art.person(c, A.meta.hero, 200, A.H * 0.8, 190, A.run?.result?.newBest ? 'cheer' : 'sad', A.t, { hat: A.meta.hat });
 }
 

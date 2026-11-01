@@ -44,6 +44,9 @@ export default {
   base: 5,
   survive: true,
   verb: { en: 'SAVE THE CAR!', fr: 'SAUVE LA BAGNOLE !' },
+  title: { en: "Hoho my bagnole!", fr: "Hoho ma bagnole !" },
+  howto: { en: "Kids are running at the Fiat Panda. Tap each kid to shoo it away.", fr: "Des gamins foncent sur la Fiat Panda. Touche chaque gamin pour le chasser." },
+  winLine: { en: "Not a scratch on the Panda!", fr: "Pas une rayure sur la Panda !" },
   create(g) {
     const total = g.boss ? 10 : 3 + Math.min(2, Math.floor((g.speed - 1) * 2));
     const carX = 200;

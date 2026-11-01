@@ -12,6 +12,9 @@ export default {
   min: 3,
   survive: false,
   verb: { en: 'OLD OR NEW COUS?', fr: 'OLD OU NEW COUS ?' },
+  title: { en: "Old Cous or New Cous?", fr: "Old Cous ou New Cous ?" },
+  howto: { en: "Read the card. Swipe left for Old Cous, right for New Cous.", fr: "Lis la carte. Glisse à gauche pour Old Cous, à droite pour New Cous." },
+  winLine: { en: "You know Cous by heart!", fr: "Tu connais Cous par cœur !" },
   create(g) {
     const card = CARDS[Math.floor(g.random() * CARDS.length)];
     const s = { t: 0, fly: 0, dir: 0, drag: 0 };

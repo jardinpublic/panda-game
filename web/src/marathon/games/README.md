@@ -16,6 +16,9 @@ export default {
   survive: true,            // true: timeout = win (you survived); false: timeout = lose
   boss: false,              // bosses: base 8-10 s, length = base / sqrt(speed), several phases
   verb: { en: 'DODGE!', fr: 'ESQUIVE !' },   // the 1-3 word order shown at the start
+  title: { en: "Babar's spit", fr: 'Le crachat de Babar' },   // shown on the intro scene
+  howto: { en: 'Babar is loading a spit. Swipe left or right to dodge every one.', fr: '…' }, // intro scene: what to do, 1-2 short sentences
+  winLine: { en: 'Dry as a bone!', fr: 'Sec comme un os !' }, // shown on the success scene
   create(g) {
     return {
       update(dt) {},        // also called after the game is decided: keep animating, stop threats
@@ -47,7 +50,7 @@ export default {
 | `g.tr({en, fr})` | text in the player's language |
 | `g.say(x, y, str, time)` | speech bubble pointing at (x, y) |
 | `g.fx` | `burst(x, y, {kind:'confetti'|'petal'|'spark'|'drop'|'smoke', n, colors, speed})`, `text(x, y, str, {color, size})`, `shake(px)`, `flash(color)` |
-| `g.sfx` | `tap pop good bad coin whoosh splash hit sizzle tick speedup life hoho click` (steel pan / marimba / ti-bwa kit) |
+| `g.sfx` | `tap pop good bad coin whoosh splash hit sizzle tick speedup boss life over best hoho click` (steel pan / marimba / ti-bwa kit) |
 
 ### Art kit (`../art.js`)
 
@@ -61,6 +64,13 @@ palm, leaf, coral, mango, hibiscus, sunset1/2, night, violet, cream, ink, creole
 `bubbles`, `lightRays`, `seaweed`, `rrect`, `circle`, `ellipse`, `vgrad`,
 `shadowed(c, drawFn)`, `groundShadow`, `text(c, str, x, y, {size, color, stroke})`,
 `wrap`. `fiatPanda(c, x, y, t, {shake, alarm})` is exported by `kids.js`.
+
+## Flow around a game
+
+The app shows an intro scene first (the game's first frame dimmed, with
+`title`, `verb`, `howto` and an animated gesture), then the game, then a
+success or fail scene (`winLine` on success). The game itself does not draw
+instructions beyond small in-scene hints.
 
 ## Quality bar
 

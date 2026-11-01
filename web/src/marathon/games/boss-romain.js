@@ -96,6 +96,9 @@ export default {
   survive: true,
   boss: true,
   verb: { en: 'RUN, IT\'S 3 PM!', fr: 'FILE, 15H PÉTANTES !' },
+  title: { en: "BOSS: 3 pm escape", fr: "BOSS : la fuite de 15h" },
+  howto: { en: "Romain's chasing you with a file. Swipe up and down to dodge everything until the exit.", fr: "Romain te court après avec un dossier. Glisse en haut et en bas pour tout éviter jusqu'à la sortie." },
+  winLine: { en: "Freedom! See you tomorrow!", fr: "Liberté ! À demain !" },
   create(g) {
     const K = 1 / Math.sqrt(g.speed);
     const chaser = g.cast('romain', 'greg');

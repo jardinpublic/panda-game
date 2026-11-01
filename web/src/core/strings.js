@@ -39,16 +39,16 @@ export const STRINGS = {
   tap_to_start: { en: 'Tap or press Space', fr: 'Touche l\'écran ou Espace' },
 
   // Cameo lines: every friend shows up in every world.
-  quote_panda: { en: ['Hoho!', 'Hoho, I deny everything!', 'Drinks at 11:30, then nap.', 'Hoho, New Panda, a reformed man.', 'Hoho, the merguez!'], fr: ['Hoho !', 'Hoho, je nie tout en bloc !', 'Un pot à 11h30, et sieste.', 'Hoho, y est New Panda, un repenti.', 'Hoho les merguez !'] },
-  quote_cous: { en: ['There is no New Cous!', 'Be wise, Panda…', '20 € per parcel!'], fr: ['Mais bondieu, y a pas de New Cous !', 'Sois sage, Panda…', '20 € par colis !'] },
+  quote_panda: { en: ['Hoho!', 'Hoho, I deny everything!', 'Drinks at 11:30, then nap.', 'Hoho, New Panda, a reformed man.', 'Hoho, the merguez!', "Hoho, I'm a natural at pole!"], fr: ['Hoho !', 'Hoho, je nie tout en bloc !', 'Un pot à 11h30, et sieste.', 'Hoho, y est New Panda, un repenti.', 'Hoho les merguez !', "Hoho, la barre, c'est mon truc !"] },
+  quote_cous: { en: ['There is no New Cous!', 'Be wise, Panda…', '20 € per parcel!', "EMILLE-PATTES!", "Emille et une nuit!"], fr: ['Mais bondieu, y a pas de New Cous !', 'Sois sage, Panda…', '20 € par colis !', "EMILLE-PATTES !", "Emille et une nuit !"] },
   quote_romain: { en: ['You want to see work?', 'Do it FOR THE SILO!', 'Looool', 'Look at that!'], fr: ['Te veux voir du travail ?', 'Do it FOR THE SILO !', 'Looool', 'R\'gard\' don\' !'] },
-  quote_mamar: { en: ['Aïe aïe aïe aïe', 'Olé!', 'Thanks!', 'Messi is a god'], fr: ['Aïe aïe aïe aïe', 'Olé !', 'Merssi', 'Messi y est un dieu'] },
-  quote_victor: { en: ['Get to work, Panda!', 'Good job, monkey!', 'Stylish'], fr: ['Bosse don\', Panda !', 'Bon boulot l\'🐒 !', 'Stylé'] },
-  quote_babar: { en: ['Shave it all off!', 'I run, like dad.', 'What do I have to do with it?!'], fr: ['Rase z\'y tout !', 'Je fais comme pôpa : je cours.', 'Qué don\' qu\' j\'ai à voir ?!'] },
-  quote_greg: { en: ['Le crapa!', 'Happy birthday!'], fr: ['Le crapa !', 'Bon anniv !'] },
+  quote_mamar: { en: ['Aïe aïe aïe aïe', 'Olé!', 'Thanks!', 'Messi is a god', "Batistuta!", "Batigol!", "Nous l'Argentine!"], fr: ['Aïe aïe aïe aïe', 'Olé !', 'Merssi', 'Messi y est un dieu', "Batistuta !", "Batigol !", "Nous l'Argentine !"] },
+  quote_victor: { en: ['Get to work, Panda!', 'Good job, monkey!', 'Stylish', "Seen my aubergines? Huge!", "Biggest aubergine on the island!"], fr: ['Bosse don\', Panda !', 'Bon boulot l\'🐒 !', 'Stylé', "T'as vu mes aubergines ? Énormes !", "La plus grosse aubergine de l'île !"] },
+  quote_babar: { en: ['Shave it all off!', 'I run, like dad.', 'What do I have to do with it?!', "Ah ben mon Romain…", "My boar is very gentle."], fr: ['Rase z\'y tout !', 'Je fais comme pôpa : je cours.', 'Qué don\' qu\' j\'ai à voir ?!', "Ah ben mon Romain…", "Mon sanglier est très gentil."] },
+  quote_greg: { en: ['Le crapa!', 'Happy birthday!', "In the US, that's a small!", "Everything's bigger in America!"], fr: ['Le crapa !', 'Bon anniv !', "Aux States, ça c'est un small !", "En Amérique, tout est plus grand !"] },
   quote_aline: { en: ['We love you anyway!', 'Silo done!'], fr: ['On t\'aime quand même !', 'Silo fini !'] },
   quote_eugenie: { en: ['What is that underwear, Panda?!', 'Bisous!'], fr: ['Mais qu\'est-ce que c\'est que ce slip ?!', 'Bisous !'] },
-  quote_violaine: { en: ['Awkward!', 'Go for it!'], fr: ['Malaisant !', 'Vazy balance !'] },
+  quote_violaine: { en: ['Awkward!', 'Go for it!', "Core, Panda! Core!", "Pole class tonight!"], fr: ['Malaisant !', 'Vazy balance !', "Gainage, Panda !", "Cours de pole ce soir !"] },
 };
 
 /** Adds a world's texts ({en: {key: text}, fr: {...}}) under a prefix. */

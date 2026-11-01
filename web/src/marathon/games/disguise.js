@@ -221,6 +221,9 @@ export default {
   min: 2.6,
   survive: false,
   verb: { en: 'FIND YOURSELF!', fr: 'TROUVE-TOI !' },
+  title: { en: "Soirée fauve", fr: "Soirée fauve" },
+  howto: { en: "Everyone's in animal costume. Watch for the tiny \"Hoho\" and tap the real you.", fr: "Tout le monde est déguisé. Repère le petit « Hoho » et touche le vrai toi." },
+  winLine: { en: "Found you, wild one!", fr: "Trouvé, le fauve !" },
   create(g) {
     const W = g.W;
     const H = g.H;

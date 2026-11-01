@@ -46,6 +46,10 @@ describe.each(ALL)('micro-game %#', (def, boss) => {
     expect(def.id).toMatch(/^[a-z0-9-]+$/);
     expect(def.verb.en).toBeTruthy();
     expect(def.verb.fr).toBeTruthy();
+    for (const key of ['title', 'howto', 'winLine']) {
+      expect(def[key]?.en, `${def.id}.${key}.en`).toBeTruthy();
+      expect(def[key]?.fr, `${def.id}.${key}.fr`).toBeTruthy();
+    }
     expect(['tap', 'swipe', 'hold', 'drag', 'mash']).toContain(def.input);
     expect(def.base).toBeGreaterThan(1);
   });

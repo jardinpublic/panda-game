@@ -50,6 +50,9 @@ export default {
   min: 2.4,
   survive: false,
   verb: { en: 'POUR THE DOSE!', fr: 'VERSE LA DOSE !' },
+  title: { en: "The right dose", fr: "La bonne dose" },
+  howto: { en: "Hold to pour the rum. Let go between the two lines.", fr: "Maintiens pour verser le rhum. Lâche entre les deux traits." },
+  winLine: { en: "Perfect ti-punch!", fr: "Ti-punch parfait !" },
   create(g) {
     const friend = g.friend();
     const gy = g.H * 0.62; // glass bottom

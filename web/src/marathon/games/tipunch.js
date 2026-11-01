@@ -68,6 +68,9 @@ export default {
   min: 2.6,
   survive: false,
   verb: { en: 'STOP THE TI-PUNCH!', fr: 'ARRÊTE LE TI-PUNCH !' },
+  title: { en: "Ti-punch slide", fr: "Le ti-punch glissé" },
+  howto: { en: "The ti-punch slides down the bar. Tap to stop it in the glowing ring.", fr: "Le ti-punch glisse sur le bar. Touche pour l'arrêter dans le cercle lumineux." },
+  winLine: { en: "Right in front of you. Santé!", fr: "Pile devant toi. Santé !" },
   create(g) {
     const bartender = g.friend();
     const dancer = g.friend([bartender]);

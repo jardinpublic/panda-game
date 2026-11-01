@@ -30,6 +30,9 @@ export default {
   base: 6,
   survive: false,
   verb: { en: 'SNEAK OUT!', fr: 'FILE EN DOUCE !' },
+  title: { en: "Sneak out", fr: "Filer en douce" },
+  howto: { en: "Hold to tiptoe to the door. Let go when Romain turns around.", fr: "Maintiens pour avancer sur la pointe des pieds. Lâche quand Romain se retourne." },
+  winLine: { en: "Out without a sound!", fr: "Sorti sans un bruit !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;
