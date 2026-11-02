@@ -105,7 +105,8 @@ const DMD_WORDS = {
   pbCellarCan: "dmdCellar",
   pbCellarMagnet: "dmdCellar",
   pbCellarNote: "dmdCellar",
-  pbCellarBoar: "dmdCellar"
+  pbCellarBoar: "dmdCellar",
+  pbCellarRaclette: "dmdCellar"
 };
 const DMD_ONLY = new Set(["pbLoops", "pbSecretSkill", "pbHotfix", "pbReplay", "pbJackpot", "pbReleaseJackpot", "pbSuperJackpot", "pbSkillShot", "pbSuperSkill", "pbCombo", "pbBallSaved", "pbKickback", "pbKickbackR", "pbBonusXUp", "pbLocked", "pbBallN", "pbShootAgain", "pbTilt", "pbTiltWarning", "pbExtraBall", "pbMultiball", "pbOldCous", "pbNewCous", "pbOldCousShot", "pbNewCousShot", "pbBurpNow", "pbBatigol", "pbCrocoHit", "pbKidShooed", "pbMerguezGrabbed", "pbCrab", "pbLoop", "pbCoco", "pbCraterJackpot", "pbSiloLocked"]);
 // What a mission counts to, for its line on the display (see missions.js goal())
@@ -148,6 +149,7 @@ const CHAT_SPEAKERS = {
   pbMoliereStart: "violaine",
   pbMamarStart: "mamar",
   pbFauveStart: "aline",
+  pbAlineRaclette: "aline",
   pbBabarStart: "babar",
   pbCheer0: "panda",
   pbCheer1: "cous",

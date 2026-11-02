@@ -79,7 +79,8 @@ const CELLAR_AWARDS = [
   { key: "pbCellarCan", effect: "bonusX" },
   { key: "pbCellarMagnet", effect: "magnet" },
   { key: "pbCellarNote", effect: "note" },
-  { key: "pbCellarBoar", effect: "post" }
+  { key: "pbCellarBoar", effect: "post" },
+  { key: "pbCellarRaclette", points: 100000, chat: "pbAlineRaclette" }
 ];
 // The light modes: off, on, slow blink, fast blink
 export const OFF = 0;
@@ -721,6 +722,9 @@ export function createRules(table, out, random) {
         break;
     }
     award(a.points || 50000, a.key, vars);
+    if (a.chat) {
+      out.say("chat", a.chat);
+    }
     out.event("cellar", { key: a.key });
     rt.cellar = { ball, until: s.clock + CELLAR_HOLD };
   }
