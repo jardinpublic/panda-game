@@ -9,9 +9,9 @@ import { scene, person, rrect, circle, ellipse, PAL, text, creoleHouse, palm } f
 
 const HERO_X = 200;
 const SPOTS = [375, 25]; // where the boar stands between charges (right, left)
-const REACH = 66; // boar half-length + hero half-width
-const CLEAR_H = 46; // feet this high clear the boar's back
-const JUMP_H = 150;
+const REACH = 44; // forgiving hitbox: boar body vs hero feet
+const CLEAR_H = 40; // feet this high clear the boar's back
+const JUMP_H = 170;
 
 /** A cute chunky boar, feet at (x, y), facing `face` (1 right, -1 left). */
 function boar(c, x, y, s, t, { face = -1, run = 0, paw = 0, happy = 0 } = {}) {
@@ -130,10 +130,12 @@ export default {
     const babar = g.cast('babar', 'mamar');
     const groundY = g.H * 0.8;
     const tell = 0.75 / g.speed;
-    const vb = 380 * Math.pow(g.speed, 0.7);
+    // Tuned for human reaction time: the good window to tap is ~0.45 s wide,
+    // and opens a little before the charge starts.
+    const vb = 250 * Math.pow(g.speed, 0.6);
     const travel = (SPOTS[0] - SPOTS[1]) / vb;
     const skid = 0.25 / g.speed;
-    const J = 0.6 / Math.pow(g.speed, 0.3);
+    const J = 0.95 / Math.pow(g.speed, 0.25);
     const first = 0.3 / g.speed;
     let total = g.boss ? 4 : g.speed < 1.45 ? 2 : 3;
     // Never schedule a charge that cannot finish before the clock runs out.
@@ -158,6 +160,22 @@ export default {
       if (s.jumpT < 0) return 0;
       const u = s.jumpT / J;
       return JUMP_H * 4 * u * (1 - u);
+    }
+
+    // Fraction of the jump spent too low to clear the boar, at each end.
+    const low = (1 - Math.sqrt(1 - CLEAR_H / JUMP_H)) / 2;
+
+    /** Would a jump started right now clear the next charge? (drives the green cue) */
+    function goodNow() {
+      if (s.jumpT >= 0 || s.hit || g.done) return false;
+      let delay = 0;
+      if (s.state === 'paw') delay = s.k;
+      else if (s.state !== 'charge') return false;
+      const d = (HERO_X - s.bx) * s.face;
+      if (d < -REACH) return false;
+      const enter = delay + Math.max(0, d - REACH) / vb;
+      const exit = delay + (d + REACH) / vb;
+      return enter >= low * J && exit <= (1 - low) * J;
     }
 
     function jump() {
@@ -325,11 +343,17 @@ export default {
           }
         }
         if (!g.done && s.jumpT < 0) text(c, '👆', HERO_X, groundY + 60, { size: 28, shadow: false });
+        if (goodNow()) {
+          // The moment to jump: a green ring under the hero and a big cue.
+          const pulse = 0.7 + 0.3 * Math.sin(s.t * 20);
+          ellipse(c, HERO_X, groundY + 4, 70 * pulse + 10, 16, 'rgba(40, 210, 120, 0.45)');
+          text(c, g.tr({ en: 'JUMP!', fr: 'SAUTE !' }), HERO_X, groundY - 230, { size: 34, color: '#fff', stroke: '#18a96b' });
+        }
       },
       bot() {
         if (s.state !== 'charge' || s.jumpT >= 0) return null;
         const d = (HERO_X - s.bx) * s.face; // distance still to cover to the hero
-        return d > 0 && d <= vb * J * 0.5 + 4 ? { press: [HERO_X, groundY - 80] } : null;
+        return d > 0 && d <= vb * J * 0.5 + 4 && goodNow() ? { press: [HERO_X, groundY - 80] } : null;
       },
     };
   },
