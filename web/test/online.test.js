@@ -86,13 +86,32 @@ describe('online Hall of Fame', () => {
     expect(board[0].player_id).toBeUndefined();
   });
 
+  it('shows the face each player picked, and their latest one', async () => {
+    let t = NOW;
+    const backend = memoryBackend([], () => t);
+    const net = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: backend.fetch });
+    let meta = player('Cous');
+    meta.online.avatar = 'violaine';
+    meta = applyPinball(meta, { score: 5000, hero: 'panda', at: NOW - 5000 }).meta;
+    expect(rowFor(meta, 'flipper').hero).toBe('violaine');
+    await net.send(rowFor(meta, 'flipper'));
+    t += 20000;
+    meta.online.avatar = 'babar';
+    meta = applySpx(meta, { score: 30000, hero: 'panda', time: 140, finished: true, at: NOW - 1000 }).meta;
+    await net.send(rowFor(meta, 'spx'));
+    expect((await net.board('flipper'))[0].hero).toBe('babar');
+    meta.online.avatar = 'nobody';
+    expect(rowFor(meta, 'flipper').hero).toBe('panda');
+  });
+
   it('tells a refused score from a network problem, and slows down spam', async () => {
     let t = NOW;
     const backend = memoryBackend([], () => t);
     const net = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: backend.fetch });
     const row = { player_id: 'a', name: 'Cous', game: 'flipper', score: 100, hero: 'panda', played_at: new Date(NOW - 1000).toISOString() };
     expect(await net.send(row)).toBe('sent');
-    expect(await net.send({ ...row, score: 200 })).toBe('refused');
+    // A second send within 10 seconds: try again later (not lost)
+    expect(await net.send({ ...row, score: 200 })).toBe('later');
     expect(await net.send({ ...row, game: 'spx', score: 999999 })).toBe('refused');
     const down = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: async () => { throw new Error('offline'); } });
     expect(await down.send(row)).toBe('later');

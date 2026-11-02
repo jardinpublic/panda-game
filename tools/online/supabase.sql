@@ -86,7 +86,7 @@ revoke all on public.panda_scores from anon, authenticated;
 grant insert (player_id, name, game, score, level, streak, hero, ride_time, home, played_at)
   on public.panda_scores to anon, authenticated;
 
--- The board: each player's best per game, with the name they use now
+-- The board: each player's best per game, with the name and face (hero) they use now
 create or replace view public.panda_board as
 with best as (
   select distinct on (game, player_id)
@@ -94,11 +94,11 @@ with best as (
   from public.panda_scores
   order by game, player_id, score desc, played_at asc
 ), names as (
-  select distinct on (player_id) player_id, name
+  select distinct on (player_id) player_id, name, hero
   from public.panda_scores
   order by player_id, created_at desc
 )
-select b.game, n.name, b.score, b.level, b.streak, b.hero, b.ride_time, b.home, b.played_at
+select b.game, n.name, b.score, b.level, b.streak, coalesce(n.hero, b.hero) as hero, b.ride_time, b.home, b.played_at
 from best b join names n using (player_id);
 
 revoke all on public.panda_board from anon, authenticated;

@@ -46,7 +46,7 @@ export function emptyMeta() {
 
 /** The online Hall of Fame profile: a random id for this phone, the name typed once, what was sent. */
 export function emptyOnline() {
-  return { id: '', name: '', asked: false, sent: { marathon: 0, flipper: 0, spx: 0 } };
+  return { id: '', name: '', avatar: '', asked: false, sent: { marathon: 0, flipper: 0, spx: 0 } };
 }
 
 function normalizeOnline(raw) {
@@ -55,6 +55,7 @@ function normalizeOnline(raw) {
   return {
     id: typeof o.id === 'string' ? o.id.slice(0, 64) : '',
     name: typeof o.name === 'string' ? o.name.slice(0, 40) : '',
+    avatar: typeof o.avatar === 'string' ? o.avatar.slice(0, 20) : '',
     asked: !!o.asked,
     sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx) },
   };
@@ -137,6 +138,7 @@ export function mergeMeta(a, b) {
   m.online = {
     id: no.id || oo.id,
     name: no.name || oo.name,
+    avatar: no.avatar || oo.avatar,
     asked: oo.asked || no.asked,
     sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx) },
   };

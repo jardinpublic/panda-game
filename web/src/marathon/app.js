@@ -1355,6 +1355,7 @@ const net = params.has('fakeonline') ? createOnline({ url: 'https://fake.local',
 
 /** Sends every best not on the board yet (a new player, a new record, or one that waited for the network). */
 let syncing = null;
+let syncRetry = 0;
 function syncScores() {
   if (!net.configured || VOLATILE && !params.has('fakeonline')) return Promise.resolve();
   if (syncing) return syncing;
@@ -1362,7 +1363,12 @@ function syncScores() {
     for (const game of toSend(A.meta)) {
       const row = rowFor(A.meta, game);
       const res = await net.send(row);
-      if (res === 'later') break;
+      if (res === 'later') {
+        // No network, or too soon after the last send: try again in a while
+        clearTimeout(syncRetry);
+        syncRetry = setTimeout(() => syncScores(), 12000);
+        break;
+      }
       // Sent, or refused for good (an impossible score): either way, do not send it again
       A.meta.online.sent[game] = Math.max(A.meta.online.sent[game] || 0, row.score);
       persist();
@@ -1396,6 +1402,22 @@ function askName(after) {
   input.placeholder = t('m.name_placeholder');
   input.value = A.meta.online.name || '';
   el('p', 'm-hint', panel, t('m.name_kids'));
+  // The face shown next to the name on the board: any of the gang
+  el('h3', 'm-sec', panel, `🙂 ${t('m.avatar_pick')}`);
+  let face = CAST_IDS.includes(A.meta.online.avatar) ? A.meta.online.avatar : CAST_IDS.includes(A.meta.hero) ? A.meta.hero : 'panda';
+  const faces = el('div', 'm-faces', panel);
+  for (const id of CAST_IDS) {
+    const b = el('button', `m-face${id === face ? ' on' : ''}`, faces);
+    b.type = 'button';
+    b.setAttribute('aria-label', id);
+    const img = el('img', '', b);
+    img.src = `${import.meta.env.BASE_URL}cast/${id}.svg`;
+    img.alt = '';
+    b.onclick = () => {
+      face = id;
+      faces.querySelectorAll('.m-face').forEach((x) => x.classList.toggle('on', x === b));
+    };
+  }
   const ok = el('button', 'm-btn m-play', panel, t('m.name_ok'));
   const done = () => {
     const name = cleanName(input.value);
@@ -1406,9 +1428,13 @@ function askName(after) {
       input.focus();
       return;
     }
-    A.meta.online.name = name;
-    A.meta.online.id ||= newPlayerId();
-    A.meta.online.asked = true;
+    const o = A.meta.online;
+    // A new name or face for someone already on the board: send the bests again so the board shows it now
+    if (o.name && (o.name !== name || o.avatar !== face)) o.sent = { marathon: 0, flipper: 0, spx: 0 };
+    o.name = name;
+    o.avatar = face;
+    o.id ||= newPlayerId();
+    o.asked = true;
     persist();
     ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
     renderUI();
@@ -1484,7 +1510,13 @@ function openRecords(tab = 'marathon') {
   // The gang's board first, then the records of this phone
   if (net.configured) {
     const name = cleanName(A.meta.online.name);
-    const me = el('button', 'm-btn m-ghost m-me', panel, name ? `👤 ${name} · ✏️ ${t('m.name_change')}` : `🏆 ${t('m.name_ask')}`);
+    const me = el('button', 'm-btn m-ghost m-me', panel, name ? `${name} · ✏️ ${t('m.name_change')}` : `🏆 ${t('m.name_ask')}`);
+    if (name) {
+      const img = document.createElement('img');
+      img.src = `${import.meta.env.BASE_URL}cast/${CAST_IDS.includes(A.meta.online.avatar) ? A.meta.online.avatar : 'panda'}.svg`;
+      img.alt = '';
+      me.prepend(img);
+    }
     me.onclick = () => {
       ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
       askName(() => openRecords(tab));

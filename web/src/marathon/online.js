@@ -50,7 +50,8 @@ export function rowFor(meta, game) {
     name: cleanName(p.name),
     game,
     score: Math.round(run.score),
-    hero: CAST_IDS.includes(run.hero) ? run.hero : null,
+    // The face the player picked for the board (else the hero of the run)
+    hero: CAST_IDS.includes(p.avatar) ? p.avatar : CAST_IDS.includes(run.hero) ? run.hero : null,
     played_at: new Date(run.at || Date.now()).toISOString(),
   };
   if (game === 'marathon') {
@@ -121,6 +122,9 @@ export function createOnline({ url = ONLINE_URL, key = ONLINE_KEY, fetch = globa
       try {
         const res = await call('panda_scores', { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }), body: JSON.stringify(row) });
         if (res.ok) return 'sent';
+        // "too soon" (one send per game every 10 seconds) is worth another try a bit later
+        const why = await res.json().catch(() => null);
+        if (why && /too soon/.test(String(why.message))) return 'later';
         return res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429 ? 'refused' : 'later';
       } catch {
         return 'later';
@@ -147,7 +151,11 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
   const reply = (status, body) => ({ ok: status < 300, status, json: async () => body });
   function board(game) {
     const names = new Map();
-    for (const r of [...rows].sort((a, b) => a.created_at - b.created_at)) names.set(r.player_id, r.name);
+    const faces = new Map();
+    for (const r of [...rows].sort((a, b) => a.created_at - b.created_at)) {
+      names.set(r.player_id, r.name);
+      faces.set(r.player_id, r.hero);
+    }
     const best = new Map();
     for (const r of rows) {
       if (r.game !== game) continue;
@@ -155,7 +163,7 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
       if (!b || r.score > b.score || (r.score === b.score && r.played_at < b.played_at)) best.set(r.player_id, r);
     }
     return [...best.values()]
-      .map(({ player_id, created_at, ...r }) => ({ ...r, name: names.get(player_id) }))
+      .map(({ player_id, created_at, ...r }) => ({ ...r, name: names.get(player_id), hero: faces.get(player_id) }))
       .sort((a, b) => b.score - a.score || Date.parse(a.played_at) - Date.parse(b.played_at));
   }
   async function fetch(url, init = {}) {
