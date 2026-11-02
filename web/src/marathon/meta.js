@@ -46,7 +46,7 @@ export function emptyMeta() {
 
 /** The online Hall of Fame profile: a random id for this phone, the name typed once, what was sent. */
 export function emptyOnline() {
-  return { id: '', name: '', avatar: '', asked: false, sent: { marathon: 0, flipper: 0, spx: 0 } };
+  return { id: '', name: '', avatar: '', asked: false, since: 0, sent: { marathon: 0, flipper: 0, spx: 0 } };
 }
 
 function normalizeOnline(raw) {
@@ -57,6 +57,8 @@ function normalizeOnline(raw) {
     name: typeof o.name === 'string' ? o.name.slice(0, 40) : '',
     avatar: typeof o.avatar === 'string' ? o.avatar.slice(0, 20) : '',
     asked: !!o.asked,
+    // Records reset on the board at this time (ms): older runs no longer count
+    since: num(o.since),
     sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx) },
   };
 }
@@ -87,6 +89,23 @@ export function normalizeMeta(raw) {
   m.spx = { ...sx, best: num(sx.best), games: num(sx.games), homes: num(sx.homes), scores: topScores(Array.isArray(sx.scores) ? sx.scores : []) };
   m.spx.best = Math.max(m.spx.best, m.spx.scores[0]?.score || 0);
   m.online = normalizeOnline(raw.online);
+  return dropOldRecords(m);
+}
+
+/**
+ * After a records reset (online.since, set on the board for this player), the
+ * runs played before it are forgotten and the bests come from what is left.
+ */
+export function dropOldRecords(m) {
+  const since = m.online?.since || 0;
+  if (!since) return m;
+  const keep = (list) => list.filter((x) => (x.at || 0) >= since);
+  m.scores = keep(m.scores);
+  m.best = m.scores[0]?.score || 0;
+  m.pinball.scores = keep(m.pinball.scores);
+  m.pinball.best = m.pinball.scores[0]?.score || 0;
+  m.spx.scores = keep(m.spx.scores);
+  m.spx.best = m.spx.scores[0]?.score || 0;
   return m;
 }
 
@@ -140,10 +159,11 @@ export function mergeMeta(a, b) {
     name: no.name || oo.name,
     avatar: no.avatar || oo.avatar,
     asked: oo.asked || no.asked,
+    since: Math.max(oo.since, no.since),
     sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx) },
   };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);
-  return m;
+  return dropOldRecords(m);
 }
 
 /** Fills the mission list up to three, deterministic from the tier and a picker. */

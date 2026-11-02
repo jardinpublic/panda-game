@@ -130,6 +130,14 @@ export function createOnline({ url = ONLINE_URL, key = ONLINE_KEY, fetch = globa
         return 'later';
       }
     },
+    /** When this player's records were reset on the board (ms), 0 if never. Throws when offline. */
+    async since(playerId) {
+      if (!configured) throw new Error('offline');
+      const res = await call('rpc/panda_since', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ pid: playerId }) });
+      if (!res.ok) throw new Error(String(res.status));
+      const at = Date.parse(await res.json());
+      return Number.isFinite(at) ? at : 0;
+    },
     /** The gang's board for a game, best first. */
     async board(game, limit = 50) {
       if (!configured) throw new Error('offline');
@@ -143,11 +151,15 @@ export function createOnline({ url = ONLINE_URL, key = ONLINE_KEY, fetch = globa
 
 /**
  * A pretend Supabase in memory, for the tests and the ?fakeonline test link:
- * the same refusals (impossible scores, a second send within 10 seconds) and
- * the same board (each player's best per game, with their latest name).
+ * the same refusals (impossible scores, a second send within 10 seconds, a run
+ * from before the player's records reset) and the same board (each player's
+ * best per game since their reset, with their latest name).
  */
 export function memoryBackend(seed = [], now = () => Date.now()) {
   const rows = seed.map((r, i) => ({ ...r, created_at: now() - (seed.length - i) * 60000 }));
+  /** player id → records reset time (ms) */
+  const resets = new Map();
+  const counts = (r) => Date.parse(r.played_at) >= (resets.get(r.player_id) || 0);
   const reply = (status, body) => ({ ok: status < 300, status, json: async () => body });
   function board(game) {
     const names = new Map();
@@ -158,7 +170,7 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
     }
     const best = new Map();
     for (const r of rows) {
-      if (r.game !== game) continue;
+      if (r.game !== game || !counts(r)) continue;
       const b = best.get(r.player_id);
       if (!b || r.score > b.score || (r.score === b.score && r.played_at < b.played_at)) best.set(r.player_id, r);
     }
@@ -172,8 +184,13 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
       const row = JSON.parse(init.body);
       if (!plausible(row, now())) return reply(400, { message: 'check constraint' });
       if (rows.some((r) => r.player_id === row.player_id && r.game === row.game && now() - r.created_at < 10000)) return reply(400, { message: 'too soon' });
+      if (!counts(row)) return reply(400, { message: 'before reset' });
       rows.push({ ...row, created_at: now() });
       return reply(201, null);
+    }
+    if (u.pathname.endsWith('/rpc/panda_since')) {
+      const at = resets.get(JSON.parse(init.body).pid);
+      return reply(200, at ? new Date(at).toISOString() : null);
     }
     if (u.pathname.endsWith('/panda_board')) {
       const game = (u.searchParams.get('game') || '').replace(/^eq\./, '');
@@ -182,5 +199,5 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
     }
     return reply(404, null);
   }
-  return { fetch, rows };
+  return { fetch, rows, resets };
 }

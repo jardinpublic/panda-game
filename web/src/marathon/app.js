@@ -14,7 +14,7 @@ import { createFx } from './fx.js';
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
-import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, buy, HEROES, HATS } from './meta.js';
+import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, dropOldRecords, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { installMode } from './install.js';
 import { GAMES as BOARD_GAMES, NAME_MAX, createOnline, memoryBackend, toSend, rowFor, bestRun, cleanName, newPlayerId } from './online.js';
@@ -1415,10 +1415,31 @@ const net = params.has('fakeonline') ? createOnline({ url: 'https://fake.local',
 /** Sends every best not on the board yet (a new player, a new record, or one that waited for the network). */
 let syncing = null;
 let syncRetry = 0;
+let resetChecked = false;
 function syncScores() {
   if (!net.configured || VOLATILE && !params.has('fakeonline')) return Promise.resolve();
   if (syncing) return syncing;
   syncing = (async () => {
+    // Once per launch: were this player's records reset on the board (scores from an
+    // easier old version)? Then the runs before it are forgotten here too.
+    if (!resetChecked && A.meta.online.id) {
+      try {
+        const since = await net.since(A.meta.online.id);
+        resetChecked = true;
+        if (since > A.meta.online.since) {
+          A.meta.online.since = since;
+          A.meta.online.sent = { marathon: 0, flipper: 0, spx: 0 };
+          dropOldRecords(A.meta);
+          persist();
+          if (A.screen === 'home' && !document.querySelector('.m-sheet')) renderUI();
+        }
+      } catch {
+        // No network: send nothing until the reset is known
+        clearTimeout(syncRetry);
+        syncRetry = setTimeout(() => syncScores(), 12000);
+        return;
+      }
+    }
     for (const game of toSend(A.meta)) {
       const row = rowFor(A.meta, game);
       const res = await net.send(row);

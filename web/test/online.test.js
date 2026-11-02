@@ -1,7 +1,7 @@
 // The online Hall of Fame: names, what gets sent and when, and the board.
 import { describe, it, expect } from 'vitest';
 import { cleanName, newPlayerId, rowFor, plausible, toSend, createOnline, memoryBackend, bestRun } from '../src/marathon/online.js';
-import { emptyMeta, normalizeMeta, mergeMeta, applyRun, applyPinball, applySpx } from '../src/marathon/meta.js';
+import { emptyMeta, normalizeMeta, mergeMeta, applyRun, applyPinball, applySpx, dropOldRecords } from '../src/marathon/meta.js';
 import { maxScore } from '../src/marathon/hof.js';
 
 const NOW = Date.UTC(2026, 10, 3, 12);
@@ -134,5 +134,50 @@ describe('online Hall of Fame', () => {
     expect(seen[1].url).toContain('/rest/v1/panda_board?');
     expect(seen[1].url).toContain('game=eq.spx');
     expect(seen[1].headers.Authorization).toBe('Bearer eyJhbGciOi.jwt');
+  });
+
+  it('after a records reset, hides the old scores, refuses them again, and sends only new records', async () => {
+    let t = NOW;
+    const backend = memoryBackend([], () => t);
+    const net = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: backend.fetch });
+    let meta = player('Cous');
+    meta = applyPinball(meta, { score: 47000000, hero: 'panda', at: NOW - 5000 }).meta;
+    meta = applySpx(meta, { score: 40000, hero: 'panda', time: 140, finished: true, at: NOW - 4000 }).meta;
+    expect(await net.send(rowFor(meta, 'flipper'))).toBe('sent');
+    meta.online.sent.flipper = 47000000;
+    expect(await net.since(meta.online.id)).toBe(0);
+
+    // The reset, on the board
+    t += 20000;
+    backend.resets.set(meta.online.id, t);
+    expect(await net.board('flipper')).toEqual([]);
+    expect(await net.since(meta.online.id)).toBe(t);
+    expect(await net.send(rowFor(meta, 'spx'))).toBe('refused');
+
+    // The phone hears of it: old runs gone, nothing to send until a new record
+    meta.online.since = t;
+    meta.online.sent = { marathon: 0, flipper: 0, spx: 0 };
+    dropOldRecords(meta);
+    expect(meta.pinball.scores).toEqual([]);
+    expect(meta.pinball.best).toBe(0);
+    expect(meta.spx.best).toBe(0);
+    expect(toSend(meta, t)).toEqual([]);
+
+    // An old copy of the save merged back in does not bring them back
+    const old = player('Cous');
+    old.pinball = { best: 47000000, games: 3, scores: [{ score: 47000000, hero: 'panda', at: NOW - 5000 }] };
+    old.updated = 1;
+    meta.updated = 2;
+    meta = mergeMeta(old, meta);
+    expect(meta.pinball.best).toBe(0);
+    expect(normalizeMeta(JSON.parse(JSON.stringify(meta))).pinball.scores).toEqual([]);
+
+    // A new, lower record goes on the board
+    t += 60000;
+    meta = applyPinball(meta, { score: 900000, hero: 'panda', at: t - 1000 }).meta;
+    expect(meta.pinball.best).toBe(900000);
+    expect(toSend(meta, t)).toEqual(['flipper']);
+    expect(await net.send(rowFor(meta, 'flipper'))).toBe('sent');
+    expect((await net.board('flipper')).map((r) => [r.name, r.score])).toEqual([['Cous', 900000]]);
   });
 });
