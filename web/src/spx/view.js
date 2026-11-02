@@ -1,6 +1,6 @@
 /*
- * 103 SPX in 3D (three.js): late-afternoon sun with shadows, Montceau built by
- * town.js, Panda on his animated 103 SPX (wheels, pedals, lean, wheelies,
+ * 103 RCX in 3D (three.js): late-afternoon sun with shadows, Montceau built by
+ * town.js, Panda on his animated 103 RCX (wheels, pedals, lean, wheelies,
  * crashes), everything on the road drawn from the rules' state, exhaust smoke,
  * a turbo flame, speed lines and a chase camera.
  *
@@ -166,7 +166,7 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
   /* ---- Montceau ---- */
   const town = buildTown({ scene, route, sec: rules.sec, texts, tier, keep, castTexture, sunDir, kit });
 
-  /* ---- Panda on his 103 SPX ---- */
+  /* ---- Panda on his 103 RCX ---- */
   const panda = new THREE.Group(); // on the road, facing along it
   const lean = new THREE.Group(); // rolls into the turns
   const pitch = new THREE.Group(); // wheelies, pivoting on the back wheel
@@ -177,7 +177,7 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
   lean.add(pitch);
   pitch.add(bike);
   const shadowy = (m) => ((m.castShadow = true), m);
-  bike.add(shadowy(new THREE.Mesh(keep(mopedBody('#2f6fd1', { noCrank: true, stripe: '#e23b3b' })), PAINT)));
+  bike.add(shadowy(new THREE.Mesh(keep(mopedBody('#2f6fd1', { noCrank: true, stripe: '#e23b3b', rcx: true })), PAINT)));
   const wheelG = keep(wheelGeometry());
   const wheelF = shadowy(new THREE.Mesh(wheelG, PAINT));
   wheelF.position.set(...FRONT_WHEEL);
@@ -205,7 +205,7 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
     face.position.set(0, 1.68, 0.02);
     face.scale.set(1, 1.05, 1.02);
     rider.add(face);
-    const decal = keep(T.texture(T.decalCanvas('103 SPX', null, '#ffffff', 256, 64, 46)));
+    const decal = keep(T.texture(T.decalCanvas('103 RCX', null, '#ffffff', 256, 64, 46)));
     for (const s of [-1, 1]) {
       const d = new THREE.Mesh(keep(new THREE.PlaneGeometry(0.34, 0.085)), lambert({ map: decal, transparent: true }));
       d.position.set(s * 0.118, 0.73, -0.22);

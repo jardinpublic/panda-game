@@ -1,5 +1,5 @@
 /*
- * 103 SPX: Panda's moped ride home through Montceau-les-Mines (see DESIGN.md).
+ * 103 RCX: Panda's moped ride home through Montceau-les-Mines (see DESIGN.md).
  * Runs inside a <div>: a WebGL view (view.js) of the rules (rules.js), a DOM
  * HUD, touch and keyboard input, and its own sounds (sound.js).
  *

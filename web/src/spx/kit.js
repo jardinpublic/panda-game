@@ -1,5 +1,5 @@
 /*
- * Ready-made 3D models for 103 SPX: Kenney's CC0 kits (www.kenney.nl), in
+ * Ready-made 3D models for 103 RCX: Kenney's CC0 kits (www.kenney.nl), in
  * web/public/models/kenney (see the LICENSE.txt there). Cars and the police
  * car (Car Kit), the ZUP tower blocks and café parasols (City Kit Commercial),
  * planters (City Kit Suburban).

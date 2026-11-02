@@ -1,8 +1,8 @@
-# 103 SPX — design
+# 103 RCX — design
 
-A bonus game next to Eul' Flipper: Panda rides his 103 SPX moped home through
+A bonus game next to Eul' Flipper: Panda rides his 103 RCX moped home through
 Montceau-les-Mines, in 3D, one thumb, portrait. About 2 min 20 s a ride, its own
-high scores (save `spx`, records tab "103 SPX").
+high scores (save `spx`, records tab "103 RCX").
 
 ## The arcade loop
 

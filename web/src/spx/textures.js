@@ -1,5 +1,5 @@
 /*
- * 103 SPX canvas textures, painted once at start (no image files): the road
+ * 103 RCX canvas textures, painted once at start (no image files): the road
  * with its centre dashes and gutters, pavements, grass, Montceau house fronts
  * (rendered or brick, shutters, lace curtains, a few shops), roof tiles, the
  * ZUP tower blocks, road signs and soft sprites. Seeded, so the town looks the
@@ -823,7 +823,7 @@ export function zebraCanvas() {
   return c;
 }
 
-/** Text painted on the side of something (POLICE, 103 SPX). */
+/** Text painted on the side of something (POLICE, 103 RCX). */
 export function decalCanvas(text, bg, fg, w = 256, h = 64, font = 40) {
   const c = canvas(w, h);
   const g = c.getContext('2d');

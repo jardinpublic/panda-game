@@ -1,5 +1,5 @@
 /*
- * Cartoon faces of the 103 SPX characters who are not in the gang (Pépé
+ * Cartoon faces of the 103 RCX characters who are not in the gang (Pépé
  * Gogol, Pépé Pineur, Le Bud, Le Smo, the cops, Pietro Gangi, Les Azzouz),
  * painted on a canvas in the style of the cast faces (web/public/cast/*.svg):
  * thick warm outline, flat colours, big eyes. Same treatment for everyone,

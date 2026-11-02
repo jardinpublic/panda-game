@@ -1,4 +1,4 @@
 3D models by Kenney (www.kenney.nl): Car Kit 3.1, City Kit Commercial 2.1,
 City Kit Suburban 2.0. License: Creative Commons Zero (CC0),
 http://creativecommons.org/publicdomain/zero/1.0/
-Used in 103 SPX (cars and traffic, ZUP tower blocks, café parasols, planters).
+Used in 103 RCX (cars and traffic, ZUP tower blocks, café parasols, planters).

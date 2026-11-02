@@ -1,5 +1,5 @@
 /*
- * A rider that plays 103 SPX on its own: for the tests (a whole ride, many
+ * A rider that plays 103 RCX on its own: for the tests (a whole ride, many
  * seeds) and the ?spxauto link. It looks ahead, picks the safest lateral spot,
  * jumps bumps and holes, shouts at Pépé Gogol, pushes Les Azzouz away and
  * whacks Pietro Gangi once it has the table leg.

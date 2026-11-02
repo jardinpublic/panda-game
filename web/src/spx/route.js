@@ -1,5 +1,5 @@
 /*
- * The 103 SPX route: Panda rides from the Parc du Petit Bois to his house on
+ * The 103 RCX route: Panda rides from the Parc du Petit Bois to his house on
  * Rue de Charolles, Montceau-les-Mines, through the ZUP roundabout (by the Lac
  * du Plessis, taken the wrong way), Rue Beaubernard and Rue de la Place Pageot.
  *

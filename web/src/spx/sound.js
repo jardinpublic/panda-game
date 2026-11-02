@@ -1,5 +1,5 @@
 /*
- * 103 SPX sounds, all synthesised (no samples, no chiptune bleeps): the
+ * 103 RCX sounds, all synthesised (no samples, no chiptune bleeps): the
  * two-stroke engine that follows the speed, the French "pin-pon" siren, a
  * shout, Pépé Gogol's mumbling and the knocks. Its own AudioContext, created on
  * the first tap (browsers need a gesture).

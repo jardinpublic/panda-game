@@ -225,7 +225,7 @@ export function applyPinball(meta, { score, hero, at = Date.now() }) {
   return { meta: next, rank, newBest };
 }
 
-/** Records a 103 SPX ride. Returns {meta, rank, newBest}. */
+/** Records a 103 RCX ride. Returns {meta, rank, newBest}. */
 export function applySpx(meta, { score, hero, time = 0, finished = false, at = Date.now() }) {
   const next = normalizeMeta(clone(meta));
   const newBest = score > next.spx.best;

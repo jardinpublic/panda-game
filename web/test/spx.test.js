@@ -1,4 +1,4 @@
-// 103 SPX: the route, the rules and whole rides played by the bot.
+// 103 RCX: the route, the rules and whole rides played by the bot.
 import { describe, it, expect } from 'vitest';
 import { buildRoute, SECTIONS } from '../src/spx/route.js';
 import { createRules, TUNING, clock } from '../src/spx/rules.js';
@@ -31,7 +31,7 @@ function ride(seed, { reaction = 0, tuning, stopAt } = {}) {
   return { rules, said, events };
 }
 
-describe('103 SPX route', () => {
+describe('103 RCX route', () => {
   const route = buildRoute();
   it('goes from the Parc du Petit Bois to Rue de Charolles through the ZUP roundabout, Rue Beaubernard and Rue de la Place Pageot', () => {
     const names = route.sections.map((s) => s.name);
@@ -70,7 +70,7 @@ describe('103 SPX route', () => {
   });
 });
 
-describe('103 SPX rules', () => {
+describe('103 RCX rules', () => {
   it('needs fast pedalling to start the engine', () => {
     const rules = createRules({ random: seeded(1) });
     rules.newGame();
@@ -227,7 +227,7 @@ describe('103 SPX rules', () => {
   });
 });
 
-describe('103 SPX texts', () => {
+describe('103 RCX texts', () => {
   it('has every French key in English and the other way round', () => {
     expect(Object.keys(TEXTS.fr).sort()).toEqual(Object.keys(TEXTS.en).sort());
   });

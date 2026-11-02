@@ -2,7 +2,7 @@
 //
 // Each phone gets a random player id and the name its player types once; after
 // that, every new personal best of each game (PandAventures, Eul' Flipper,
-// 103 SPX) is sent on its own, and waits for the network when there is none.
+// 103 RCX) is sent on its own, and waits for the network when there is none.
 // The board shows each player's best per game.
 //
 // Pure helpers first (tested in web/test/online.test.js), then the network.

@@ -1,5 +1,5 @@
 /*
- * 103 SPX scenery: Montceau-les-Mines around the route. Sky, clouds and the far
+ * 103 RCX scenery: Montceau-les-Mines around the route. Sky, clouds and the far
  * skyline with its mine headframes; the road (painted centre line, gutters,
  * zebra crossings), kerbs and pavements; the house fronts, shops and their
  * awnings, the ZUP tower blocks, front walls and hedges, trees, lamps, signs;

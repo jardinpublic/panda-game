@@ -1,5 +1,5 @@
 /*
- * 103 SPX rules: Panda's ride home on his 103 SPX, with no drawing at all, so
+ * 103 RCX rules: Panda's ride home on his 103 RCX, with no drawing at all, so
  * every rule can be tested (see web/test/spx.test.js and DESIGN.md).
  *
  * The rider is at distance `s` along the route (metres) and `x` metres to the

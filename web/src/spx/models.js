@@ -1,5 +1,5 @@
 /*
- * 103 SPX models, built from code (no model files): the Peugeot 103 SPX and
+ * 103 RCX models, built from code (no model files): the Peugeot 103 RCX and
  * other mopeds, riders, walkers, cars (hatchback, saloon, van, bus, police),
  * and the small things on the road. Each is vertex-coloured geometry merged
  * into one mesh, so a phone draws a whole car in one call. Forward is +Z, up is
@@ -74,7 +74,7 @@ const CHROME = '#d4d8de';
 const DARK = '#1f2124';
 const RUBBER = '#18191b';
 
-/** A mag wheel (5 spokes, like the SPX), centred on its axle, rolling about X. */
+/** A mag wheel (5 spokes, like the 103's), centred on its axle, rolling about X. */
 export function wheelGeometry(rim = '#bfc3c8', r = 0.29) {
   const p = [];
   p.push(part(new THREE.TorusGeometry(r - 0.045, 0.06, 8, 22), RUBBER, M(0, 0, 0, 0, Math.PI / 2, 0)));
@@ -88,8 +88,8 @@ export function wheelGeometry(rim = '#bfc3c8', r = 0.29) {
 }
 
 /**
- * The Peugeot 103 SPX without its wheels (they spin on their own): pressed-
- * steel spine frame, white side panels with the SPX stripe, the engine and its
+ * The Peugeot 103 RCX without its wheels (they spin on their own): pressed-
+ * steel spine frame, white side panels with the stripe, the engine and its
  * variator cover, the chrome exhaust, fork, round mirrors, long seat and rack.
  * Wheels go at FRONT_WHEEL / REAR_WHEEL.
  */
@@ -147,7 +147,7 @@ export function mopedBody(color = '#2f6fd1', opts = {}) {
     p.push(cyl(0.06, 0.22, '#777c82', M(0, 0.5, 0.75, 0, 0, Math.PI / 2), 10));
   }
   if (opts.rcx) {
-    // Babar's 103 RCX: a little racing fairing and number plate
+    // The 103 RCX (Panda's and Babar's): a little racing fairing and number plate
     p.push(box(0.3, 0.22, 0.05, '#ffffff', M(0, 1.02, 0.66, 0.3)));
     p.push(cyl(0.06, 0.25, '#2a2a2a', M(-0.17, 0.45, -0.55, Math.PI / 2 - 0.4, 0, 0), 10));
   }

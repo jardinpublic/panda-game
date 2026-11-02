@@ -1,5 +1,6 @@
 // The score card shared on WhatsApp: a 1080x1350 picture of the run (hero,
-// score, game reached, the gang) drawn with the game's own art kit.
+// score, the game and how far, the gang) drawn with the game's own art kit.
+// Used by PandAventures, Eul' Flipper and 103 RCX.
 
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
@@ -9,8 +10,9 @@ const H = 500;
 const SCALE = 2.7; // 1080 x 1350 pixels
 
 /**
- * Draws the card and resolves a PNG File. run: {score, level, streak, hero,
- * hat, best (new record?), lang strings: title, reached, record, url}.
+ * Draws the card and resolves a PNG File. run: {score, scoreText (the score as
+ * shown, optional), reached (the line under it), best (new record?), record,
+ * hero, hat, url}.
  */
 export function makeShareCard(run) {
   const canvas = document.createElement('canvas');
@@ -41,8 +43,8 @@ export function makeShareCard(run) {
   art.text(c, 'PandAventures', W / 2, 46, { size: 40, color: '#fff', stroke: PAL.hibiscus });
 
   // The score.
-  art.text(c, String(run.score), W / 2, 112, { size: 72, color: '#fff7c2', stroke: 'rgba(120,20,60,0.55)' });
-  art.text(c, run.reached, W / 2, 162, { size: 22, color: '#fff', weight: 600 });
+  art.text(c, run.scoreText || String(run.score), W / 2, 112, { size: 72, color: '#fff7c2', stroke: 'rgba(120,20,60,0.55)', max: W - 36 });
+  art.text(c, run.reached, W / 2, 162, { size: 22, color: '#fff', weight: 600, max: W - 36 });
   if (run.best) {
     art.rrect(c, W / 2 - 92, 180, 184, 34, 17);
     c.fillStyle = PAL.mango;

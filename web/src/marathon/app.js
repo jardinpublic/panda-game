@@ -155,7 +155,7 @@ canvas.addEventListener('pointercancel', up);
 const KEY_SWIPE = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyQ: 'left', KeyZ: 'up' };
 window.addEventListener('keydown', (e) => {
   if (isExtra()) {
-    // Eul' Flipper and 103 SPX listen to the keyboard themselves; Escape leaves the flipper (103 SPX handles its own).
+    // Eul' Flipper and 103 RCX listen to the keyboard themselves; Escape leaves the flipper (103 RCX handles its own).
     if (e.code === 'Escape' && A.screen === 'pinball') leavePinball();
     return;
   }
@@ -972,10 +972,14 @@ function renderPinballUI() {
   menu.onclick = leavePinball;
   const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('pb.scores')}`);
   top.onclick = () => openRecords('flipper');
-  if (r.score > 0) onlineBlock(ui, 'flipper', r.newBest);
+  if (r.score > 0) {
+    const score = r.score.toLocaleString(locale());
+    shareButton(ui, r, { score: r.score, scoreText: score, reached: `🕹️ ${t('pb.title')}`, best: !!r.newBest }, t('pb.share_text', { score, url: shareUrl() }));
+    onlineBlock(ui, 'flipper', r.newBest);
+  }
 }
 
-// ---- 103 SPX ----------------------------------------------------------------------------
+// ---- 103 RCX ----------------------------------------------------------------------------
 
 let spxModule = null;
 
@@ -984,7 +988,7 @@ function isExtra() {
   return A.screen === 'pinball' || A.screen === 'spx';
 }
 
-/** Opens 103 SPX: Panda's moped ride home through Montceau (3D, loaded on demand). */
+/** Opens 103 RCX: Panda's moped ride home through Montceau (3D, loaded on demand). */
 async function startSpxRide() {
   unlock();
   sfx.click();
@@ -1081,7 +1085,14 @@ function renderSpxUI() {
   menu.onclick = leaveSpx;
   const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('spx.scores')}`);
   top.onclick = () => openRecords('spx');
-  if (r.score > 0) onlineBlock(ui, 'spx', r.newBest);
+  if (r.score > 0) {
+    const score = r.score.toLocaleString(locale());
+    const time = sum.time ? `${Math.floor(sum.time / 60)}:${String(Math.round(sum.time % 60)).padStart(2, '0')}` : '';
+    const reached = sum.finished && time ? `🛵 103 RCX · ${t('spx.home')} ${time}` : `🛵 103 RCX · ${t('spx.crashed')}`;
+    const text = sum.finished ? t('spx.share_home', { score, time, url: shareUrl() }) : t('spx.share_crash', { score, url: shareUrl() });
+    shareButton(ui, r, { score: r.score, scoreText: score, reached, best: !!r.newBest }, text);
+    onlineBlock(ui, 'spx', r.newBest);
+  }
 }
 
 function renderUI() {
@@ -1294,39 +1305,42 @@ function renderOverScreen() {
     renderUI();
   };
   const share = el('button', 'm-btn m-ghost', row, `💬 ${t('m.share')}`);
-  prepareCard(r);
-  share.onclick = () => brag(r);
+  prepareCard(r, {
+    score: r.m.score,
+    reached: t('m.reached', { n: r.m.level }),
+    best: !!(res.newBest && r.m.score > 0),
+  });
+  share.onclick = () => brag(r, t('m.share_text', { n: r.m.level, score: r.m.score, url: shareUrl() }));
   if (r.m.score > 0) onlineBlock(ui, 'marathon', !!res.newBest);
 }
 
-/** Prepares the score card picture as soon as the game-over screen shows (sharing must stay inside the tap). */
-function prepareCard(r) {
+const shareUrl = () => location.href.split('?')[0];
+
+/**
+ * Prepares the score card picture as soon as an end screen shows (sharing must
+ * stay inside the tap). card: {score, scoreText?, reached, best}; r keeps it.
+ */
+function prepareCard(r, card) {
   if (r.card) return;
   try {
-    prepareCardNow(r);
+    r.card = makeShareCard({ ...card, record: t('m.new_best'), hero: A.meta.hero, hat: A.meta.hat, url: shareUrl() }).catch(() => null);
+    r.card.then((file) => (r.cardFile = file));
   } catch (err) {
     r.card = Promise.resolve(null);
     reportError(err);
   }
 }
 
-function prepareCardNow(r) {
-  r.card = makeShareCard({
-    score: r.m.score,
-    reached: t('m.reached', { n: r.m.level }),
-    best: !!(r.result?.newBest && r.m.score > 0),
-    record: t('m.new_best'),
-    hero: A.meta.hero,
-    hat: A.meta.hat,
-    url: location.href.split('?')[0],
-  }).catch(() => null);
-  r.card.then((file) => (r.cardFile = file));
+/** The "brag in the group" button of an end screen. */
+function shareButton(parent, r, card, text) {
+  const share = el('button', 'm-btn m-ghost m-share', parent, `💬 ${t('m.share')}`);
+  prepareCard(r, card);
+  share.onclick = () => brag(r, text);
+  return share;
 }
 
-/** Shares the run: the score card picture and a line of text (WhatsApp from the phone's share menu). */
-async function brag(r) {
-  const url = location.href.split('?')[0];
-  const text = t('m.share_text', { n: r.m.level, score: r.m.score, url });
+/** Shares a game: the score card picture and a line of text (WhatsApp from the phone's share menu). */
+async function brag(r, text) {
   const file = r.cardFile;
   try {
     if (file && navigator.canShare?.({ files: [file] })) {
@@ -1754,4 +1768,6 @@ window.__m = {
   input: (kind, a, b) => micro()?.input(kind, a, b),
   openShop,
   openMissions,
+  pinballOver,
+  spxOver,
 };
