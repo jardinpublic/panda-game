@@ -312,6 +312,28 @@ export function drawHat(c, hat, x, y, w) {
   c.restore();
 }
 
+/** A can of 8.6, Panda's beer: centred on (x, y), s tall. */
+export function beerCan(c, x, y, s, rot = 0) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(rot);
+  const w = s * 0.56;
+  shadowed(c, () => {
+    rrect(c, -w / 2, -s / 2, w, s, w * 0.18);
+    c.fillStyle = vgrad(c, -s / 2, s / 2, ['#2e7d4f', '#14532d']);
+    c.fill();
+  }, 6, 3);
+  c.fillStyle = '#c9cdd6';
+  c.fillRect(-w / 2 + 2, -s / 2, w - 4, s * 0.08);
+  c.fillRect(-w / 2 + 2, s / 2 - s * 0.06, w - 4, s * 0.06);
+  c.fillStyle = '#f2c94c';
+  c.fillRect(-w / 2, -s * 0.12, w, s * 0.3);
+  text(c, '8.6', 0, s * 0.03, { size: s * 0.24, color: '#14532d', shadow: false, weight: 700 });
+  c.fillStyle = 'rgba(255,255,255,0.3)';
+  c.fillRect(-w / 2 + w * 0.15, -s * 0.42, w * 0.12, s * 0.84);
+  c.restore();
+}
+
 /** A hibiscus flower. */
 export function hibiscus(c, x, y, r, rot = 0, color = PAL.hibiscus) {
   c.save();

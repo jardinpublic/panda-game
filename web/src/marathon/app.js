@@ -508,6 +508,8 @@ function drawReady(r) {
   stageBg(levelColors(0));
   art.person(c, A.meta.hero, 150, H * 0.9, 230, 'cheer', A.t, { hat: A.meta.hat });
   art.person(c, r.cameo, 300, H * 0.88, 180, 'dance', A.t + 2, { flip: true });
+  // Panda raises his 8.6.
+  if (A.meta.hero === 'panda') art.beerCan(c, 196, H * 0.9 - 160 + Math.sin(A.t * 12) * 3, 30, 0.2);
   banner(t('m.ready'), H * 0.32, r.phaseT, PAL.mango, 60);
   drawLives(200, H * 0.45, 16, r.m.lives, 9, 9);
   if (r.phaseT > 0.4) art.bubble(c, r.heroLine, 160, H * 0.9 - 240, { size: 16, maxW: 300 });
