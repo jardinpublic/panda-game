@@ -190,7 +190,8 @@ export default {
     const s = { t: 0, ended: false, endT: 0, glow: 0 };
 
     function holdTime() {
-      return (0.65 + g.random() * 0.35) / g.speed;
+      // speed^0.8: at top speed a pause still outlasts reaction + the dash.
+      return (0.65 + g.random() * 0.35) / Math.pow(g.speed, 0.8);
     }
 
     function heroPos() {

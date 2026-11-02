@@ -9,7 +9,7 @@ import { person, rrect, circle, ellipse, PAL, text, shadowed, vgrad, sky, sea, p
 const TUNE = {
   window: 2, // half-width of the 15:00 window, in clock minutes (±12° on the dial)
   windowTime: 0.2, // seconds the hand takes to cross half the window at speed 1
-  windowCurve: 0.7, // window time shrinks as speed^-curve
+  windowCurve: 0.6, // window time shrinks as speed^-curve
   arriveMin: 1.7, // seconds until 15:00 at speed 1 (min + random range)
   arriveRange: 1.2,
   dash: 0.6, // seconds of the winning dash

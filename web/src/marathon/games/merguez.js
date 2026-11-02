@@ -73,7 +73,10 @@ export default {
         }
       },
       press(x, y) {
-        const m = sausages.find((q) => !q.flipped && Math.abs(q.x - x) < 46 && Math.abs(q.y - y) < 80);
+        // Nearest sausage under the finger (the 4-sausage boss grill has overlapping hitboxes).
+        const m = sausages
+          .filter((q) => !q.flipped && Math.abs(q.x - x) < 46 && Math.abs(q.y - y) < 80)
+          .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
         if (!m) return;
         m.flipped = true;
         if (m.d < GOLD[0]) {

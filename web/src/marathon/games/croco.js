@@ -203,7 +203,8 @@ export default {
     const hx = 318;
     const hy = g.H * 0.56;
     const snapAt = g.duration * (0.42 + g.random() * 0.24);
-    const tellT = 0.5 / Math.pow(sp, 0.6);
+    // Red eyes -> bite: a pure reaction, so it never drops under ~0.35 s.
+    const tellT = 0.5 / Math.pow(sp, 0.4);
     const fakeT = 0.17 / Math.sqrt(sp);
     const fakes = [];
     for (let ft = (0.3 + g.random() * 0.25) / sp; ft < snapAt - 0.32 / sp - fakeT && fakes.length < 3; ft += (0.42 + g.random() * 0.45) / sp) fakes.push(ft);

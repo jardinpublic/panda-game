@@ -9,7 +9,7 @@ import { scene, person, rrect, circle, ellipse, PAL, text, shadowed, vgrad, palm
 const TUNE = {
   gap: 150, // height between ledges
   ledgeW: 120,
-  tol: 46, // max offset between ledge centre and hero to land
+  tol: 52, // max offset between ledge centre and hero to land (the 120-wide ledge still visibly covers the hero)
   swing: 120, // ledge travel either side of the hero
   slide: 230, // ledge speed, times speed^slideCurve
   slideCurve: 0.85,

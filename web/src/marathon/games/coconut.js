@@ -74,7 +74,7 @@ export default {
     const headY = seatY - 110;
     const topY = g.H * 0.17;
     const n = g.boss ? 7 : 3 + Math.min(2, Math.floor((g.speed - 1) * 1.6));
-    const tell = 0.55 / g.speed;
+    const tell = 0.55 / Math.pow(g.speed, 0.85); // shake + fall stays >= ~0.6 s to react and drag
     const fall = 0.5 / Math.sqrt(g.speed);
     const first = 0.3 / g.speed;
     const gap = Math.max(0.25 / g.speed, (g.duration - first - tell - fall - 0.15) / Math.max(1, n - 1));

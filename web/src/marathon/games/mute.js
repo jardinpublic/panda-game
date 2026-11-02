@@ -11,8 +11,8 @@ const TUNE = {
   calm: 0.35, // before the cheeks start puffing
   puffMin: 0.6, // cheeks puff for puffMin + random * puffRange
   puffRange: 1.4,
-  react: 0.6, // time to mute once the burp starts...
-  reactFloor: 0.28, // ...never below this, so top speed stays humanly possible
+  react: 0.65, // time to mute once the burp starts...
+  reactFloor: 0.36, // ...never below this: a thumb on a phone needs ~0.3 s (pure reaction, no anticipation possible)
   feintSpeed: 1.4, // from this speed the hero swallows once mid-puff (a fake-out)
   feintTime: 0.16,
 };

@@ -11,6 +11,7 @@ const OTHERS = [0.48, 0.78]; // everyone else: leader stays >= 1.18x the runner-
 const WOBBLE = 0.025; // breathing, on top of the target size
 const FAIR = 0.95; // a tap counts if within 5 % of the biggest (only matters mid-swap)
 const CLEAR = 1.15; // the bot (and the "obvious" moment) needs this margin
+const GRACE = 0.3; // seconds after a swap during which the old champion still counts
 
 function aubergine(c, x, y, L, hw, rot, t, { glow = 0, sad = 0 } = {}) {
   c.save();
@@ -142,10 +143,14 @@ export default {
     function swap() {
       let nl = Math.floor(g.random() * (n - 1));
       if (nl >= s.leader) nl++;
+      // Grace: a tap on the old champion just after a swap was decided before it.
+      s.prevLeader = s.leader;
+      s.swapAt = s.t;
       s.leader = nl;
       s.swaps++;
       assign();
-      s.nextSwap = s.t + (0.85 + g.random() * 0.55) / g.speed;
+      // speed^0.75: at top speed the champion used to change every ~0.5 s.
+      s.nextSwap = s.t + (0.85 + g.random() * 0.55) / Math.pow(g.speed, 0.75);
       g.sfx.pop();
       if (s.swaps === 1 && !g.done) {
         g.say(villainX(), peopleY - 150, g.tr(g.pick([
@@ -211,7 +216,8 @@ export default {
         g.sfx.tap();
         const cx = p.x;
         const cy = hangY + maxL * sizes[i] * 0.6;
-        if (sizes[i] >= FAIR * max) {
+        const graced = i === s.prevLeader && s.t - s.swapAt < GRACE;
+        if (sizes[i] >= FAIR * max || graced) {
           p.good = true;
           s.picks++;
           g.sfx.good();
@@ -229,6 +235,7 @@ export default {
             p.good = false;
             p.cur = 0.2;
             swap();
+            s.swapAt = -9; // no grace on the fresh sprout
           }
         } else {
           p.bad = true;

@@ -7,11 +7,11 @@ import { person, head, rrect, circle, ellipse, PAL, text, shadowed, vgrad, sky, 
 
 /** Tuning (seconds at speed 1; divided by speed unless noted). */
 const TUNE = {
-  walk: 135, // tiptoe speed, units per second (times speed)
+  walk: 145, // tiptoe speed, units per second (times speed)
   firstCalm: [0.6, 0.5], // min, random range before the first look
   calm: [0.45, 0.7],
-  tell: 0.38, // "Hmm?" wobble; divided by speed^tellCurve so top speed stays fair
-  tellCurve: 0.6,
+  tell: 0.4, // "Hmm?" wobble; divided by speed^tellCurve so top speed stays fair
+  tellCurve: 0.45, // tell + half the swivel stays >= ~0.32 s even at speed 2.4
   turn: 0.14, // chair swivel; caught once it is past halfway
   look: [0.45, 0.35],
   back: 0.18, // swivelling back: safe to move

@@ -27,10 +27,13 @@ export default {
     const heroY = g.H * 0.86;
     const mouthY = topY - 92;
     const hitY = heroY - 120;
-    const s = { lane: 1, x: LANES[1], t: 0, gobs: [], launched: 0, nextAt: 0.7 / g.speed, villainX: 200, hit: false, moving: 0 };
+    // Each gob is aimed when Babar starts his "Hrrrk" (a green ring marks the
+    // lane), so the whole tell + flight is the time to dodge (~0.55 s at top speed).
+    const s = { lane: 1, x: LANES[1], t: 0, gobs: [], launched: 0, nextAt: 0.7 / g.speed, villainX: 200, hit: false, moving: 0, aim: null, close: 0 };
 
     function launch() {
-      s.gobs.push({ lane: s.lane, x0: s.villainX, t: 0, passed: false });
+      s.gobs.push({ lane: s.aim ?? s.lane, x0: s.villainX, t: 0, passed: false });
+      s.aim = null;
       s.launched++;
       s.nextAt += gap;
       g.sfx.whoosh();
@@ -41,9 +44,15 @@ export default {
         s.t += dt;
         s.x += (LANES[s.lane] - s.x) * Math.min(1, dt * 18);
         s.moving = Math.max(0, s.moving - dt);
+        s.close = Math.max(0, s.close - dt);
         if (!g.done) {
-          // Babar walks to aim before each gob.
-          s.villainX += (LANES[s.lane] * 0.6 + 80 - s.villainX) * Math.min(1, dt * 3);
+          // Babar locks on to the hero's lane as he starts hawking, then walks to aim.
+          if (s.launched < total && s.aim === null && s.nextAt - s.t < tell) {
+            s.aim = s.lane;
+            g.sfx.tick();
+          }
+          const aimX = LANES[s.aim ?? s.lane];
+          s.villainX += (aimX * 0.6 + 80 - s.villainX) * Math.min(1, dt * 3);
           if (s.launched < total && s.t >= s.nextAt) launch();
         }
         for (const gob of s.gobs) {
@@ -58,6 +67,11 @@ export default {
               g.lose();
             } else if (!g.done) {
               g.sfx.pop();
+              // Near miss: the gob lands right next to the hero.
+              if (Math.abs(gob.lane - s.lane) === 1 && s.close <= 0) {
+                s.close = 0.5;
+                g.fx.text(s.x, heroY - 230, g.tr({ en: 'Phew!', fr: 'Ouf !' }), { size: 24, color: PAL.cream });
+              }
             }
           }
         }
@@ -90,6 +104,14 @@ export default {
         }
         // Lane marks on the grass.
         for (const lx of LANES) ellipse(c, lx, heroY + 4, 46, 12, 'rgba(255,255,255,0.18)');
+        // Target rings: the lane Babar is aiming at, and where each gob will land.
+        const targets = s.gobs.filter((gob) => !gob.passed).map((gob) => [gob.lane, Math.min(1, gob.t)]);
+        if (s.aim !== null && !g.done) targets.push([s.aim, 0]);
+        for (const [lane, k] of targets) {
+          const pulse = 0.5 + 0.5 * Math.sin(s.t * (10 + k * 14));
+          ellipse(c, LANES[lane], heroY + 4, 40 + 14 * k, 12 + 4 * k, `rgba(170,235,130,${0.45 + 0.4 * k * pulse})`);
+          text(c, '⚠', LANES[lane], heroY + 36, { size: 18, shadow: false });
+        }
         for (const gob of s.gobs) {
           if (gob.t > 1.25) continue;
           const k = Math.min(1.25, gob.t);

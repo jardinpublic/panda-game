@@ -194,8 +194,9 @@ export default {
   loseLine: { en: "Hoho, my XXL burger!", fr: "Hoho, mon burger XXL !" },
   create(g) {
     const greg = g.cast('greg', 'romain');
-    const need = g.boss ? 6 : g.speed < 1.45 ? 4 : g.speed < 2 ? 5 : 6;
-    const tol = Math.max(32, 72 - 15 * g.speed); // max centre offset that still sticks
+    // 6 layers + bun at top speed left no time for a single missed pass: 5 max outside bosses.
+    const need = g.boss ? 6 : g.speed < 1.45 ? 4 : 5;
+    const tol = Math.max(34, 72 - 15 * g.speed); // max centre offset that still sticks
     const v = 230 * Math.pow(g.speed, 0.85);
     const A = 125;
     const lift = 100;

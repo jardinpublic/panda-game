@@ -62,7 +62,7 @@ export default {
     const counterY = gy + 26;
     const low = 0.42 + g.random() * 0.2;
     const high = low + 0.17;
-    const rate = 0.3 * g.speed;
+    const rate = 0.3 * Math.pow(g.speed, 0.85); // dose zone lasts ~0.29 s at speed 2.2
     const pivot = { x: 300, y: gy - 240 };
     const s = { t: 0, level: 0, pouring: false, tilt: 0, glug: 0, spill: 0, inZone: false, verdict: null, endShown: false, raise: 0 };
 

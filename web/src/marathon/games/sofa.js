@@ -172,7 +172,8 @@ export default {
         const limit = s.phase === 'calm' ? s.calmFor : s.phase === 'yawn' ? yawnFor : nodFor;
         if (s.phaseT >= limit) nextPhase();
         const tired = 1 + 0.5 * clamp01(g.elapsed / g.duration);
-        s.lid += DROWSE * g.speed * tired * (s.phase === 'nod' ? NOD_RATE : 1) * dt;
+        // speed^0.7: linear made top speed need ~8 taps/s for 2+ s, beyond a thumb.
+        s.lid += DROWSE * Math.pow(g.speed, 0.55) * tired * (s.phase === 'nod' ? NOD_RATE : 1) * dt;
         s.show += (s.lid - s.show) * Math.min(1, dt * 20);
         if (s.lid >= 1) fallAsleep();
       },
