@@ -16,7 +16,7 @@ import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
 import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
-import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
+import { GAMES as BOARD_GAMES, NAME_MAX, createOnline, memoryBackend, toSend, rowFor, bestRun, cleanName, newPlayerId } from './online.js';
 import { makeShareCard } from './sharecard.js';
 import './texts.js';
 
@@ -971,6 +971,7 @@ function renderPinballUI() {
   menu.onclick = leavePinball;
   const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('pb.scores')}`);
   top.onclick = () => openRecords('flipper');
+  if (r.score > 0) onlineBlock(ui, 'flipper', r.newBest);
 }
 
 // ---- 103 SPX ----------------------------------------------------------------------------
@@ -1079,6 +1080,7 @@ function renderSpxUI() {
   menu.onclick = leaveSpx;
   const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('spx.scores')}`);
   top.onclick = () => openRecords('spx');
+  if (r.score > 0) onlineBlock(ui, 'spx', r.newBest);
 }
 
 function renderUI() {
@@ -1168,7 +1170,7 @@ function renderHome() {
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
-  const records = el('button', 'm-btn m-ghost', row, `🏆`);
+  const records = el('button', 'm-btn m-ghost m-hof', row, `🏆 ${t('m.records')}`);
   records.onclick = () => openRecords();
   const shop = el('button', 'm-btn m-ghost', row, `🛍️ ${t('m.shop')}`);
   shop.onclick = () => openShop('heroes');
@@ -1235,11 +1237,7 @@ function renderOverScreen() {
   const share = el('button', 'm-btn m-ghost', row, `💬 ${t('m.share')}`);
   prepareCard(r);
   share.onclick = () => brag(r);
-  if (r.m.score > 0) {
-    const send = el('button', 'm-btn m-ghost m-send', ui, r.sent ? `✅ ${t('m.sent')}` : `📤 ${t('m.send')}`);
-    send.disabled = !!r.sent;
-    send.onclick = () => sendScore(r, send);
-  }
+  if (r.m.score > 0) onlineBlock(ui, 'marathon', !!res.newBest);
 }
 
 /** Prepares the score card picture as soon as the game-over screen shows (sharing must stay inside the tap). */
@@ -1352,11 +1350,117 @@ function recordRow(panel, rank, hero, title, meta) {
   return row;
 }
 
-function openRecords(tab = 'gang') {
+/** Talks to the online Hall of Fame (Supabase); ?fakeonline plays with a pretend board on this page. */
+const net = params.has('fakeonline') ? createOnline({ url: 'https://fake.local', key: 'fake', fetch: memoryBackend(fakeGang()).fetch }) : createOnline();
+
+/** Sends every best not on the board yet (a new player, a new record, or one that waited for the network). */
+let syncing = null;
+function syncScores() {
+  if (!net.configured || VOLATILE && !params.has('fakeonline')) return Promise.resolve();
+  if (syncing) return syncing;
+  syncing = (async () => {
+    for (const game of toSend(A.meta)) {
+      const row = rowFor(A.meta, game);
+      const res = await net.send(row);
+      if (res === 'later') break;
+      // Sent, or refused for good (an impossible score): either way, do not send it again
+      A.meta.online.sent[game] = Math.max(A.meta.online.sent[game] || 0, row.score);
+      persist();
+    }
+  })().finally(() => {
+    syncing = null;
+  });
+  return syncing;
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => syncScores());
+  setTimeout(() => syncScores(), 1500);
+}
+
+/** Is this game's best already on the board? Still to send (it is a real score, waiting for the network)? */
+const bestSent = (game) => {
+  const best = bestRun(A.meta, game);
+  return !!best && (A.meta.online.sent[game] || 0) >= best.score;
+};
+const bestWaiting = (game) => toSend(A.meta).includes(game);
+
+/** Asks for the name shown on the board (once; it can be changed in the Hall of Fame). */
+function askName(after) {
+  sfx.click();
+  const panel = sheet(`🏆 ${t('m.name_title')}`);
+  el('p', 'm-hint m-name-hint', panel, t('m.name_hint'));
+  const input = el('input', 'm-input', panel);
+  input.type = 'text';
+  input.maxLength = NAME_MAX;
+  input.autocomplete = 'nickname';
+  input.placeholder = t('m.name_placeholder');
+  input.value = A.meta.online.name || '';
+  el('p', 'm-hint', panel, t('m.name_kids'));
+  const ok = el('button', 'm-btn m-play', panel, t('m.name_ok'));
+  const done = () => {
+    const name = cleanName(input.value);
+    if (!name) {
+      input.classList.remove('shake');
+      void input.offsetWidth;
+      input.classList.add('shake');
+      input.focus();
+      return;
+    }
+    A.meta.online.name = name;
+    A.meta.online.id ||= newPlayerId();
+    A.meta.online.asked = true;
+    persist();
+    ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
+    renderUI();
+    toast(t('m.name_saved', { name }));
+    syncScores().then(() => renderUI());
+    after?.();
+  };
+  ok.onclick = done;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') done();
+  };
+  setTimeout(() => input.focus(), 50);
+}
+
+/**
+ * The Hall of Fame line of an end screen: no name yet → a big button to give one
+ * (asked once on its own); a new record → whether it reached the board.
+ */
+function onlineBlock(parent, game, newBest) {
+  if (!net.configured) return;
+  const o = A.meta.online;
+  const best = bestRun(A.meta, game);
+  if (!cleanName(o.name)) {
+    if (!best) return;
+    const b = el('button', 'm-btn m-play m-hof-cta', parent, `🏆 ${t('m.name_ask')}`);
+    b.onclick = () => askName();
+    if (!o.asked) {
+      o.asked = true;
+      persist();
+      setTimeout(() => {
+        if (!document.querySelector('.m-sheet')) askName();
+      }, 900);
+    }
+    return;
+  }
+  if (!newBest) {
+    syncScores();
+    return;
+  }
+  if (!bestSent(game) && !bestWaiting(game)) return;
+  const line = el('div', 'm-online', parent, bestSent(game) ? `📡 ${t('m.sync_sent')}` : `⏳ ${t('m.sync_wait')}`);
+  syncScores().then(() => {
+    line.textContent = bestSent(game) ? `📡 ${t('m.sync_sent')}` : `⏳ ${t('m.sync_wait')}`;
+  });
+}
+
+function openRecords(tab = 'marathon') {
+  if (!BOARD_GAMES.includes(tab)) tab = 'marathon';
   sfx.click();
   const panel = sheet(`🏆 ${t('m.records')}`);
   const tabs = el('div', 'm-tabs', panel);
-  for (const id of ['gang', 'mine', 'flipper', 'spx']) {
+  for (const id of BOARD_GAMES) {
     const b = el('button', `m-tab${id === tab ? ' on' : ''}`, tabs, t(`m.tab_${id}`));
     b.onclick = () => {
       ui.querySelector('.m-sheet-back')?.remove();
@@ -1365,88 +1469,61 @@ function openRecords(tab = 'gang') {
     };
   }
   const date = (at) => (at ? new Date(at).toLocaleDateString(locale()) : '');
-  if (tab === 'spx') {
-    const list = A.meta.spx.scores;
-    if (!list.length) el('p', 'm-empty', panel, t('spx.none'));
-    list.forEach((x, i) => recordRow(panel, i + 1, x.hero, x.score.toLocaleString(locale()), `${x.finished ? '🏠' : '💥'} ${x.time ? `${Math.floor(x.time / 60)}:${String(x.time % 60).padStart(2, '0')} · ` : ''}${date(x.at)}`));
-    return;
-  }
-  if (tab === 'flipper') {
-    const list = A.meta.pinball.scores;
-    if (!list.length) el('p', 'm-empty', panel, t('pb.none'));
-    list.forEach((x, i) => recordRow(panel, i + 1, x.hero, x.score.toLocaleString(locale()), date(x.at)));
-    return;
-  }
-  if (tab === 'mine') {
-    if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
-    A.meta.scores.forEach((x, i) => recordRow(panel, i + 1, x.hero, String(x.score), `${t('m.reached', { n: x.level })} · ${date(x.at)}`));
-    postButton(panel);
-    return;
-  }
-  const post = postButton(panel);
-  const status = el('p', 'm-empty', panel, t('m.loading'));
-  loadBoard().then((board) => {
-    status.remove();
-    const players = ranking(board);
-    // My record is already on the board: nothing to post
-    const best = A.meta.scores[0];
-    if (post && best && players.some((p) => p.best.score === best.score && p.best.at === best.at)) markPosted(post, t('m.on_board'));
-    if (!players.length) el('p', 'm-empty', panel, t('m.gang_empty'));
-    players.forEach((p, i) => {
-      const row = recordRow(panel, i + 1, p.best.hero, `${p.best.score}  ·  ${p.login}`, `${t('m.reached', { n: p.best.level })} · ${date(p.best.at)}`);
-      if (i < 3) row.classList.add(`m-podium-${i + 1}`);
-    });
-    el('p', 'm-hint', panel, t('m.gang_hint'));
-  }).catch(() => {
-    status.textContent = t('m.gang_offline');
-  });
-}
-
-/** The online board, fresh from GitHub (a few minutes behind at most). */
-async function loadBoard() {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 6000);
-  try {
-    const res = await fetch(`${BOARD_URL}?t=${Math.floor(Date.now() / 60000)}`, { signal: ctrl.signal, cache: 'no-store' });
-    if (res.status === 404) return emptyBoard();
-    if (!res.ok) throw new Error(String(res.status));
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function sendScore(r, button) {
-  const payload = buildPayload({ score: r.m.score, level: r.m.level, bestStreak: r.m.bestStreak, hero: A.meta.hero, at: r.endedAt });
-  window.open(issueUrl(payload, locale()), '_blank', 'noopener');
-  r.sent = true;
-  POSTED.add(payload.at);
-  markPosted(button, t('m.sent'));
-  toast(t('m.send_help'));
-}
-
-// Runs posted to the Hall of Fame since the page opened (by end time)
-const POSTED = new Set();
-
-/** The high scores sheet's button: posts my best run to the gang's Hall of Fame (a GitHub issue). */
-function postButton(panel) {
-  const best = A.meta.scores[0];
-  if (!best || best.score <= 0) return null;
-  const button = el('button', 'm-btn m-play m-send', panel, `📤 ${t('m.post_best', { n: best.score })}`);
-  if (POSTED.has(best.at)) markPosted(button, t('m.sent'));
-  button.onclick = () => {
-    const payload = buildPayload({ ...best, bestStreak: best.streak ?? 0 });
-    window.open(issueUrl(payload, locale()), '_blank', 'noopener');
-    POSTED.add(best.at);
-    markPosted(button, t('m.sent'));
-    toast(t('m.send_help'));
+  const clockOf = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+  const detail = (x, at) => {
+    if (tab === 'marathon') return `${t('m.reached', { n: x.level })} · ${date(at)}`;
+    if (tab === 'spx') {
+      const secs = x.time ?? x.ride_time;
+      const home = x.finished ?? x.home;
+      return `${home ? '🏠' : '💥'} ${secs ? `${clockOf(secs)} · ` : ''}${date(at)}`;
+    }
+    return date(at);
   };
-  return button;
+  const fmt = (n) => Number(n).toLocaleString(locale());
+
+  // The gang's board first, then the records of this phone
+  if (net.configured) {
+    const name = cleanName(A.meta.online.name);
+    const me = el('button', 'm-btn m-ghost m-me', panel, name ? `👤 ${name} · ✏️ ${t('m.name_change')}` : `🏆 ${t('m.name_ask')}`);
+    me.onclick = () => {
+      ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
+      askName(() => openRecords(tab));
+    };
+    el('h3', 'm-sec', panel, `👥 ${t('m.board_gang')}`);
+    const status = el('p', 'm-empty', panel, t('m.loading'));
+    const list = el('div', '', panel);
+    net
+      .board(tab)
+      .then((rows) => {
+        status.remove();
+        if (!rows.length) el('p', 'm-empty', list, t('m.gang_empty'));
+        rows.forEach((x, i) => {
+          const row = recordRow(list, i + 1, x.hero, `${fmt(x.score)}  ·  ${x.name}`, detail(x, x.played_at));
+          if (i < 3) row.classList.add(`m-podium-${i + 1}`);
+          if (name && x.name === name) row.classList.add('is-me');
+        });
+        if (name && bestWaiting(tab)) el('p', 'm-hint', list, `⏳ ${t('m.sync_wait')}`);
+      })
+      .catch(() => {
+        status.textContent = t('m.gang_offline');
+      });
+  }
+  el('h3', 'm-sec', panel, `📱 ${t('m.board_mine')}`);
+  const mine = tab === 'marathon' ? A.meta.scores : tab === 'flipper' ? A.meta.pinball.scores : A.meta.spx.scores;
+  if (!mine.length) el('p', 'm-empty', panel, t(tab === 'marathon' ? 'm.no_records' : tab === 'flipper' ? 'pb.none' : 'spx.none'));
+  mine.forEach((x, i) => recordRow(panel, i + 1, x.hero, fmt(x.score), detail(x, x.at)));
+  if (net.configured) el('p', 'm-hint', panel, t('m.gang_hint'));
 }
 
-function markPosted(button, text) {
-  button.disabled = true;
-  button.textContent = `✅ ${text}`;
+/** A pretend gang for ?fakeonline (test links only). */
+function fakeGang() {
+  const at = Date.now() - 3600e3;
+  return [
+    { player_id: 'f1', name: 'Cous', game: 'marathon', score: 520, level: 40, streak: 14, hero: 'cous', played_at: new Date(at).toISOString() },
+    { player_id: 'f2', name: 'Eul’ Tatou', game: 'marathon', score: 300, level: 25, streak: 9, hero: 'panda', played_at: new Date(at).toISOString() },
+    { player_id: 'f1', name: 'Cous', game: 'spx', score: 41250, ride_time: 138, home: true, hero: 'panda', played_at: new Date(at).toISOString() },
+    { player_id: 'f3', name: 'Babar', game: 'flipper', score: 812300, hero: 'babar', played_at: new Date(at).toISOString() },
+  ];
 }
 
 function openShop(tab) {

@@ -41,7 +41,23 @@ export const SAVE_VERSION = 1;
 export const TOP_SIZE = 10;
 
 export function emptyMeta() {
-  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, spx: { best: 0, games: 0, homes: 0, scores: [] }, updated: 0 };
+  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, spx: { best: 0, games: 0, homes: 0, scores: [] }, online: emptyOnline(), updated: 0 };
+}
+
+/** The online Hall of Fame profile: a random id for this phone, the name typed once, what was sent. */
+export function emptyOnline() {
+  return { id: '', name: '', asked: false, sent: { marathon: 0, flipper: 0, spx: 0 } };
+}
+
+function normalizeOnline(raw) {
+  const o = raw && typeof raw === 'object' ? raw : {};
+  const sent = o.sent && typeof o.sent === 'object' ? o.sent : {};
+  return {
+    id: typeof o.id === 'string' ? o.id.slice(0, 64) : '',
+    name: typeof o.name === 'string' ? o.name.slice(0, 40) : '',
+    asked: !!o.asked,
+    sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx) },
+  };
 }
 
 const num = (x, fallback = 0) => (Number.isFinite(x) && x >= 0 ? x : fallback);
@@ -69,6 +85,7 @@ export function normalizeMeta(raw) {
   const sx = raw.spx && typeof raw.spx === 'object' ? raw.spx : {};
   m.spx = { ...sx, best: num(sx.best), games: num(sx.games), homes: num(sx.homes), scores: topScores(Array.isArray(sx.scores) ? sx.scores : []) };
   m.spx.best = Math.max(m.spx.best, m.spx.scores[0]?.score || 0);
+  m.online = normalizeOnline(raw.online);
   return m;
 }
 
@@ -113,6 +130,15 @@ export function mergeMeta(a, b) {
     games: Math.max(os.games, ns.games),
     homes: Math.max(os.homes, ns.homes),
     scores: topScores([...os.scores, ...ns.scores]),
+  };
+  // Online profile: the newer one's name, the id the save already had, the most sent
+  const oo = normalizeOnline(older.online);
+  const no = normalizeOnline(newer.online);
+  m.online = {
+    id: no.id || oo.id,
+    name: no.name || oo.name,
+    asked: oo.asked || no.asked,
+    sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx) },
   };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);
   return m;
