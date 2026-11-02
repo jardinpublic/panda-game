@@ -2,6 +2,7 @@
 // shaker, kick, bass and a zouk groove whose tempo follows the game speed.
 // No square or sawtooth bleeps: soft sines, filtered noise and a light reverb.
 // Browsers only allow sound after a user gesture: call unlock() from one.
+import { setVoiceMuted } from '../core/voice.js';
 
 let ac = null;
 let out = null; // dry bus
@@ -37,6 +38,7 @@ export function unlock() {
 
 export function setMuted(value) {
   muted = value;
+  setVoiceMuted(value);
   if (out) out._master.gain.value = muted ? 0 : VOLUME;
 }
 

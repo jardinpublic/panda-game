@@ -20,6 +20,7 @@ import { createTexts } from './texts.js';
 import { faceUrl } from './faces.js';
 import { RING_MAP } from './route.js';
 import { loadKit } from './kit.js';
+import { heard, setVoiceMuted } from '../core/voice.js';
 
 const CSS = `
 .sx-root [hidden] { display: none !important; }
@@ -180,6 +181,7 @@ export async function startSpx(options) {
   const readMs = (text) => Math.min(7000, 1700 + String(text).length * 55);
   function say(kind, key, vars, speaker) {
     const text = kind === 'line' ? key : tx(key, vars);
+    heard(text);
     if (kind === 'chat' || kind === 'line') {
       const who = speakerOf(speaker || 'panda');
       chat.replaceChildren();
@@ -222,6 +224,7 @@ export async function startSpx(options) {
 
   /* ---------- Rules, view, sound ---------- */
   const synth = createSound({ muted: options.sound === false });
+  setVoiceMuted(options.sound === false);
   let sirenOn = false;
   let ended = false;
   let rules = null;

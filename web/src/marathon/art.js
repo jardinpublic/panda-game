@@ -3,7 +3,12 @@
 // Every function takes the 2D context first and draws in logical units
 // (the stage is 400 units wide). Safe to call in Node tests with a fake context.
 
+import { heard } from '../core/voice.js';
+
 export const FONT = "'Fredoka', 'Baloo 2', system-ui, sans-serif";
+
+/** A line drawn on the game's screen (not an off-screen share card): Panda says his Hoho. */
+const onScreen = (c) => !!(c && c.canvas && c.canvas.isConnected);
 
 export const PAL = {
   lagoon: '#12c2c9',
@@ -111,6 +116,7 @@ export function shadowed(c, draw, blur = 14, dy = 6, color = 'rgba(20, 10, 40, 0
 
 /** Text with a soft shadow; align centre by default. */
 export function text(c, str, x, y, { size = 28, color = PAL.white, weight = 700, align = 'center', base = 'middle', shadow = true, stroke = null, max } = {}) {
+  if (onScreen(c)) heard(str);
   c.save();
   c.font = `${weight} ${size}px ${FONT}`;
   c.textAlign = align;
@@ -133,6 +139,7 @@ export function text(c, str, x, y, { size = 28, color = PAL.white, weight = 700,
 
 /** Rounded speech bubble with a tail pointing down to (x, y). */
 export function bubble(c, str, x, y, { size = 17, color = PAL.ink, bg = PAL.white, maxW = 230 } = {}) {
+  if (onScreen(c)) heard(str);
   c.save();
   c.font = `600 ${size}px ${FONT}`;
   const widthOf = (t) => c.measureText(t).width || t.length * size * 0.5;

@@ -17,6 +17,7 @@
  *   handle.dispose();
  */
 import * as THREE from "three";
+import { heard, setVoiceMuted } from "../core/voice.js";
 import { buildTable, TABLE } from "./engine/layout.js";
 import { createRules } from "./engine/rules.js";
 import { createView } from "./engine/view.js";
@@ -308,6 +309,7 @@ export async function startFlipper(options) {
 
   const ui = {
     toast(text, tone) {
+      heard(text);
       const node = el("div", "fl-toast" + (tone === "bad" ? " is-bad" : ""), toasts);
       node.textContent = text;
       while (toasts.children.length > 3) {
@@ -317,6 +319,7 @@ export async function startFlipper(options) {
     },
     chatTimer: 0,
     chat(speaker, text) {
+      heard(text);
       const who = typeof speaker === "string" ? { name: CAST_NAMES[speaker] || speaker[0].toUpperCase() + speaker.slice(1), faceUrl: castUrl(speaker) } : speaker;
       chat.replaceChildren();
       const img = el("img", "", chat);
@@ -389,6 +392,7 @@ export async function startFlipper(options) {
 
   const synth = createSound();
   const soundOn = options.sound !== false;
+  setVoiceMuted(!soundOn);
   const sound = {
     get muted() {
       return !soundOn;
