@@ -6,7 +6,7 @@
 //   game.update(dt, { left, right, nudge });   // every frame
 //   game.state.over                            // true at game over
 
-import { step, ball as makeBall, flipperTip } from './physics.js';
+import { step, ball as makeBall, flipperTip, setRandom } from './physics.js';
 import { buildTable, L, DRAIN_Y } from './table.js';
 
 export const BALLS = 3;
@@ -43,6 +43,7 @@ export function createPinball({ out = {}, random = Math.random } = {}) {
   const sfx = out.sfx || (() => {});
   const fx = out.fx || (() => {}); // (kind, x, y)
 
+  setRandom(random);
   const table = buildTable();
   const world = { balls: [], bodies: table.bodies, flippers: table.flippers, sensors: table.sensors };
   const parts = table.parts;

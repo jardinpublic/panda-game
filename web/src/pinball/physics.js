@@ -7,6 +7,12 @@ export const GRAVITY = 1050; // the table's slope, pulling the ball down
 export const MAX_SPEED = 2100;
 export const SUBSTEPS = 10;
 
+let rand = Math.random;
+/** Sets the random source for kick jitter (seeded in tests). */
+export function setRandom(fn) {
+  rand = fn;
+}
+
 /** A wall from (x1, y1) to (x2, y2). e: bounciness. kick: extra push along the normal (slingshots). */
 export function seg(x1, y1, x2, y2, opts = {}) {
   return { type: 'seg', x1, y1, x2, y2, e: 0.45, kick: 0, active: true, oneWay: null, ...opts };
@@ -102,7 +108,7 @@ function resolve(b, cx, cy, reach, e, kick, svx = 0, svy = 0) {
   const eff = e / (1 + 0.00025 * -vn);
   const j = -(1 + eff) * vn;
   // Kicks vary by +-7% so no shot repeats exactly.
-  const k = kick ? kick * (0.93 + Math.random() * 0.14) : 0;
+  const k = kick ? kick * (0.93 + rand() * 0.14) : 0;
   b.vx += nx * (j + k);
   b.vy += ny * (j + k);
   return -vn;

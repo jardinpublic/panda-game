@@ -365,11 +365,18 @@ function afterResult() {
 }
 
 function gameOver() {
+  if (A.screen !== 'run') return;
   const r = A.run;
-  const res = applyRun(A.meta, { level: r.m.level, bestStreak: r.m.bestStreak, coins: r.m.coins, score: r.m.score, stats: r.m.stats, hero: A.meta.hero });
-  A.meta = refillMissions(res.meta, pickGameId);
-  persist();
-  askPersist();
+  // Saving must never stop the game-over screen from showing.
+  let res = { meta: A.meta, completed: [], newBest: false, rank: 0 };
+  try {
+    res = applyRun(A.meta, { level: r.m.level, bestStreak: r.m.bestStreak, coins: r.m.coins, score: r.m.score, stats: r.m.stats, hero: A.meta.hero });
+    A.meta = refillMissions(res.meta, pickGameId);
+    persist();
+    askPersist();
+  } catch (err) {
+    reportError(err);
+  }
   r.result = res;
   r.endedAt = Date.now();
   A.screen = 'over';
@@ -432,6 +439,8 @@ function update(dt) {
       r.shownScore += (r.m.score - r.shownScore) * Math.min(1, dt * 6);
       if (r.phaseT >= r.resultLen) afterResult();
     }
+    // Safety net: never stay stuck after the last life.
+    if (A.screen === 'run' && r.m.isOver() && r.phase !== 'outcome' && r.phaseT > 12) gameOver();
   }
   A.fx.update(dt);
 }
@@ -1029,6 +1038,24 @@ function renderRunUI() {
 }
 
 function renderOver() {
+  try {
+    renderOverScreen();
+  } catch (err) {
+    reportError(err);
+    // Minimal screen: the score and the two ways out.
+    ui.textContent = '';
+    el('div', 'm-card m-over', ui, `<h2>${t('m.over')}</h2><div class="m-score">${A.run?.m.score ?? 0}</div>`);
+    const replay = el('button', 'm-btn m-play', ui, t('m.replay'));
+    replay.onclick = startRun;
+    const menu = el('button', 'm-btn m-ghost', ui, t('m.menu'));
+    menu.onclick = () => {
+      A.screen = 'home';
+      renderUI();
+    };
+  }
+}
+
+function renderOverScreen() {
   const r = A.run;
   const res = r.result;
   topBar();
@@ -1065,6 +1092,15 @@ function renderOver() {
 /** Prepares the score card picture as soon as the game-over screen shows (sharing must stay inside the tap). */
 function prepareCard(r) {
   if (r.card) return;
+  try {
+    prepareCardNow(r);
+  } catch (err) {
+    r.card = Promise.resolve(null);
+    reportError(err);
+  }
+}
+
+function prepareCardNow(r) {
   r.card = makeShareCard({
     score: r.m.score,
     reached: t('m.reached', { n: r.m.level }),
@@ -1294,10 +1330,36 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  update(dt);
-  draw();
+  try {
+    update(dt);
+    draw();
+  } catch (err) {
+    reportError(err);
+  }
   requestAnimationFrame(frame);
 }
+
+let lastReported = '';
+/** Shows an error once (small toast) and keeps it in storage, so a bug on a phone can be reported. */
+function reportError(err) {
+  const text = String(err?.message || err).slice(0, 140);
+  console.error(err);
+  try {
+    localStorage.setItem('pandadventures.lastError', `${new Date().toISOString()} ${text} ${String(err?.stack || '').slice(0, 400)}`);
+  } catch {
+    // No storage.
+  }
+  if (text !== lastReported) {
+    lastReported = text;
+    try {
+      toast(`Oups : ${text}`);
+    } catch {
+      // The UI itself is broken: nothing more to do.
+    }
+  }
+}
+window.addEventListener('error', (e) => reportError(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => reportError(e.reason));
 
 // Draw at once: faces have a drawn fallback until their pictures arrive.
 requestAnimationFrame(frame);
