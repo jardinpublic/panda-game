@@ -27,11 +27,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 window.addEventListener('appinstalled', () => {
   window.__installPrompt = null;
-  try {
-    localStorage.setItem('pandadventures.installed', '1');
-  } catch {
-    // No storage.
-  }
+  window.__appOnPhone = true;
   window.dispatchEvent(new Event('pandadventures:installable'));
 });
 

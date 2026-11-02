@@ -16,6 +16,7 @@ import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
 import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
+import { installMode } from './install.js';
 import { GAMES as BOARD_GAMES, NAME_MAX, createOnline, memoryBackend, toSend, rowFor, bestRun, cleanName, newPlayerId } from './online.js';
 import { makeShareCard } from './sharecard.js';
 import './texts.js';
@@ -1117,18 +1118,32 @@ function topBar() {
   };
 }
 
-/** How the game can be added to the home screen here: 'prompt' (Android), 'ios' (Safari steps) or null. */
+/** How the game can be added to the home screen here: 'prompt', 'ios', 'android' (menu steps) or null (see install.js). */
 function installKind() {
+  let standalone = false;
   try {
-    const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
-    if (standalone || localStorage.getItem('pandadventures.installed') === '1') return null;
+    standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || !!navigator.standalone;
   } catch {
     // Old browser: go on.
   }
-  if (window.__installPrompt) return 'prompt';
-  const ua = navigator.userAgent || '';
-  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  return ios ? 'ios' : null;
+  return installMode({
+    standalone,
+    hasPrompt: !!window.__installPrompt,
+    appOnPhone: !!window.__appOnPhone,
+    ua: navigator.userAgent || '',
+    platform: navigator.platform || '',
+    touchPoints: navigator.maxTouchPoints || 0,
+  });
+}
+
+// Chrome can tell whether this game's app is on the phone (manifest related_applications)
+try {
+  navigator.getInstalledRelatedApps?.().then((apps) => {
+    window.__appOnPhone = apps.length > 0;
+    if (window.__appOnPhone) renderUI();
+  }).catch(() => {});
+} catch {
+  // Not supported.
 }
 
 async function installGame(kind) {
@@ -1139,7 +1154,7 @@ async function installGame(kind) {
     try {
       await offer.prompt();
       const choice = await offer.userChoice;
-      if (choice?.outcome === 'accepted') localStorage.setItem('pandadventures.installed', '1');
+      void choice;
     } catch {
       // Dismissed or refused.
     }
@@ -1147,7 +1162,7 @@ async function installGame(kind) {
     return;
   }
   const panel = sheet(`📲 ${t('m.install')}`);
-  el('p', 'm-install-steps', panel, t('m.install_ios'));
+  el('p', 'm-install-steps', panel, t(kind === 'android' ? 'm.install_android' : 'm.install_ios'));
   el('p', 'm-hint', panel, t('m.install_offline'));
 }
 window.addEventListener('pandadventures:installable', () => {
@@ -1182,8 +1197,8 @@ function offerInstall() {
     ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
     renderUI();
   };
-  if (kind === 'ios') {
-    el('p', 'm-install-steps', panel, t('m.install_ios'));
+  if (kind === 'ios' || kind === 'android') {
+    el('p', 'm-install-steps', panel, t(kind === 'android' ? 'm.install_android' : 'm.install_ios'));
     const ok = el('button', 'm-btn m-play', panel, t('m.install_ok'));
     ok.onclick = close;
   } else {
