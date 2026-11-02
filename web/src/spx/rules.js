@@ -22,30 +22,42 @@ export const TUNING = {
   roadHalf: 3.5, // kerb, metres from the centre line
   edge: 4.9, // furthest a rider can go (the pavement)
   lane: 1.65, // lane centre
-  vmax: 15, // m/s on the road (a tuned 103: 54 km/h)
+  vStart: 13.5, // m/s cruising when the ride starts (49 km/h)
+  vTop: 19.5, // m/s once fully "chaud" (70 km/h: a well-tuned 103)
+  heatTime: 38, // seconds of riding without a crash to get there
+  heatKeep: 0.4, // share of the heat kept after a crash
   vPavement: 9,
-  vBoost: 19.5,
+  vBoost: 24,
   boostTime: 3,
+  turboTime: 3.5,
   slipBonus: 2.6,
-  accel: 5,
-  steerRate: 11, // m/s sideways
+  accel: 6.5,
+  cornerGrip: 10, // m/s² sideways: the speed limit in a bend is √(grip × radius)
+  steerRate: 12, // m/s sideways
   jumpTime: 0.6,
   jumpCooldown: 0.15,
   hearts: 3,
   clopes: 10,
-  crashTime: 1.6,
+  clopesMax: 20,
+  crashTime: 1.2,
   safeTime: 1.8, // no crash right after getting back on
   controlTime: 2.4,
-  targetTime: 185, // seconds; faster than this earns a time bonus
+  targetTime: 165, // seconds; faster than this earns a time bonus
   pedalPerTap: 0.14,
   pedalDecay: 0.12,
-  police: { speed: 12.8, startGap: 30, catchGap: 2.4, maxGap: 42 },
-  babar: { speed: 14.6, band: 0.04, ahead: -1.0, behind: 0.8 },
+  nearMiss: 0.75, // metres between Panda and a vehicle's side that count as a close pass
+  combo: { window: 3, perStep: 2, maxMult: 5 },
+  gauge: { nearMiss: 0.16, overtake: 0.1, clope: 0.035, wheelie: 0.12 },
+  // The cops ride at `lag` × Panda's road speed: they only catch a rider who slows down
+  police: { lag: 0.84, min: 11, startGap: 32, catchGap: 2.4, maxGap: 42 },
+  // Babar rides `lag` m/s under Panda's road speed, rubber-banded by the gap
+  babar: { lag: 0.5, band: 0.04, ahead: -1.0, behind: 0.8 },
   points: {
     metre: 1,
-    overtake: 100,
-    nearMiss: 120,
-    wheelie: 80,
+    overtake: 120,
+    nearMiss: 150,
+    wheelie: 100,
+    clopePick: 25,
     ouf: 150,
     can: 300,
     keufsLost: 1500,
@@ -54,13 +66,33 @@ export const TUNING = {
     pietroDown: 2000,
     duelWon: 3000,
     home: 2000,
-    clope: 200,
+    clope: 100,
     heart: 1000,
     perSecondSaved: 30,
     screamBase: 100,
     screamPerSecond: 320,
   },
 };
+
+/**
+ * Vehicles by model (Kenney's Car Kit, see kit.js): half-length and half-width
+ * in metres, as drawn. `big` ones only turn up on the long streets.
+ */
+export const VEHICLES = {
+  sedan: { hl: 1.71, hw: 0.9 },
+  'sedan-sports': { hl: 1.71, hw: 0.78 },
+  'hatchback-sports': { hl: 1.92, hw: 0.78 },
+  suv: { hl: 1.81, hw: 0.9 },
+  taxi: { hl: 1.85, hw: 0.9 },
+  van: { hl: 1.85, hw: 0.9 },
+  truck: { hl: 1.98, hw: 0.9, big: true },
+  delivery: { hl: 2.18, hw: 0.9, big: true },
+  'garbage-truck': { hl: 2.32, hw: 0.96, big: true },
+  tractor: { hl: 1.48, hw: 0.8, big: true },
+};
+const CARS = ['sedan', 'sedan', 'sedan-sports', 'hatchback-sports', 'suv', 'suv', 'taxi', 'van', 'van'];
+const BIG = ['truck', 'delivery', 'garbage-truck'];
+const SLOW_BIG = ['delivery', 'garbage-truck', 'tractor', 'tractor'];
 
 /** Where the fixed events sit, metres into their street (the view puts the café and the bench there too). */
 export const SPOTS = { gogol: 55, bench: 80, leg: 30, panne: 70 };
@@ -70,6 +102,7 @@ const PW = 0.32; // rider half-width
 const SPAWN_AHEAD = 170;
 const KEEP_BEHIND = 40;
 const SOLID = new Set(['car', 'parked', 'gogol', 'pineur', 'bench', 'panne', 'impuissant']);
+const LONG_STREETS = new Set(['laville', 'beaubernard', 'vernois', 'desmoulins', 'barbes']);
 
 /** Speakers with a face from the cast (the others are drawn by the game). */
 export const CAST_SPEAKERS = ['panda', 'cous', 'romain', 'victor', 'aline', 'babar'];
@@ -86,8 +119,7 @@ export function createRules(options = {}) {
   let plan = [];
   let later = [];
 
-  const st = {
-    route,
+  const fresh = () => ({
     phase: 'pedal', // pedal | ride | down | control | done | over
     pedal: 0,
     t: 0,
@@ -95,9 +127,14 @@ export function createRules(options = {}) {
     x: T.lane,
     target: T.lane,
     v: 0,
+    heat: 0, // 0..1: riding without a crash makes the 103 faster
     hearts: T.hearts,
     clopes: T.clopes,
     score: 0,
+    combo: 0, // close passes, overtakes and pickups in a row
+    comboT: 0, // seconds left to keep the combo going
+    mult: 1,
+    gauge: 0, // 0..1: full = turbo
     air: 0,
     jumpWait: 0,
     boost: 0,
@@ -113,8 +150,9 @@ export function createRules(options = {}) {
     duel: null,
     entities: [],
     summary: null,
-    stats: { crashes: 0, overtakes: 0, cans: 0, bonks: 0, stolen: 0, screams: 0 },
-  };
+    stats: { crashes: 0, overtakes: 0, nearMisses: 0, clopes: 0, bestMult: 1, turbos: 0, cans: 0, bonks: 0, stolen: 0, screams: 0 },
+  });
+  const st = Object.assign({ route }, fresh());
 
   const say = (kind, key, vars, speaker) => out.say(kind, key, vars || {}, speaker);
   const award = (points, key, vars) => {
@@ -122,6 +160,49 @@ export function createRules(options = {}) {
     st.score += points;
     if (key) say('toast', key, Object.assign({ points }, vars || {}));
   };
+  /** Road speed now (no boost): from vStart to vTop as the heat builds. */
+  const roadCap = () => T.vStart + (T.vTop - T.vStart) * st.heat;
+  /** The fastest anyone takes the road at s (bends and the roundabout slow everybody down). */
+  const bendCap = (s) => {
+    const bend = Math.abs(route.curvature(s));
+    return bend > 0.01 ? Math.sqrt(T.cornerGrip / bend) : Infinity;
+  };
+
+  /** One more in the combo; returns the points times the multiplier. */
+  function comboUp(points) {
+    st.combo++;
+    st.comboT = T.combo.window;
+    const mult = Math.min(T.combo.maxMult, 1 + Math.floor(st.combo / T.combo.perStep));
+    if (mult > st.mult) {
+      out.event('mult', { mult });
+      if (mult === T.combo.maxMult && st.t - (st.maxSaidAt ?? -99) > 25) {
+        st.maxSaidAt = st.t;
+        say('chat', 'comboPanda', null, 'panda');
+      }
+    }
+    st.mult = mult;
+    st.stats.bestMult = Math.max(st.stats.bestMult, mult);
+    return Math.round(points * mult);
+  }
+
+  function comboLost() {
+    st.combo = 0;
+    st.comboT = 0;
+    st.mult = 1;
+  }
+
+  /** Fills the turbo gauge; full, it fires a turbo. */
+  function charge(amount) {
+    st.gauge = Math.min(1, st.gauge + amount);
+    if (st.gauge >= 1 && st.phase === 'ride') {
+      st.gauge = 0;
+      st.boost = Math.max(st.boost, T.turboTime);
+      st.stats.turbos++;
+      say('pop', 'turbo');
+      out.sound('turbo');
+      out.event('turbo');
+    }
+  }
   const after = (seconds, fn) => later.push({ at: st.t + seconds, fn });
   const add = (e) => {
     const ent = Object.assign({ id: nextId++, v: 0, hl: 0.5, hw: 0.5, x: 0 }, e);
@@ -187,56 +268,99 @@ export function createRules(options = {}) {
     const ring = route.ring;
     keepFree((ring.s0 + ring.s1) / 2, 40);
     at(ring.s0, () => {
-      add({ kind: 'car', s: ring.s0 + 26, x: -T.lane, v: -7, hl: 2.0, hw: 0.8, oncoming: true, ring: true });
-      add({ kind: 'car', s: ring.s0 + 46, x: T.lane, v: -7, hl: 2.0, hw: 0.8, oncoming: true, ring: true });
-      add({ kind: 'car', s: ring.s1 + 6, x: -T.lane * 0.2, v: -6, hl: 2.0, hw: 0.8, oncoming: true, ring: true });
+      add({ kind: 'car', model: 'sedan', s: ring.s0 + 26, x: -T.lane, v: -7, ...VEHICLES.sedan, oncoming: true, ring: true });
+      add({ kind: 'car', model: 'taxi', s: ring.s0 + 46, x: T.lane, v: -7, ...VEHICLES.taxi, oncoming: true, ring: true });
+      add({ kind: 'car', model: 'van', s: ring.s1 + 6, x: -T.lane * 0.2, v: -6, ...VEHICLES.van, oncoming: true, ring: true });
     }, 45);
 
-    // Traffic, parked cars, speed bumps and holes, street by street
-    const quiet = new Set(['petitbois', 'chateau', 'zup']);
+    // Speed bumps, cigarettes to pick up, parked cars, holes and traffic, street by street
+    const quiet = new Set(['petitbois', 'zup']);
+    const pickups = []; // [s0, s1, xMin, xMax] stretches with cigarettes on them
     for (const street of route.sections) {
       if (quiet.has(street.id)) continue;
-      const end = street.id === 'charolles' ? street.s1 - 50 : street.s1 - 8;
-      // Oncoming cars
-      const gapMin = ['barbes', 'desmoulins', 'vernois'].includes(street.id) ? 85 : 65;
-      for (let s = street.s0 + rand(15, 40); s < end; s += rand(gapMin, gapMin + 40)) {
-        const pos = s;
-        // No oncoming car meets Panda right at the broken-down car: he must be able to go round it
-        if (pos > panneS + 15 && pos < panneS + 105) continue;
-        at(pos, () => add({ kind: 'car', s: pos, x: -T.lane + rand(-0.2, 0.2), v: -rand(9, 12), hl: 2.0, hw: 0.8, oncoming: true }), 150);
-      }
-      // A slow car to overtake (not where Pépé Gogol is, nor during the fights)
-      if (['loge', 'moulin', 'moulin2', 'laville', 'pageot', 'beaubernard'].includes(street.id) && street.s1 - street.s0 > 100) {
-        const pos = street.s0 + rand(25, Math.min(60, street.s1 - street.s0 - 60));
-        at(pos, () => add({ kind: 'car', s: pos, x: T.lane, v: rand(7.5, 9), hl: 2.0, hw: 0.8, slow: true, passed: false }), 75);
-      }
-      // Parked cars along the kerbs
-      for (let s = street.s0 + 18; s < street.s1 - 15; s += rand(30, 70)) {
-        if (!free(s) || random() < 0.35) continue;
-        const pos = s;
-        const side = random() < 0.5 ? -1 : 1;
-        at(pos, () => add({ kind: 'parked', s: pos, x: side * 3.05, hl: 2.0, hw: 0.8, side }));
-      }
-      // Speed bumps (one in a long street, two in the longest)
       const len = street.s1 - street.s0;
+      const end = street.id === 'charolles' ? street.s1 - 50 : street.s1 - 8;
+      // Speed bumps (one in a long street, two in the longest), with cigarettes in the air above: jump for them
       const bumps = len > 300 ? 2 : len > 110 ? 1 : 0;
       for (let k = 1; k <= bumps; k++) {
         const pos = street.s0 + (len * k) / (bumps + 1) + rand(-10, 10);
         if (!free(pos)) continue;
-        keepFree(pos, 6);
+        keepFree(pos, 9);
         at(pos, () => add({ kind: 'bump', s: pos, x: 0, hl: 0.5, hw: T.edge + 1, done: false }));
+        const bx = random() < 0.5 ? T.lane : -T.lane * 0.2;
+        for (let i = -1; i <= 1; i++) placeClope(pos + i * 2.4, bx, true);
       }
-      // Potholes
+      // Cigarettes: lines, slaloms and lane changes (the oncoming lane is riskier and pays the same)
+      if (street.id !== 'charolles' || len > 60) {
+        let s = street.s0 + (street.id === 'chateau' ? 12 : rand(18, 35));
+        while (s < end - 30) {
+          if (free(s) && free(s + 26)) {
+            const kind = street.id === 'chateau' ? 'line' : ['line', 'slalom', 'switch', 'line', 'slalom'][Math.floor(random() * 5)];
+            const side = street.id === 'chateau' || random() < 0.62 ? 1 : -1;
+            const n = kind === 'line' ? 6 : 9;
+            const xs = [];
+            for (let i = 0; i < n; i++) {
+              const f = i / (n - 1);
+              let x = side * T.lane;
+              if (kind === 'slalom') x = side * T.lane * 0.25 + Math.sin(f * Math.PI * 2) * 1.35;
+              if (kind === 'switch') x = side * T.lane * (1 - 2 * Math.min(1, Math.max(0, (f - 0.3) / 0.4)));
+              xs.push(x);
+              placeClope(s + i * 3, x, false);
+            }
+            pickups.push([s - 2, s + n * 3 + 2, Math.min(...xs), Math.max(...xs)]);
+            s += n * 3 + rand(32, 60);
+          } else s += 10;
+        }
+      }
+      if (street.id === 'chateau') continue;
+      // Parked cars along the kerbs (not next to a cigarette line that runs close to the kerb)
+      for (let s = street.s0 + 18; s < street.s1 - 15; s += rand(26, 60)) {
+        if (!free(s) || random() < 0.3) continue;
+        const pos = s;
+        const side = random() < 0.5 ? -1 : 1;
+        if (pickups.some(([a, b, lo, hi]) => pos + 3 > a && pos - 3 < b && (side > 0 ? hi > 1.9 : lo < -1.9))) continue;
+        const model = pickModel();
+        at(pos, () => add({ kind: 'parked', s: pos, x: side * (3.5 - VEHICLES[model].hw * 0.55), ...VEHICLES[model], side, model }));
+      }
+      // Potholes (never on a cigarette line)
       const holes = len > 200 ? 2 : len > 120 ? 1 : 0;
       for (let k = 0; k < holes; k++) {
         const pos = street.s0 + rand(20, len - 20);
-        if (!free(pos)) continue;
-        keepFree(pos, 5);
         const x = rand(-2.6, 2.6);
+        if (!free(pos) || pickups.some(([a, b, lo, hi]) => pos > a - 3 && pos < b + 3 && x > lo - 1.4 && x < hi + 1.4)) continue;
+        keepFree(pos, 5);
         at(pos, () => add({ kind: 'hole', s: pos, x, hl: 0.55, hw: 0.6 }));
+      }
+      // Oncoming traffic: cars, vans, now and then a bus on the long streets
+      const gapMin = ['barbes', 'desmoulins', 'vernois'].includes(street.id) ? 62 : 46;
+      for (let s = street.s0 + rand(15, 40); s < end; s += rand(gapMin, gapMin + 38)) {
+        const pos = s;
+        // No oncoming car meets Panda right at the broken-down car: he must be able to go round it
+        if (pos > panneS + 15 && pos < panneS + 105) continue;
+        const model = LONG_STREETS.has(street.id) && random() < 0.14 ? BIG[Math.floor(random() * BIG.length)] : pickModel();
+        at(pos, () => add({ kind: 'car', model, s: pos, x: -T.lane + rand(-0.15, 0.15), v: -(VEHICLES[model].big ? rand(8, 9.5) : rand(9, 12.5)), ...VEHICLES[model], oncoming: true }), 165);
+      }
+      // Slow ones going Panda's way, to overtake (not where Pépé Gogol is, nor during the fights)
+      if (['loge', 'moulin', 'laville', 'pageot', 'beaubernard'].includes(street.id) && len > 75) {
+        const count = len > 150 ? 2 : 1;
+        for (let k = 0; k < count; k++) {
+          const pos = street.s0 + 25 + (k * (len - 60)) / count + rand(0, 20);
+          const model = LONG_STREETS.has(street.id) && random() < 0.45 ? SLOW_BIG[Math.floor(random() * SLOW_BIG.length)] : pickModel();
+          const v = model === 'tractor' ? rand(5, 6) : VEHICLES[model].big ? rand(6.5, 7.5) : rand(7.5, 9.5);
+          at(pos, () => add({ kind: 'car', model, s: pos, x: T.lane, v, ...VEHICLES[model], slow: true, passed: false }), 80);
+        }
       }
     }
     plan.sort((a, b) => a.trigger - b.trigger);
+  }
+
+  function pickModel() {
+    return CARS[Math.floor(random() * CARS.length)];
+  }
+
+  /** A cigarette floating over the road (high = over a speed bump: only a jump gets it). */
+  function placeClope(s, x, high) {
+    at(s, () => add({ kind: 'clope', s, x, hl: 0.55, hw: 0.6, high }), SPAWN_AHEAD);
   }
 
   /* ---------------- Game ---------------- */
@@ -244,34 +368,8 @@ export function createRules(options = {}) {
   function newGame() {
     nextId = 1;
     later = [];
-    Object.assign(st, {
-      phase: 'pedal',
-      pedal: 0,
-      t: 0,
-      s: 2,
-      x: T.lane,
-      target: T.lane,
-      v: 0,
-      hearts: T.hearts,
-      clopes: T.clopes,
-      score: 0,
-      air: 0,
-      jumpWait: 0,
-      boost: 0,
-      slip: false,
-      safe: 0,
-      down: 0,
-      hasLeg: false,
-      held: false,
-      scream: 0,
-      prompt: null,
-      section: null,
-      chase: { on: false, gap: 0, x: 0, done: false },
-      duel: null,
-      entities: [],
-      summary: null,
-      stats: { crashes: 0, overtakes: 0, cans: 0, bonks: 0, stolen: 0, screams: 0 },
-    });
+    for (const k of ['pushedOnce', 'noLegAt', 'maxSaidAt', 'lastHit']) delete st[k];
+    Object.assign(st, fresh());
     buildPlan();
     say('tip', 'pedal');
   }
@@ -289,6 +387,7 @@ export function createRules(options = {}) {
       say('pop', 'started');
       say('tip', 'controls');
       after(1.5, () => say('chat', 'cheerCous', null, 'cous'));
+      after(4.5, () => say('tip', 'comboTip'));
     }
   }
 
@@ -333,6 +432,8 @@ export function createRules(options = {}) {
     st.v = 0;
     st.air = 0;
     st.boost = 0;
+    st.heat *= T.heatKeep;
+    comboLost();
     if (st.scream > 0) endScream();
     out.sound('crash');
     out.event('crash', { reason: reasonKey });
@@ -473,10 +574,17 @@ export function createRules(options = {}) {
     } else if (st.scream > 0 && !st.held) {
       endScream();
     }
+    if (st.comboT > 0) {
+      st.comboT = Math.max(0, st.comboT - dt);
+      if (st.comboT === 0) comboLost();
+    }
     const onPavement = Math.abs(st.x) > T.roadHalf;
-    let vmax = onPavement ? T.vPavement : T.vmax;
+    if (!onPavement && st.v > T.vStart * 0.7) st.heat = Math.min(1, st.heat + dt / T.heatTime);
+    let vmax = onPavement ? T.vPavement : roadCap();
     if (st.boost > 0) vmax = Math.max(vmax, T.vBoost);
     if (st.slip) vmax += T.slipBonus;
+    // Tight turns and the roundabout: no 103 takes those flat out
+    vmax = Math.min(vmax, bendCap(st.s + st.v * 0.4));
     // Stuck behind something slower going the same way: follow it instead of crashing into it
     for (const e of st.entities) {
       if (!(e.kind === 'car' || e.kind === 'gogol') || e.v <= 0) continue;
@@ -488,7 +596,8 @@ export function createRules(options = {}) {
     st.x += Math.sign(dx) * Math.min(Math.abs(dx), T.steerRate * dt);
     st.x = Math.max(-T.edge, Math.min(T.edge, st.x));
     st.s += st.v * dt;
-    if (st.v > 0.5) st.score += P.metre * st.v * dt;
+    // Faster pays more
+    if (st.v > 0.5) st.score += P.metre * st.v * dt * (1 + st.heat);
   }
 
   function streets() {
@@ -558,6 +667,22 @@ export function createRules(options = {}) {
           const gap = st.s - e.s;
           if (gap > 0 && gap < e.hl + PL + 2 && Math.abs(e.x - st.x) < e.hw + PW + 0.2) e.v = Math.min(e.cruise || (e.cruise = e.v), st.v);
           else if (e.cruise) e.v = e.cruise;
+        }
+        // An oncoming driver who sees Panda coming at him head-on brakes, honks and squeezes over
+        if (e.kind === 'car' && e.oncoming && st.phase === 'ride') {
+          const ahead = e.s - st.s;
+          const inPath = Math.abs(e.x - st.x) < e.hw + PW + 0.35;
+          if (ahead > 0 && ahead < 34 && inPath) {
+            e.cruise = e.cruise || e.v;
+            e.v = Math.min(-3.5, e.v + 9 * dt);
+            const away = st.x > e.x ? -1 : 1;
+            e.x = Math.max(-T.roadHalf + e.hw - 0.1, Math.min(T.roadHalf - e.hw + 0.1, e.x + away * 1.6 * dt));
+            if (!e.honked) {
+              e.honked = true;
+              out.sound('horn');
+              out.event('honk', { id: e.id });
+            }
+          } else if (e.cruise && ahead < 0) e.v = e.cruise;
         }
         e.s += e.v * dt;
     }
@@ -688,14 +813,39 @@ export function createRules(options = {}) {
       const ds = e.s - st.s;
       const dx = e.x - st.x;
       const over = Math.abs(ds) < e.hl + PL && Math.abs(dx) < e.hw + PW;
+      const close = Math.abs(dx) - e.hw - PW < T.nearMiss && st.safe <= 0;
       if (e.kind === 'car' && e.slow && !e.passed && ds < -(e.hl + PL)) {
         e.passed = true;
         st.stats.overtakes++;
-        award(P.overtake, 'overtake');
+        if (close) {
+          st.stats.nearMisses++;
+          award(comboUp(P.overtake + P.nearMiss), 'nearMiss');
+          charge(T.gauge.nearMiss + T.gauge.overtake);
+          out.event('nearMiss', { id: e.id, side: Math.sign(dx) });
+        } else {
+          award(comboUp(P.overtake), 'overtake');
+          charge(T.gauge.overtake);
+        }
       }
       if (e.kind === 'car' && e.oncoming && !e.passed && ds < 0) {
         e.passed = true;
-        if (Math.abs(dx) < 2.1 && st.safe <= 0) award(P.nearMiss, 'nearMiss');
+        if (close) {
+          st.stats.nearMisses++;
+          award(comboUp(P.nearMiss), 'nearMiss');
+          charge(T.gauge.nearMiss);
+          out.sound('whoosh');
+          out.event('nearMiss', { id: e.id, side: Math.sign(dx) });
+        }
+      }
+      if (e.kind === 'clope' && !e.gone && Math.abs(ds) < e.hl + PL && Math.abs(dx) < e.hw + PW && (!e.high || st.air > 0)) {
+        e.gone = true;
+        st.clopes = Math.min(T.clopesMax, st.clopes + 1);
+        st.stats.clopes++;
+        st.score += comboUp(P.clopePick);
+        charge(T.gauge.clope);
+        out.sound('clope', st.mult);
+        out.event('clope', { id: e.id });
+        continue;
       }
       if ((e.kind === 'pineur' || e.kind === 'impuissant') && !e.passed && ds < -0.6) {
         e.passed = true;
@@ -722,7 +872,8 @@ export function createRules(options = {}) {
       if (e.kind === 'bump' && !e.done) {
         e.done = true;
         if (st.air > 0) {
-          award(P.wheelie, 'wheelie');
+          award(comboUp(P.wheelie), 'wheelie');
+          charge(T.gauge.wheelie);
         } else {
           st.v *= 0.45;
           say('toast', 'bumpHit');
@@ -773,7 +924,7 @@ export function createRules(options = {}) {
   function chase(dt) {
     const c = st.chase;
     if (!c.on) return;
-    if (st.phase === 'ride') c.gap = Math.min(T.police.maxGap, c.gap + (st.v - T.police.speed) * dt);
+    if (st.phase === 'ride' || st.phase === 'down') c.gap = Math.min(T.police.maxGap, c.gap + (st.v - Math.max(T.police.min, T.police.lag * Math.min(roadCap(), bendCap(st.s - c.gap)))) * dt);
     c.x += (st.x - c.x) * Math.min(1, dt * 1.5);
     if (st.phase === 'ride' && c.gap < T.police.catchGap) {
       c.on = false;
@@ -819,7 +970,7 @@ export function createRules(options = {}) {
       return;
     }
     const band = Math.max(T.babar.ahead, Math.min(T.babar.behind, (st.s - b.s) * T.babar.band));
-    b.v = T.babar.speed + band;
+    b.v = roadCap() - T.babar.lag + band;
     // Babar keeps out of the way of what is in his lane
     const blocked = st.entities.some((e) => SOLID.has(e.kind) && e !== b && e.s - b.s > 0 && e.s - b.s < 16 && Math.abs(e.x - b.lane) < 1.4);
     if (blocked) b.lane = -b.lane;

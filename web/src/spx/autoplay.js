@@ -20,7 +20,7 @@ export function createAutoplay(rules, options = {}) {
       const solid = ['car', 'parked', 'pineur', 'bench', 'gogol', 'hole', 'panne', 'impuissant'].includes(e.kind);
       if (!solid) continue;
       const ds = e.s - st.s;
-      if (ds < -2.5 || ds > 55) continue;
+      if (ds < -(e.hl + 1.5) || ds > Math.max(55, st.v * 3.4)) continue;
       // A human sees a thing only a moment after it comes into view
       if (reaction && st.t - (seen.get(e.id) ?? (seen.set(e.id, st.t), st.t)) < reaction) continue;
       if ((e.kind === 'car' || e.kind === 'gogol') && e.v > 0) {
@@ -29,7 +29,7 @@ export function createAutoplay(rules, options = {}) {
         continue;
       }
       const closing = Math.max(1, st.v - (e.v || 0));
-      const tt = Math.max(0, ds) / closing;
+      const tt = Math.max(0, ds - (e.hl - 1)) / closing;
       if (tt > 3.2) continue;
       // Where it will be when we get there
       let ex = e.x;
@@ -44,6 +44,8 @@ export function createAutoplay(rules, options = {}) {
     }
     for (const e of st.entities) {
       if ((e.kind === 'can' || e.kind === 'leg') && e.s - st.s > 0 && e.s - st.s < 40 && Math.abs(x - e.x) < 0.6) cost -= 2.5;
+      // The nearest cigarettes ahead pull the rider towards them
+      if (e.kind === 'clope' && !e.high && e.s - st.s > 0 && e.s - st.s < 14 && Math.abs(x - e.x) < 0.5) cost -= 1.2 / (1 + (e.s - st.s) / 6);
     }
     // Moving far takes time: favour staying close
     cost += Math.abs(x - st.x) * 0.12;
@@ -63,15 +65,26 @@ export function createAutoplay(rules, options = {}) {
       if (st.held) rules.release();
       return;
     }
+    // The cost of each spot, plus the worst spot on the way there (crossing a lane takes time)
+    const xs = [];
+    const costs = [];
+    for (let x = -4.8; x <= 4.81; x += 0.2) {
+      xs.push(x);
+      costs.push(danger(x));
+    }
     let best = st.x;
     let bestCost = Infinity;
-    for (let x = -4.8; x <= 4.81; x += 0.2) {
-      const c = danger(x);
+    xs.forEach((x, i) => {
+      let path = 0;
+      xs.forEach((y, j) => {
+        if ((y > st.x && y < x) || (y < st.x && y > x)) path = Math.max(path, costs[j]);
+      });
+      const c = costs[i] + path * 0.7;
       if (c < bestCost) {
         bestCost = c;
         best = x;
       }
-    }
+    });
     rules.setTarget(best);
     // Jump the speed bumps and the holes just before reaching them
     for (const e of st.entities) {

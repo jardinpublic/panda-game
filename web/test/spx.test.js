@@ -106,8 +106,11 @@ describe('103 SPX rules', () => {
     const { rules } = ride(2, { stopAt: (r) => r.state.entities.some((e) => e.kind === 'azzouz' && e.state === 'side') });
     const st = rules.state;
     const before = st.clopes;
-    // Ride on in a straight line, never pushing them away
-    for (let t = 0; t < 4; t += 1 / 60) rules.update(1 / 60);
+    // Ride on in a straight line, never pushing them away (and picking up no cigarettes)
+    for (let t = 0; t < 4; t += 1 / 60) {
+      st.entities = st.entities.filter((e) => e.kind !== 'clope');
+      rules.update(1 / 60);
+    }
     expect(st.clopes).toBe(before - 1);
     expect(st.stats.stolen).toBe(1);
   });
@@ -123,7 +126,7 @@ describe('103 SPX rules', () => {
   });
 
   it('fast cops catch the rider: a check costs a life', () => {
-    const tuning = { ...TUNING, police: { ...TUNING.police, speed: 40 } };
+    const tuning = { ...TUNING, police: { ...TUNING.police, lag: 3 } };
     const { rules, said } = ride(4, { tuning, stopAt: (r) => r.state.chase.done });
     expect(said.some((x) => x.key === 'keufsCaught')).toBe(true);
     expect(rules.state.hearts).toBeLessThan(TUNING.hearts);
@@ -157,14 +160,63 @@ describe('103 SPX rules', () => {
         expect(st.summary.score).toBe(st.score);
       }
     }
-    expect(home).toBeGreaterThanOrEqual(5);
-    expect(duels).toBeGreaterThanOrEqual(4);
+    expect(home).toBe(6);
+    expect(duels).toBeGreaterThanOrEqual(5);
   });
 
   it('a rider with human reaction time (0.3 s) still gets home', () => {
     let home = 0;
     for (let seed = 11; seed <= 15; seed++) if (ride(seed, { reaction: 0.3 }).rules.state.phase === 'done') home++;
-    expect(home).toBeGreaterThanOrEqual(4);
+    expect(home).toBe(5);
+  });
+
+  it('gets faster the longer Panda rides without a crash, and a crash cools it down', () => {
+    const { rules } = ride(6, { stopAt: (r) => r.state.t > 30 && r.state.phase === 'ride' });
+    const st = rules.state;
+    expect(st.heat).toBeGreaterThan(0.6);
+    const hot = st.heat;
+    // Straight into the oncoming lane until something hits
+    rules.setTarget(-TUNING.lane);
+    for (let t = 0; t < 60 && st.stats.crashes === 0; t += 1 / 60) rules.update(1 / 60);
+    expect(st.heat).toBeLessThan(hot * 0.5);
+  });
+
+  it('close passes and cigarettes build a combo, and the combo multiplies the points', () => {
+    const { rules, said } = ride(7, { stopAt: (r) => r.state.mult >= 3 });
+    const st = rules.state;
+    expect(st.mult).toBeGreaterThanOrEqual(3);
+    expect(st.stats.clopes + st.stats.nearMisses + st.stats.overtakes).toBeGreaterThanOrEqual(4);
+    expect(st.stats.bestMult).toBe(st.mult);
+    // The combo runs out after a few quiet seconds (nothing on the road to count)
+    for (let t = 0; t < TUNING.combo.window + 0.5; t += 1 / 60) {
+      st.entities = [];
+      rules.update(1 / 60);
+    }
+    expect(st.mult).toBe(1);
+    expect(st.combo).toBe(0);
+    expect(said.length).toBeGreaterThan(0);
+  });
+
+  it('a full gauge fires a turbo', () => {
+    const { rules, said } = ride(8, { stopAt: (r) => r.state.stats.turbos > 0 });
+    expect(rules.state.stats.turbos).toBe(1);
+    expect(rules.state.boost).toBeGreaterThan(0);
+    expect(said.some((x) => x.key === 'turbo')).toBe(true);
+  });
+
+  it('puts cigarettes on the road, some only reachable with a jump over a speed bump', () => {
+    const rules = createRules({ random: seeded(3) });
+    rules.newGame();
+    for (let i = 0; i < 10; i++) rules.pedal();
+    const seen = new Map();
+    for (let t = 0; t < 200 && rules.state.phase === 'ride'; t += 1 / 30) {
+      rules.setTarget(4.7); // ride on the pavement, out of the way
+      rules.update(1 / 30);
+      for (const e of rules.state.entities) if (e.kind === 'clope') seen.set(e.id, e);
+    }
+    const all = [...seen.values()];
+    expect(all.length).toBeGreaterThan(60);
+    expect(all.some((e) => e.high)).toBe(true);
   });
 
   it('is the same ride for the same seed', () => {

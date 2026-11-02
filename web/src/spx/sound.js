@@ -279,6 +279,18 @@ export function createSound({ muted = false } = {}) {
     },
     throw: () => noise(now(), 0.3, 0.08, { freq: 1500, sweepTo: 500 }),
     pickup: () => [660, 880, 1320].forEach((f, i) => tone(now() + i * 0.06, f, 0.2, 0.08)),
+    // A cigarette: a soft bell, higher with the combo
+    clope: (mult = 1) => {
+      const f = 880 * Math.pow(2, (Math.min(5, mult) - 1) * (2 / 12));
+      tone(now(), f, 0.18, 0.06, { type: 'triangle' });
+      tone(now() + 0.05, f * 1.5, 0.22, 0.04);
+    },
+    // A car flashing past
+    whoosh: () => noise(now(), 0.4, 0.22, { freq: 500, q: 0.8, sweepTo: 2400 }),
+    turbo: () => {
+      noise(now(), 0.8, 0.25, { type: 'lowpass', freq: 400, sweepTo: 3600 });
+      [523, 784, 1047].forEach((f, i) => tone(now() + i * 0.07, f, 0.3, 0.06, { type: 'triangle' }));
+    },
     push: () => noise(now(), 0.2, 0.25, { freq: 900, sweepTo: 300 }),
     steal: () => tone(now(), 900, 0.25, 0.08, { glide: 1800 }),
     bonk: () => {
@@ -304,10 +316,10 @@ export function createSound({ muted = false } = {}) {
 
   return {
     unlock: () => ensure(),
-    play(name) {
+    play(name, arg) {
       if (!ensure()) return;
       const fx = effects[name];
-      if (fx) fx();
+      if (fx) fx(arg);
     },
     setEngine,
     stopEngine,

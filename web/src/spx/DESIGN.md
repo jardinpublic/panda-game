@@ -1,8 +1,41 @@
 # 103 SPX — design
 
 A bonus game next to Eul' Flipper: Panda rides his 103 SPX moped home through
-Montceau-les-Mines, in 3D, one thumb, portrait. About 2 min 45 s a ride, its own
+Montceau-les-Mines, in 3D, one thumb, portrait. About 2 min 20 s a ride, its own
 high scores (save `spx`, records tab "103 SPX").
+
+## The arcade loop
+
+- **Speed builds up**: riding without a crash heats the 103 from 49 to 70 km/h
+  in about 40 s (`heatTime`); a crash keeps only 40 % of it. Faster pays more
+  (points per metre × (1 + heat)). Bends and the roundabout slow everybody,
+  the cops included (√(grip × radius)).
+- **Combo**: close passes (within 0.75 m of a car's side), overtakes, wheelies
+  and cigarettes chain within 3 s; every 2 in a row adds ×1, up to ×5.
+- **Cigarettes** lie on the road in lines, slaloms and lane changes (the
+  oncoming lane is riskier); three float over each speed bump, only a jump gets
+  them. They refill the pack (up to 20) and pay ×combo.
+- **Turbo gauge** (round the speedometer): close passes, overtakes, wheelies and
+  cigarettes fill it; full, it fires a 3.5 s turbo.
+- Oncoming drivers who see Panda head-on brake, honk ("TÛÛT !") and squeeze
+  over; a rear-view mirror shows the cops during the chase.
+
+## Look
+
+Late-afternoon sun with real shadows, a painted sky, Montceau house fronts
+(rendered or brick, brick window surrounds, shutters, lace curtains), shops on
+Rue Barbès and Rue Camille Desmoulins (tabac with its red "carotte",
+boulangerie, pharmacie, Café des Sports), mine headframes, the ZUP tower blocks
+by the Lac du Plessis, Panda's yellow house with bunting. Textures are painted
+in code (`textures.js`), the town is built in `town.js`, Panda's moped and the
+people in `models.js`.
+
+Ready-made models (CC0, Kenney, `web/public/models/kenney`, loaded by
+`kit.js`): every car, van, truck, tractor and the police car (Car Kit), the ZUP
+blocks and café parasols (City Kit Commercial), the shop planters (City Kit
+Suburban). Each model is merged into one mesh; the game falls back to
+code-built cars if they cannot load. The Suburban houses were left out: they
+look American, not Montceau.
 
 ## The route (real streets)
 
@@ -31,8 +64,8 @@ corners rounded (radius 11 m), the roundabout a true circle (radius 16 m).
 ## Rules
 
 - 3 lives (crashes), 10 cigarettes. Lose all lives: the ride ends where it is.
-- The moped goes by itself (15 m/s, 54 km/h; 9 m/s on the pavement; 19.5 with
-  an 8.6). Cars going Panda's way never crash into him: he follows them, or
+- The moped goes by itself (13.5 to 19.5 m/s with the heat; 9 m/s on the
+  pavement; 24 with an 8.6 or a turbo). Cars going Panda's way never crash into him: he follows them, or
   they brake behind him. Oncoming cars, parked cars, people and holes crash him.
 - Events, street by street:
   - Rue du Chancelier Rollin: **Pépé Gogol** on his Solex. Hold to shout
@@ -41,8 +74,8 @@ corners rounded (radius 11 m), the roundabout a true circle (radius 16 m).
   - Rue de la Loge, Rue de Cluny, Rue de la Place Pageot: **Pépé Pineur**
     crosses with his cane, his name in big letters. Dodge him.
   - **Rond-point de la ZUP**: wrong way, the cars come at Panda in both lanes.
-    Then **les keufs** chase him (police 12.8 m/s, start 30 m behind) until
-    Rue Beaubernard: shaken off +1500, caught = a check, one life.
+    Then **les keufs** chase him (at 84 % of Panda's road speed, start 32 m
+    behind) until Rue Beaubernard: shaken off +1500, caught = a check, one life.
   - Avenue Jean Laville: **Pépé Impuissant**, his old car broken down in the
     right lane ("elle veut pas d'marrer"). Go round it; no oncoming car meets
     Panda right there.
@@ -54,12 +87,13 @@ corners rounded (radius 11 m), the roundabout a true circle (radius 16 m).
     **Pietro Gangi** ("Vindieu Panda, te veux t'battre ?") rides alongside and
     lunges every 2 s (three hits = a crash). Three whacks floor him (+2000).
   - Rue du Vernois: **Babar on his 103 RCX**, a race to the end of the street.
-    His speed follows the gap (14.6 m/s, ±1); ride in his slipstream for +2.6 m/s.
+    His speed is Panda's road speed − 0.5 m/s, rubber-banded ±1 by the gap; ride in his slipstream for +2.6 m/s.
     Win +3000.
   - Rue de Charolles: home. The gang waits in front of the house.
-- Score: 1 point per metre, overtakes +100, close passes +120, wheelies over
-  bumps +80, the events above; at home +2000, +200 per cigarette kept, +1000
-  per life left, +30 per second under 3:05.
+- Score: points per metre × (1 + heat); overtakes +120, close passes +150,
+  wheelies over bumps +100, cigarettes +25, all × combo; the events above; at
+  home +2000, +100 per cigarette kept, +1000 per life left, +30 per second
+  under 2:45.
 
 Every number is in `TUNING` (rules.js).
 
@@ -73,5 +107,6 @@ bourguignon, like the rest of the game.
 ## Tests
 
 `web/test/spx.test.js`: the route (order, lengths, ring), the rules (pedal,
-shout, cigarettes, cops, game over), whole rides by the bot (5 of 6 seeds home;
-with a 0.3 s human reaction delay, 4 of 5) and the patois.
+shout, cigarettes, cops, game over, heat, combo, turbo, pickups), whole rides
+by the bot (all 6 seeds home; with a 0.3 s human reaction delay, all 5) and the
+patois.
