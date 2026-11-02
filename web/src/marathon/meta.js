@@ -41,7 +41,7 @@ export const SAVE_VERSION = 1;
 export const TOP_SIZE = 10;
 
 export function emptyMeta() {
-  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, updated: 0 };
+  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, spx: { best: 0, games: 0, homes: 0, scores: [] }, updated: 0 };
 }
 
 const num = (x, fallback = 0) => (Number.isFinite(x) && x >= 0 ? x : fallback);
@@ -66,6 +66,9 @@ export function normalizeMeta(raw) {
   const pb = raw.pinball && typeof raw.pinball === 'object' ? raw.pinball : {};
   m.pinball = { ...pb, best: num(pb.best), games: num(pb.games), scores: topScores(Array.isArray(pb.scores) ? pb.scores : []) };
   m.pinball.best = Math.max(m.pinball.best, m.pinball.scores[0]?.score || 0);
+  const sx = raw.spx && typeof raw.spx === 'object' ? raw.spx : {};
+  m.spx = { ...sx, best: num(sx.best), games: num(sx.games), homes: num(sx.homes), scores: topScores(Array.isArray(sx.scores) ? sx.scores : []) };
+  m.spx.best = Math.max(m.spx.best, m.spx.scores[0]?.score || 0);
   return m;
 }
 
@@ -102,6 +105,14 @@ export function mergeMeta(a, b) {
     best: Math.max(older.pinball.best, newer.pinball.best),
     games: Math.max(older.pinball.games, newer.pinball.games),
     scores: topScores([...older.pinball.scores, ...newer.pinball.scores]),
+  };
+  const os = older.spx || emptyMeta().spx;
+  const ns = newer.spx || emptyMeta().spx;
+  m.spx = {
+    best: Math.max(os.best, ns.best),
+    games: Math.max(os.games, ns.games),
+    homes: Math.max(os.homes, ns.homes),
+    scores: topScores([...os.scores, ...ns.scores]),
   };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);
   return m;
@@ -159,6 +170,19 @@ export function applyPinball(meta, { score, hero, at = Date.now() }) {
   const entry = { score, hero, at };
   next.pinball.scores = topScores([...next.pinball.scores, entry]);
   const rank = next.pinball.scores.findIndex((x) => x.score === score && x.at === at) + 1;
+  return { meta: next, rank, newBest };
+}
+
+/** Records a 103 SPX ride. Returns {meta, rank, newBest}. */
+export function applySpx(meta, { score, hero, time = 0, finished = false, at = Date.now() }) {
+  const next = normalizeMeta(clone(meta));
+  const newBest = score > next.spx.best;
+  next.spx.best = Math.max(next.spx.best, score);
+  next.spx.games++;
+  if (finished) next.spx.homes++;
+  const entry = { score, hero, at, time: Math.round(time), finished: !!finished };
+  next.spx.scores = topScores([...next.spx.scores, entry]);
+  const rank = next.spx.scores.findIndex((x) => x.score === score && x.at === at) + 1;
   return { meta: next, rank, newBest };
 }
 

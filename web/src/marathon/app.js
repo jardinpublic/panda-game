@@ -14,7 +14,7 @@ import { createFx } from './fx.js';
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
-import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, buy, HEROES, HATS } from './meta.js';
+import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
 import { makeShareCard } from './sharecard.js';
@@ -122,14 +122,14 @@ canvas.addEventListener('pointerdown', (e) => {
     // Some browsers refuse capture for synthetic or stale pointers: play on.
   }
   const [x, y] = toLogical(e);
-  if (A.screen === 'pinball') return;
+  if (isExtra()) return;
   Object.assign(touch, { id: e.pointerId, x0: x, y0: y, t0: performance.now(), swiped: false });
   if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result' || A.run.phase === 'outcome')) skipPhase();
   else micro()?.input('press', x, y);
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (A.screen === 'pinball') return;
+  if (isExtra()) return;
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   micro()?.input('move', x, y);
@@ -142,7 +142,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const up = (e) => {
-  if (A.screen === 'pinball') return;
+  if (isExtra()) return;
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   touch.id = null;
@@ -153,9 +153,9 @@ canvas.addEventListener('pointercancel', up);
 
 const KEY_SWIPE = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyQ: 'left', KeyZ: 'up' };
 window.addEventListener('keydown', (e) => {
-  if (A.screen === 'pinball') {
-    // Eul' Flipper listens to the keyboard itself; Escape leaves it.
-    if (e.code === 'Escape') leavePinball();
+  if (isExtra()) {
+    // Eul' Flipper and 103 SPX listen to the keyboard themselves; Escape leaves the flipper (103 SPX handles its own).
+    if (e.code === 'Escape' && A.screen === 'pinball') leavePinball();
     return;
   }
   if (e.repeat) return;
@@ -172,7 +172,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && A.screen === 'run') togglePause();
 });
 window.addEventListener('keyup', (e) => {
-  if (A.screen === 'pinball') return;
+  if (isExtra()) return;
   if (e.code === 'Space' || e.code === 'Enter') micro()?.input('release', 200, A.H * 0.55);
 });
 document.addEventListener('visibilitychange', () => {
@@ -378,7 +378,7 @@ function togglePause() {
 
 function update(dt) {
   A.t += dt;
-  if (A.screen === 'pinball') {
+  if (isExtra()) {
     A.fx.update(dt);
     return;
   }
@@ -437,7 +437,7 @@ function draw() {
   const [ox, oy] = A.fx.offset();
   c.save();
   c.translate(ox, oy);
-  if (A.screen === 'pinball') stageBg(['#2a1559', '#0a6d93']);
+  if (isExtra()) stageBg(['#2a1559', '#0a6d93']);
   else if (A.screen === 'home') drawHome();
   else if (A.screen === 'run') drawRun();
   else drawOverBg();
@@ -973,11 +973,120 @@ function renderPinballUI() {
   top.onclick = () => openRecords('flipper');
 }
 
+// ---- 103 SPX ----------------------------------------------------------------------------
+
+let spxModule = null;
+
+/** The bonus games with a screen of their own (they take the input and the drawing). */
+function isExtra() {
+  return A.screen === 'pinball' || A.screen === 'spx';
+}
+
+/** Opens 103 SPX: Panda's moped ride home through Montceau (3D, loaded on demand). */
+async function startSpxRide() {
+  unlock();
+  sfx.click();
+  disposeSpx();
+  A.screen = 'spx';
+  A.paused = false;
+  A.sxDone = false;
+  A.sxResult = null;
+  stopGroove();
+  renderUI();
+  try {
+    spxModule = spxModule || (await import('../spx/index.js'));
+    if (A.screen !== 'spx') return;
+    const root = document.createElement('div');
+    root.className = 'm-flipper-root';
+    phone.insertBefore(root, ui);
+    A.sxRoot = root;
+    A.sx = await spxModule.startSpx({
+      root,
+      lang: locale(),
+      sound: !isMuted(),
+      auto: params.has('spxauto'),
+      onGameOver: ({ score, summary }) => spxOver(score, summary),
+      onExit: leaveSpx,
+      onError: reportError,
+    });
+    if (!isMuted()) startGroove(112, 0.22);
+    renderUI();
+  } catch (err) {
+    reportError(err);
+    leaveSpx();
+  }
+}
+
+function disposeSpx() {
+  try {
+    A.sx?.dispose?.();
+  } catch (err) {
+    reportError(err);
+  }
+  A.sx = null;
+  A.sxRoot?.remove();
+  A.sxRoot = null;
+}
+
+function spxOver(score = 0, summary = {}) {
+  if (A.sxDone) return;
+  A.sxDone = true;
+  let res = { meta: A.meta, rank: 0, newBest: false };
+  try {
+    res = applySpx(A.meta, { score, hero: A.meta.hero, time: summary.time || 0, finished: !!summary.finished });
+    A.meta = res.meta;
+    persist();
+    askPersist();
+  } catch (err) {
+    reportError(err);
+  }
+  A.sxResult = { ...res, score, summary };
+  if (res.newBest && score > 0) sfx.best();
+  renderUI();
+}
+
+function leaveSpx() {
+  disposeSpx();
+  A.screen = 'home';
+  A.paused = false;
+  A.sxDone = false;
+  startGroove(88, 0.25);
+  renderUI();
+}
+
+function renderSpxUI() {
+  if (!A.sx && !A.sxDone) {
+    el('div', 'm-chip m-loading', ui, t('spx.loading'));
+    return;
+  }
+  if (!A.sxDone) return;
+  const r = A.sxResult;
+  const sum = r.summary || {};
+  const card = el('div', 'm-card m-over', ui);
+  el('div', 'm-band', card);
+  el('h2', '', card, sum.finished ? t('spx.over') : t('spx.crashed'));
+  el('div', 'm-score', card, r.score.toLocaleString(locale()));
+  if (r.newBest && r.score > 0) el('div', 'm-badge', card, `🏆 ${t('m.new_best')}`);
+  const stats = el('div', 'm-stats', card);
+  if (sum.time) el('span', '', stats, `⏱️ ${t('spx.time')} ${Math.floor(sum.time / 60)}:${String(Math.round(sum.time % 60)).padStart(2, '0')}`);
+  el('span', '', stats, `🚬 ${sum.clopes ?? 0}`);
+  el('span', '', stats, `${t('spx.best')} ${A.meta.spx.best.toLocaleString(locale())}`);
+  if (r.rank > 0) el('span', 'm-gold', stats, `🏆 ${t('spx.rank', { n: r.rank })}`);
+  const again = el('button', 'm-btn m-play', ui, t('m.replay'));
+  again.onclick = startSpxRide;
+  const row = el('div', 'm-row', ui);
+  const menu = el('button', 'm-btn m-ghost', row, t('m.menu'));
+  menu.onclick = leaveSpx;
+  const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('spx.scores')}`);
+  top.onclick = () => openRecords('spx');
+}
+
 function renderUI() {
   ui.textContent = '';
   if (A.screen === 'home') renderHome();
   else if (A.screen === 'run') renderRunUI();
   else if (A.screen === 'pinball') renderPinballUI();
+  else if (A.screen === 'spx') renderSpxUI();
   else renderOver();
 }
 
@@ -1053,6 +1162,9 @@ function renderHome() {
   const best = A.meta.pinball.best;
   const flip = el('button', 'm-btn m-ghost m-flipper', ui, `${t('pb.play')}${best ? ` · ${best.toLocaleString(locale())}` : ''}`);
   flip.onclick = startPinball;
+  const spxBest = A.meta.spx.best;
+  const spx = el('button', 'm-btn m-ghost m-flipper m-spx', ui, `${t('spx.play')}${spxBest ? ` · ${spxBest.toLocaleString(locale())}` : ''}`);
+  spx.onclick = startSpxRide;
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
@@ -1244,7 +1356,7 @@ function openRecords(tab = 'gang') {
   sfx.click();
   const panel = sheet(`🏆 ${t('m.records')}`);
   const tabs = el('div', 'm-tabs', panel);
-  for (const id of ['gang', 'mine', 'flipper']) {
+  for (const id of ['gang', 'mine', 'flipper', 'spx']) {
     const b = el('button', `m-tab${id === tab ? ' on' : ''}`, tabs, t(`m.tab_${id}`));
     b.onclick = () => {
       ui.querySelector('.m-sheet-back')?.remove();
@@ -1253,6 +1365,12 @@ function openRecords(tab = 'gang') {
     };
   }
   const date = (at) => (at ? new Date(at).toLocaleDateString(locale()) : '');
+  if (tab === 'spx') {
+    const list = A.meta.spx.scores;
+    if (!list.length) el('p', 'm-empty', panel, t('spx.none'));
+    list.forEach((x, i) => recordRow(panel, i + 1, x.hero, x.score.toLocaleString(locale()), `${x.finished ? '🏠' : '💥'} ${x.time ? `${Math.floor(x.time / 60)}:${String(x.time % 60).padStart(2, '0')} · ` : ''}${date(x.at)}`));
+    return;
+  }
   if (tab === 'flipper') {
     const list = A.meta.pinball.scores;
     if (!list.length) el('p', 'm-empty', panel, t('pb.none'));

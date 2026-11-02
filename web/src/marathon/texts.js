@@ -33,6 +33,33 @@ registerTexts('pb', {
   },
 });
 
+registerTexts('spx', {
+  en: {
+    play: '🛵 103 SPX',
+    loading: 'Warming up the 103…',
+    over: 'Home at Panda’s!',
+    crashed: 'The 103 is dead…',
+    best: '103 SPX record',
+    scores: '103 SPX top 10',
+    none: 'No ride on the 103 yet.',
+    rank: '#{n} of your rides',
+    time: 'Time',
+    home: 'Got home',
+  },
+  fr: {
+    play: '🛵 103 SPX',
+    loading: 'Eul’ 103 chauffe…',
+    over: 'Arrivé chez Panda !',
+    crashed: 'Eul’ 103 y’est morte…',
+    best: 'Record 103 SPX',
+    scores: 'Top 10 103 SPX',
+    none: 'Pas encore de balade en 103.',
+    rank: 'N°{n} de tes balades',
+    time: 'Chrono',
+    home: 'Arrivé',
+  },
+});
+
 registerTexts('m', {
   en: {
     tagline: 'Micro-games with the gang. Faster. And faster.',
@@ -91,6 +118,7 @@ registerTexts('m', {
     install_ios: 'In Safari, tap the Share button (square with an arrow), then "Add to Home Screen".',
     install_offline: 'Once installed, the game opens full screen from your home screen and plays even without a network.',
     tab_flipper: 'Flipper',
+    tab_spx: '103 SPX',
     tab_gang: 'The gang',
     loading: 'Loading…',
     gang_empty: "Nobody on the board yet. Be the first!",
@@ -161,6 +189,7 @@ registerTexts('m', {
     install_ios: 'Dans Safari, touche eul’ bouton Partager (carré avec une flèche), puis « Sur l’écran d’accueil ».',
     install_offline: 'Une fois installé, eul’ jeu s’ouvre en plein écran depuis ton écran d’accueil et marche même sans réseau.',
     tab_flipper: 'Flipper',
+    tab_spx: '103 SPX',
     tab_gang: 'La bande',
     loading: 'Chargement…',
     gang_empty: "Personne au Panthéon pour l'instant. Sois eul’ premier !",

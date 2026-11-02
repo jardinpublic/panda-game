@@ -110,6 +110,7 @@ button { font-family: var(--font); cursor: pointer; border: 0; }
 .m-podium-3 .m-record-rank { color: #c27a4a; font-size: 20px; }
 
 .m-flipper { margin-top: 12px; font-size: 17px; padding: 9px 22px; }
+.m-spx { margin-top: 8px; }
 .m-pb-quit { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; width: 36px; height: 36px; font-size: 14px; }
 
 /* Eul' Flipper: the 3D table fills the phone under the overlay (cards stay on top). */

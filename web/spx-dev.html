@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>103 SPX (dev)</title>
+    <link rel="icon" href="cast/panda.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      #root { position: fixed; inset: 0; }
+      #over { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; color: #fff; font: 600 18px system-ui, sans-serif; background: rgba(0,0,0,0.7); z-index: 5; }
+      #over[hidden] { display: none; }
+      #over button { font: inherit; padding: 8px 18px; border-radius: 10px; border: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="over" hidden><div id="msg"></div><button id="again" type="button">Rejouer</button></div>
+    <script type="module">
+      // Dev page for 103 SPX: ?auto (the bot rides), ?lang=en, ?mute. Not linked from the game.
+      import { startSpx } from "./src/spx/index.js";
+      const params = new URLSearchParams(location.search);
+      const root = document.getElementById("root");
+      const over = document.getElementById("over");
+      const msg = document.getElementById("msg");
+      let handle = null;
+      async function play() {
+        over.hidden = true;
+        handle = await startSpx({
+          root,
+          lang: params.get("lang") || "fr",
+          sound: !params.has("mute"),
+          auto: params.has("auto"),
+          onGameOver({ score }) {
+            msg.textContent = "Fin : " + score.toLocaleString("fr-FR");
+            over.hidden = false;
+          },
+          onExit() {
+            handle.dispose();
+            handle = null;
+            msg.textContent = "Quitté";
+            over.hidden = false;
+          },
+          onError(err) {
+            window.__spxError = String(err && err.stack || err);
+          }
+        });
+        window.__spx = handle;
+      }
+      document.getElementById("again").onclick = () => {
+        if (handle) handle.dispose();
+        play();
+      };
+      play();
+    </script>
+  </body>
+</html>
