@@ -180,4 +180,30 @@ describe('online Hall of Fame', () => {
     expect(await net.send(rowFor(meta, 'flipper'))).toBe('sent');
     expect((await net.board('flipper')).map((r) => [r.name, r.score])).toEqual([['Cous', 900000]]);
   });
+
+  it('after a reset, an old "sent" mark from the stored save does not hold back the new record', () => {
+    // The stored save, from before the reset: old record, marked as sent
+    const stored = player('Cous');
+    stored.pinball = { best: 47000000, games: 3, scores: [{ score: 47000000, hero: 'panda', at: NOW - 5000 }] };
+    stored.online.sent.flipper = 47000000;
+    stored.updated = 1;
+    // This launch: the reset arrived, sent marks cleared, then a new record
+    let mine = JSON.parse(JSON.stringify(stored));
+    mine.online.since = NOW;
+    mine.online.sent = { marathon: 0, flipper: 0, spx: 0 };
+    dropOldRecords(mine);
+    mine = applyPinball(mine, { score: 4000000, hero: 'panda', at: NOW + 1000 }).meta;
+    mine.updated = 2;
+    // Saving merges with the stored copy (the most sent of both)
+    const merged = mergeMeta(stored, mine);
+    expect(merged.pinball.best).toBe(4000000);
+    expect(toSend(merged, NOW + 2000)).toEqual(['flipper']);
+    // The phone that already saved the stale mark is repaired on load
+    const stale = JSON.parse(JSON.stringify(merged));
+    stale.online.sent.flipper = 47000000;
+    expect(toSend(normalizeMeta(stale), NOW + 2000)).toEqual(['flipper']);
+    // Once sent, it stays sent
+    merged.online.sent.flipper = 4000000;
+    expect(toSend(normalizeMeta(merged), NOW + 2000)).toEqual([]);
+  });
 });

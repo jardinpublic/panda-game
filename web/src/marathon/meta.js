@@ -106,6 +106,10 @@ export function dropOldRecords(m) {
   m.pinball.best = m.pinball.scores[0]?.score || 0;
   m.spx.scores = keep(m.spx.scores);
   m.spx.best = m.spx.scores[0]?.score || 0;
+  // A "sent" mark above what is left is an old record's: the new best must go out
+  // (merging with an older copy of the save brings those marks back, hence here)
+  const bests = { marathon: m.best, flipper: m.pinball.best, spx: m.spx.best };
+  for (const game of Object.keys(bests)) if (m.online.sent[game] > bests[game]) m.online.sent[game] = 0;
   return m;
 }
 
