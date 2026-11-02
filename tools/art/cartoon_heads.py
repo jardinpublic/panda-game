@@ -71,9 +71,10 @@ def ears(p, line):
     h = p["head"]
     out = []
     y = h["ear_y"]
+    k = p.get("ears", 1.0)
     for side in (-1, 1):
         x = CX + side * (h["w"] - 4)
-        d = (f"M {x},{y - 26} C {x + side * 30},{y - 36} {x + side * 34},{y + 18} {x + side * 4},{y + 26}")
+        d = (f"M {x},{y - 26 * k} C {x + side * 30 * k},{y - 36 * k} {x + side * 34 * k},{y + 18 * k} {x + side * 4},{y + 26 * k}")
         out.append(path(d + " Z", p["skin"], line, 4))
         out.append(path(f"M {x + side * 6},{y - 12} C {x + side * 20},{y - 14} {x + side * 20},{y + 8} {x + side * 8},{y + 12}", "none", darker(p["skin"], 0.7), 3))
     return "".join(out)
@@ -228,7 +229,7 @@ def beard(p, mouth_y, line, front):
                          (h["jaw"], h["chin"] - 40), (h["chin_w"] + 6, h["chin"] - 4), (0, h["chin"] + 2)])
         out.append(path(smooth(region), col, extra=f'opacity="{0.12 * dens}"'))
         import random
-        rnd = random.Random(hash(p["id"]) & 0xFFFF)
+        rnd = random.Random(sum(ord(ch) * (i + 1) for i, ch in enumerate(p["id"])))  # same dots every run
         for _ in range(int(55 * dens)):
             u = rnd.uniform(-1, 1)
             v = rnd.uniform(0, 1)
@@ -356,6 +357,25 @@ def hair(p, line, layer):
         out.append(f'<circle cx="{CX}" cy="{top - 22}" r="6" fill="{lighter(cap, 0.3)}"/>')
         out.append(path(f"M {CX - w * 0.5},{top - 4} Q {CX},{top - 20} {CX + w * 0.5},{top - 2}", "none", lighter(cap, 0.25), 4, 'opacity="0.8"'))
         return "".join(out)
+    if style == "crop":
+        # Short cropped hair close to the skull, receding at the temples (M line),
+        # short spiky fringe, faded sides.
+        bay = hs.get("bay", 50)
+        pts = [(CX - w + 2, h["ear_y"] - 34), (CX - w - 2, top + 44), (CX - w * 0.55, top - 6), (CX, top - 12), (CX + w * 0.55, top - 6),
+               (CX + w + 2, top + 44), (CX + w - 2, h["ear_y"] - 34), (CX + w - 14, top + 74),
+               (CX + w * 0.6, top + bay), (CX + w * 0.4, top + bay * 0.5), (CX + w * 0.2, top + bay * 0.45),
+               (CX, top + bay * 0.55), (CX - w * 0.2, top + bay * 0.45), (CX - w * 0.4, top + bay * 0.5),
+               (CX - w * 0.6, top + bay), (CX - w + 14, top + 74)]
+        out.append(path(smooth(pts), col, edge, 3.5))
+        # Short spikes along the front line.
+        for dx in (-34, -17, 0, 17, 34):
+            y0 = top + bay * 0.5 + (2 if dx == 0 else 0)
+            out.append(path(f"M {CX + dx - 7},{y0 - 2} L {CX + dx},{y0 + 9} L {CX + dx + 7},{y0 - 2} Z", col, edge, 2.5))
+        # Faded sides: the skin shows through.
+        for side in (-1, 1):
+            out.append(f'<ellipse cx="{CX + side * (w - 6)}" cy="{h["ear_y"] - 50}" rx="9" ry="22" fill="{p["skin"]}" opacity="0.45"/>')
+        out.append(path(f"M {CX - w * 0.5},{top + 8} Q {CX},{top - 8} {CX + w * 0.5},{top + 8}", "none", shine, 3.5, 'opacity="0.55"'))
+        return "".join(out)
     if style == "temples":
         # Hair on top, but receding: deep bays at the temples, a higher front line.
         bay = hs.get("bay", 56)
@@ -419,19 +439,19 @@ def friend(id, skin, head=None, **traits):
 
 
 CAST = [
-    friend("panda", "#f2c3a0", head={"w": 112, "chin": 380, "jaw": 76, "chin_w": 30},
-           hair={"style": "temples", "color": "#7b5a41", "bay": 60},
-           eyes={"y": 220, "dx": 50, "kind": "lidded", "iris": "#6f8fae"},
-           brows={"color": "#5a4130", "inner": 4, "outer": -2, "arch": 10},
-           glasses={"kind": "rect", "color": "#151515", "w": 33, "h": 25, "sw": 8},
-           nose={"len": 78, "w": 18}, mouth={"kind": "smirk", "w": 40},
-           beard={"kind": "stubble", "color": "#6b5140", "density": 1.0}),
-    friend("cous", "#f4cbb0", head={"w": 112, "chin": 384, "jaw": 78, "chin_w": 32},
+    friend("panda", "#f3b8a0", head={"w": 124, "chin": 368, "jaw": 98, "chin_w": 46, "cheek_y": 262},
+           hair={"style": "crop", "color": "#5a3e2c", "bay": 54},
+           eyes={"y": 222, "dx": 50, "kind": "open", "iris": "#86a0b6", "size": 0.92},
+           brows={"color": "#4a3324", "inner": 0, "outer": 2, "arch": 3, "sw": 9, "w": 21},
+           glasses={"kind": "rect", "color": "#141414", "w": 34, "h": 23, "sw": 8.5, "rx": 6},
+           nose={"len": 60, "w": 18}, mouth={"kind": "smirk", "w": 34, "dy": 20},
+           beard={"kind": "stubble", "color": "#6b4a36", "density": 0.9}, ears=1.25),
+    friend("cous", "#f4cbb0", head={"w": 106, "chin": 392, "jaw": 74, "chin_w": 30, "cheek_y": 258},
            hair={"style": "messy", "color": "#d9b866"},
-           eyes={"y": 226, "dx": 48, "kind": "lidded", "iris": "#6d8a6a"},
+           eyes={"y": 226, "dx": 46, "kind": "lidded", "iris": "#6d8a6a"},
            brows={"color": "#b8964f", "inner": 6, "outer": 0},
-           nose={"len": 70, "w": 17}, mouth={"kind": "smile", "w": 38},
-           beard={"kind": "stubble", "color": "#c79a52", "density": 1.4}),
+           nose={"len": 72, "w": 16}, mouth={"kind": "smile", "w": 34, "dy": 22},
+           beard={"kind": "stubble", "color": "#b8853f", "density": 2.4}),
     friend("mamar", "#eec19c", head={"w": 120, "jaw": 88, "top": 64},
            hair={"style": "bald", "color": "#a0623a"},
            eyes={"y": 214, "dx": 48, "kind": "smiley", "iris": "#4f6f4a"},

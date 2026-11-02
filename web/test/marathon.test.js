@@ -5,12 +5,14 @@ import { emptyMeta, applyRun, buy, refillMissions, normalizeMeta, mergeMeta, top
 const seq = (values) => { let i = 0; return () => values[i++ % values.length]; };
 
 describe('marathon rules', () => {
-  it('never repeats one of the last three micro-games', () => {
-    const run = createMarathon({ pool: ['a', 'b', 'c', 'd', 'e'], random: Math.random });
-    const played = [];
-    for (let i = 0; i < 200; i++) played.push(run.next());
-    for (let i = 3; i < played.length; i++) {
-      expect(played.slice(i - 3, i)).not.toContain(played[i]);
+  it('plays every game once before any comes again, never twice in a row', () => {
+    const pool = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    for (let seed = 1; seed <= 20; seed++) {
+      const run = createMarathon({ pool, random: seq([0.13, 0.71, 0.42, 0.9, 0.05, 0.66, 0.3].map((x) => (x * seed) % 1)) });
+      const played = [];
+      for (let i = 0; i < pool.length * 4; i++) played.push(run.next());
+      for (let d = 0; d < 4; d++) expect(new Set(played.slice(d * pool.length, (d + 1) * pool.length)).size).toBe(pool.length);
+      for (let i = 1; i < played.length; i++) expect(played[i]).not.toBe(played[i - 1]);
     }
   });
 

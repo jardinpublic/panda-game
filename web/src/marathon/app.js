@@ -72,6 +72,8 @@ if (!VOLATILE) {
     if (!document.querySelector('.m-sheet')) renderUI();
   });
 }
+// A mission about a game that no longer exists is dropped and replaced.
+A.meta.missions = A.meta.missions.filter((m) => m.kind !== 'game' || byId(m.game));
 A.meta = refillMissions(A.meta, pickGameId);
 persist();
 

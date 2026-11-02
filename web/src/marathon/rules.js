@@ -11,6 +11,16 @@ export const LIVES = 3;
 export const BOSS_EVERY = 10;
 export const MAX_SPEED = 2.2;
 
+/** A shuffled copy of list (Fisher-Yates). */
+export function shuffle(list, random = Math.random) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
   const s = {
     level: 0, // micro-games played
@@ -20,7 +30,7 @@ export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
     bestStreak: 0,
     score: 0,
     coins: 0,
-    last: [],
+    deck: [],
     stats: {}, // id -> {won, lost}
     current: null,
 
@@ -35,13 +45,20 @@ export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
     isBoss() {
       return s.level > 0 && (s.level + 1) % BOSS_EVERY === 0;
     },
-    /** Picks the next micro-game, never one of the last three played. */
+    /**
+     * Picks the next micro-game from a shuffled deck: every game comes once,
+     * in random order, before any comes again. A new deck never starts with
+     * the game just played.
+     */
     next() {
-      const fresh = pool.filter((id) => !s.last.includes(id));
-      const choices = fresh.length ? fresh : pool;
-      s.current = choices[Math.floor(random() * choices.length)];
-      s.last.push(s.current);
-      if (s.last.length > Math.min(3, pool.length - 1)) s.last.shift();
+      if (!s.deck.length) {
+        s.deck = shuffle(pool, random);
+        if (pool.length > 1 && s.deck[s.deck.length - 1] === s.current) {
+          const swap = Math.floor(random() * (s.deck.length - 1));
+          [s.deck[swap], s.deck[s.deck.length - 1]] = [s.deck[s.deck.length - 1], s.deck[swap]];
+        }
+      }
+      s.current = s.deck.pop();
       return s.current;
     },
     /** Records the outcome of the current micro-game. Returns {gained, lostLife}. */
