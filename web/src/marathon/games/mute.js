@@ -305,7 +305,7 @@ export default {
       c.restore();
       // Little reactions.
       if (heard) {
-        const word = tile.laugh ? g.tr({ en: 'HAHA', fr: 'MDR' }) : g.tr({ en: 'Yuck!', fr: 'Beurk !' });
+        const word = tile.laugh ? g.tr({ en: 'CHEH!', fr: 'CHEH !' }) : g.tr({ en: 'Yuck!', fr: 'Beurk !' });
         text(c, word, x + tw / 2, y + 18 + Math.sin(s.t * 12 + i) * 3, { size: 18, color: tile.laugh ? PAL.mango : '#b8f27a', stroke: 'rgba(20,20,30,0.6)' });
       } else if (confused) {
         text(c, '?', x + tw - 18, y + 22, { size: 24, color: PAL.cream });

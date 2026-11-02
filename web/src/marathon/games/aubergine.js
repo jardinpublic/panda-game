@@ -237,7 +237,7 @@ export default {
           g.fx.burst(cx, cy, { kind: 'smoke', n: 10, speed: 70 });
           g.fx.text(cx, cy - 60, g.tr({ en: 'Tiny!', fr: 'Riquiqui !' }), { size: 26, color: PAL.coral });
           g.fx.shake(8);
-          g.say(villainX(), peopleY - 150, g.tr({ en: "Hahaha! That's a baby one!", fr: "Hahaha ! C'est un bébé, ça !" }), 1.5);
+          g.say(villainX(), peopleY - 150, g.tr({ en: "Cheh! That's a baby one!", fr: "Cheh ! C'est un bébé, ça !" }), 1.5);
           g.lose();
         }
       },

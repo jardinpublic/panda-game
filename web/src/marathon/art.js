@@ -219,7 +219,8 @@ export function head(c, id, x, y, h, { rot = 0, flip = false, squash = 1, hat = 
     ellipse(c, 0, -h * 0.05, w * 0.42, h * 0.4, OUTFITS[id]?.skin || '#f0c3a3');
     text(c, (id || '?')[0].toUpperCase(), 0, -h * 0.05, { size: h * 0.3, color: PAL.ink, shadow: false });
   }
-  if (hat && hat !== 'none') drawHat(c, hat, -w * 0.03, -h * 0.4, w * 0.62);
+  // Anchor: the top of the hair on the cartoon heads (tools/art/cartoon_heads.py).
+  if (hat && hat !== 'none') drawHat(c, hat, 0, -h * 0.33, w * 0.62);
   c.restore();
 }
 
@@ -259,7 +260,7 @@ export function drawHat(c, hat, x, y, w) {
     c.ellipse(w * 0.48, -w * 0.38, w * 0.16, w * 0.08, -1.1, 0, Math.PI * 2);
     c.fill();
   } else if (hat === 'shades') {
-    c.translate(0, w * 0.62);
+    c.translate(0, w * 0.68);
     c.fillStyle = '#121218';
     rrect(c, -w * 0.48, -w * 0.06, w * 0.42, w * 0.2, w * 0.08);
     c.fill();
@@ -291,6 +292,20 @@ export function drawHat(c, hat, x, y, w) {
     c.closePath();
     c.fill();
     circle(c, 0, -w * 0.12, w * 0.06, PAL.hibiscus);
+  } else if (hat === 'citroen') {
+    // The Citroën double chevron, drawn on the forehead in blue marker by a friend.
+    const fy = w * 0.34;
+    c.strokeStyle = 'rgba(40, 90, 210, 0.85)';
+    c.lineWidth = w * 0.065;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    for (const dy of [0, w * 0.15]) {
+      c.beginPath();
+      c.moveTo(-w * 0.26, fy + dy + w * 0.08);
+      c.lineTo(-w * 0.01, fy + dy - w * 0.035);
+      c.lineTo(w * 0.25, fy + dy + w * 0.075);
+      c.stroke();
+    }
   } else if (hat === 'flower') {
     hibiscus(c, -w * 0.3, w * 0.1, w * 0.22, 0.4);
   }

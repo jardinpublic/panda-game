@@ -18,6 +18,7 @@ export const HATS = [
   { id: 'none', price: 0 },
   { id: 'shades', price: 30 },
   { id: 'flower', price: 50 },
+  { id: 'citroen', price: 70 },
   { id: 'bakoua', price: 90 },
   { id: 'madras', price: 140 },
   { id: 'party', price: 200 },

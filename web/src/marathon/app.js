@@ -16,6 +16,7 @@ import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } fr
 import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
+import { makeShareCard } from './sharecard.js';
 import './texts.js';
 
 const params = new URLSearchParams(location.search);
@@ -282,6 +283,8 @@ function finishMicroGame() {
   r.last = won ? 'win' : 'lose';
   r.outcomeWord = t(won ? 'm.win' : 'm.lose');
   r.rival = r.micro.g.cast(...(r.def.rival || ['cous']));
+  // When the hero loses, the rival rubs it in (picked once, so it does not flicker).
+  r.tease = t('m.tease');
   r.endFx = 0;
   r.phase = 'outcome';
   r.phaseT = 0;
@@ -816,7 +819,7 @@ function drawOutcome(r) {
     if (k > 0.9) art.text(c, g.tr(r.def.winLine), 200, bar + 70, { size: 22, color: '#fff', stroke: PAL.palm, max: 380 });
   } else {
     if (k > 1.2) art.bubble(c, g.tr(r.def.loseLine), 150, heroHeadTop, { size: 18, maxW: 260 });
-    if (k > 2.2) art.bubble(c, g.tr({ en: 'Hahaha!', fr: 'Hahaha !' }), 320, rivalHeadTop, { size: 16 });
+    if (k > 2.2) art.bubble(c, r.tease, 320, rivalHeadTop, { size: 16, maxW: 250 });
   }
   // The stamp.
   const s = 0.3 + 0.7 * easeOutBack(Math.min(1, k * 5));
@@ -925,6 +928,7 @@ function renderOver() {
     renderUI();
   };
   const share = el('button', 'm-btn m-ghost', row, `💬 ${t('m.share')}`);
+  prepareCard(r);
   share.onclick = () => brag(r);
   if (r.m.score > 0) {
     const send = el('button', 'm-btn m-ghost m-send', ui, r.sent ? `✅ ${t('m.sent')}` : `📤 ${t('m.send')}`);
@@ -933,20 +937,49 @@ function renderOver() {
   }
 }
 
+/** Prepares the score card picture as soon as the game-over screen shows (sharing must stay inside the tap). */
+function prepareCard(r) {
+  if (r.card) return;
+  r.card = makeShareCard({
+    score: r.m.score,
+    reached: t('m.reached', { n: r.m.level }),
+    best: !!(r.result?.newBest && r.m.score > 0),
+    record: t('m.new_best'),
+    hero: A.meta.hero,
+    hat: A.meta.hat,
+    url: location.href.split('?')[0],
+  }).catch(() => null);
+  r.card.then((file) => (r.cardFile = file));
+}
+
+/** Shares the run: the score card picture and a line of text (WhatsApp from the phone's share menu). */
 async function brag(r) {
   const url = location.href.split('?')[0];
   const text = t('m.share_text', { n: r.m.level, score: r.m.score, url });
+  const file = r.cardFile;
   try {
+    if (file && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], text });
+      return;
+    }
     if (navigator.share) {
       await navigator.share({ text });
       return;
     }
-  } catch {
-    return;
+  } catch (e) {
+    if (e?.name === 'AbortError') return;
+  }
+  // No share menu (a computer): download the picture and copy the text.
+  if (file) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = file.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
   try {
     await navigator.clipboard.writeText(text);
-    toast(t('m.copied'));
+    toast(t(file ? 'm.card_saved' : 'm.copied'));
   } catch {
     toast(text);
   }
@@ -1115,6 +1148,7 @@ const HAT_NAMES = {
   none: { en: 'No hat', fr: 'Sans' },
   shades: { en: 'Shades', fr: 'Lunettes' },
   flower: { en: 'Hibiscus', fr: 'Hibiscus' },
+  citroen: { en: 'Citroën', fr: 'Citroën' },
   bakoua: { en: 'Bakoua', fr: 'Bakoua' },
   madras: { en: 'Madras', fr: 'Madras' },
   party: { en: 'Party', fr: 'Fête' },

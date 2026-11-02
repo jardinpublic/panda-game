@@ -118,7 +118,7 @@ export default {
                 g.fx.shake(14);
                 g.fx.burst(s.x, headY - 10, { kind: 'spark', n: 16, colors: ['#fff3a0', '#ffffff', PAL.mango], speed: 220 });
                 g.fx.text(s.x, headY - 60, 'BONK!', { size: 34, color: PAL.mango });
-                g.say(300, g.H * 0.86 - 80, g.tr({ en: 'Hahaha! Bonk!', fr: 'Hahaha ! Bonk !' }), 1.4);
+                g.say(300, g.H * 0.86 - 80, g.tr({ en: 'Cheh! Bonk!', fr: 'Cheh ! Bonk !' }), 1.4);
                 g.lose();
               } else {
                 nut.state = 'drop';
