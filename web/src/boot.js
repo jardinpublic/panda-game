@@ -89,7 +89,12 @@ function keepOffline() {
 /** A small banner: a new version of the game is ready. */
 function showUpdate(worker) {
   if (document.querySelector('.m-update')) return;
-  const fr = (navigator.language || '').toLowerCase().startsWith('fr');
+  let fr = true;
+  try {
+    fr = localStorage.getItem('pandadventures.lang') !== 'en';
+  } catch {
+    // No storage: French, like the game.
+  }
   const bar = document.createElement('button');
   bar.className = 'm-update';
   bar.textContent = fr ? 'Nouvelle version prête : touche pour mettre à jour' : 'New version ready: tap to update';

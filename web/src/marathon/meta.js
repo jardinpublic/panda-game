@@ -130,7 +130,7 @@ export function applyRun(meta, run) {
   next.coins += run.coins;
   const newBest = run.score > next.best;
   next.best = Math.max(next.best, run.score);
-  const entry = { score: run.score, level: run.level, hero: run.hero || next.hero, at: run.at || Date.now() };
+  const entry = { score: run.score, level: run.level, streak: Math.max(0, Math.round(run.bestStreak || 0)), hero: run.hero || next.hero, at: run.at || Date.now() };
   next.scores = topScores([...(next.scores || []), entry]);
   const rank = next.scores.indexOf(next.scores.find((x) => x.score === entry.score && x.at === entry.at)) + 1;
   const completed = [];

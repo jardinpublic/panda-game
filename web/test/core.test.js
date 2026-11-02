@@ -4,11 +4,11 @@ import { emptySave, recordRun, bestStars, isUnlocked, totalStars } from '../src/
 import { createRunState } from '../src/worlds/w01-escape/rules.js';
 
 describe('i18n', () => {
-  it('picks French for any fr-* browser language and English otherwise', () => {
-    expect(pickInitial('fr-FR')).toBe('fr');
-    expect(pickInitial('FR')).toBe('fr');
-    expect(pickInitial('en-US')).toBe('en');
-    expect(pickInitial('')).toBe('en');
+  it('starts in French unless English was chosen with the button', () => {
+    expect(pickInitial(null)).toBe('fr');
+    expect(pickInitial('fr')).toBe('fr');
+    expect(pickInitial('en')).toBe('en');
+    expect(pickInitial('en-US')).toBe('fr');
   });
 });
 

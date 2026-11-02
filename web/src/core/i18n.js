@@ -1,14 +1,24 @@
-// English / French text. The game starts in the browser language and can be
-// switched live; every visible string goes through t().
+// English / French text. The game starts in French (the gang's language),
+// whatever the phone's language; the language button switches it live and the
+// choice is remembered. Every visible string goes through t().
 
 import { STRINGS } from './strings.js';
 
+const LANG_KEY = 'pandadventures.lang';
 const LISTENERS = new Set();
-let current = pickInitial(typeof navigator !== 'undefined' ? navigator.language : 'en');
+let current = pickInitial(readChoice());
 
-/** Maps a browser language to a supported locale ("fr" for any fr-*, else "en"). */
-export function pickInitial(language) {
-  return String(language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+/** The starting locale: the language chosen earlier with the button, else French. */
+export function pickInitial(chosen) {
+  return chosen === 'en' ? 'en' : 'fr';
+}
+
+function readChoice() {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_KEY) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function locale() {
@@ -17,6 +27,12 @@ export function locale() {
 
 export function setLocale(next) {
   current = next === 'fr' ? 'fr' : 'en';
+  try {
+    localStorage.setItem(LANG_KEY, current);
+  } catch {
+    // No storage (private mode, tests): the choice lasts until the page closes.
+  }
+  if (typeof document !== 'undefined') document.documentElement.lang = current;
   LISTENERS.forEach((fn) => fn(current));
 }
 

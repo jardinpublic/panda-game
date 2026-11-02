@@ -1240,11 +1240,11 @@ function recordRow(panel, rank, hero, title, meta) {
   return row;
 }
 
-function openRecords(tab = 'mine') {
+function openRecords(tab = 'gang') {
   sfx.click();
   const panel = sheet(`🏆 ${t('m.records')}`);
   const tabs = el('div', 'm-tabs', panel);
-  for (const id of ['mine', 'flipper', 'gang']) {
+  for (const id of ['gang', 'mine', 'flipper']) {
     const b = el('button', `m-tab${id === tab ? ' on' : ''}`, tabs, t(`m.tab_${id}`));
     b.onclick = () => {
       ui.querySelector('.m-sheet-back')?.remove();
@@ -1262,12 +1262,17 @@ function openRecords(tab = 'mine') {
   if (tab === 'mine') {
     if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
     A.meta.scores.forEach((x, i) => recordRow(panel, i + 1, x.hero, String(x.score), `${t('m.reached', { n: x.level })} · ${date(x.at)}`));
+    postButton(panel);
     return;
   }
+  const post = postButton(panel);
   const status = el('p', 'm-empty', panel, t('m.loading'));
   loadBoard().then((board) => {
     status.remove();
     const players = ranking(board);
+    // My record is already on the board: nothing to post
+    const best = A.meta.scores[0];
+    if (post && best && players.some((p) => p.best.score === best.score && p.best.at === best.at)) markPosted(post, t('m.on_board'));
     if (!players.length) el('p', 'm-empty', panel, t('m.gang_empty'));
     players.forEach((p, i) => {
       const row = recordRow(panel, i + 1, p.best.hero, `${p.best.score}  ·  ${p.login}`, `${t('m.reached', { n: p.best.level })} · ${date(p.best.at)}`);
@@ -1297,9 +1302,33 @@ function sendScore(r, button) {
   const payload = buildPayload({ score: r.m.score, level: r.m.level, bestStreak: r.m.bestStreak, hero: A.meta.hero, at: r.endedAt });
   window.open(issueUrl(payload, locale()), '_blank', 'noopener');
   r.sent = true;
-  button.disabled = true;
-  button.textContent = `✅ ${t('m.sent')}`;
+  POSTED.add(payload.at);
+  markPosted(button, t('m.sent'));
   toast(t('m.send_help'));
+}
+
+// Runs posted to the Hall of Fame since the page opened (by end time)
+const POSTED = new Set();
+
+/** The high scores sheet's button: posts my best run to the gang's Hall of Fame (a GitHub issue). */
+function postButton(panel) {
+  const best = A.meta.scores[0];
+  if (!best || best.score <= 0) return null;
+  const button = el('button', 'm-btn m-play m-send', panel, `📤 ${t('m.post_best', { n: best.score })}`);
+  if (POSTED.has(best.at)) markPosted(button, t('m.sent'));
+  button.onclick = () => {
+    const payload = buildPayload({ ...best, bestStreak: best.streak ?? 0 });
+    window.open(issueUrl(payload, locale()), '_blank', 'noopener');
+    POSTED.add(best.at);
+    markPosted(button, t('m.sent'));
+    toast(t('m.send_help'));
+  };
+  return button;
+}
+
+function markPosted(button, text) {
+  button.disabled = true;
+  button.textContent = `✅ ${text}`;
 }
 
 function openShop(tab) {
