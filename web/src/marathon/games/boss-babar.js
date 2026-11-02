@@ -160,7 +160,7 @@ export default {
           s.phaseShown = phase;
           if (phase > 1) {
             g.sfx.speedup();
-            g.fx.text(200, g.H * 0.2, phase === 2 ? g.tr({ en: 'THE LIGHTER!', fr: 'LE BRIQUET !' }) : g.tr({ en: 'DOUBLE SPIT!', fr: 'DOUBLE CRACHAT !' }), { size: 34, color: PAL.mango, life: 1.2 });
+            g.fx.text(200, g.H * 0.2, phase === 2 ? g.tr({ en: 'THE LIGHTER!', fr: 'EUL’ BRIQUET !' }) : g.tr({ en: 'DOUBLE SPIT!', fr: 'DOUBLE CRACHAT !' }), { size: 34, color: PAL.mango, life: 1.2 });
           }
         }
         if (s.t >= endAt && events.every((e) => e.state === 'done')) {
@@ -271,7 +271,7 @@ export default {
         }
         const breath = g.done && g.won ? 0 : 1 - Math.min(1, t / endAt);
         bossBar(c, 120, 88, 262, breath, { label: g.tr({ en: 'BREATH', fr: 'SOUFFLE' }), color: PAL.hibiscus });
-        bossBanner(c, g.W, g.H * 0.2, t, banner, g.tr({ en: `${name}'s Barrage`, fr: `Le barrage de ${name}` }), g.tr({ en: 'Barbecue from hell', fr: 'Le barbecue infernal' }), PAL.coral);
+        bossBanner(c, g.W, g.H * 0.2, t, banner, g.tr({ en: `${name}'s Barrage`, fr: `Le barrage de ${name}` }), g.tr({ en: 'Barbecue from hell', fr: 'Eul’ barbecue infernal' }), PAL.coral);
       },
       bot() {
         // Head for the lane whose next hit comes last; never step into one about to land.

@@ -57,13 +57,13 @@ export default {
   input: 'tap',
   base: 4,
   survive: false,
-  verb: { en: 'MUTE THE BURP!', fr: 'COUPE LE MICRO !' },
-  title: { en: "The video-call concert", fr: "Le concert en visio" },
-  howto: { en: "Panda's about to burp on the call. Tap MUTE right when the burp starts, not before.", fr: "Panda va roter en pleine visio. Touche MUET pile quand le rot part, pas avant." },
+  verb: { en: 'MUTE THE BURP!', fr: 'COUPE EUL’ MICRO !' },
+  title: { en: "The video-call concert", fr: "Eul’ concert en visio" },
+  howto: { en: "Panda's about to burp on the call. Tap MUTE right when the burp starts, not before.", fr: "Panda va roter en pleine visio. Touche MUET pile quand eul’ rot part, pas avant." },
   winLine: { en: "Nobody heard a thing!", fr: "Personne n'a rien entendu !" },
   rival: ["romain", "victor"],
   rivalLine: { en: "I was so sure I'd hear it…", fr: "J'étais sûr de l'entendre…" },
-  loseLine: { en: "Hoho… that was the dog!", fr: "Hoho… c'était le chien !" },
+  loseLine: { en: "Hoho… that was the dog!", fr: "Hoho… c'était eul’ chien !" },
   create(g) {
     const { W, H } = g;
     const sp = g.speed;
@@ -135,7 +135,7 @@ export default {
         g.fx.flash('rgba(190,240,140,0.45)', 0.25);
         g.fx.burst(faceX, faceY + faceH * 0.2, { kind: 'drop', n: 18, colors: ['#d8f0c0', '#b5df9a', '#ffffff'], speed: 320 });
         const t0 = tiles[Math.min(1, tiles.length - 1)];
-        g.say(t0.x + tw / 2, t0.y + 14, g.tr({ en: 'Everybody heard that!', fr: 'Tout le monde a entendu !' }), 1.6);
+        g.say(t0.x + tw / 2, t0.y + 14, g.tr({ en: 'Everybody heard that!', fr: 'Tout eul’ monde a entendu !' }), 1.6);
         g.lose();
       }
     }

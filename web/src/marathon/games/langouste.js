@@ -108,7 +108,7 @@ export default {
   verb: { en: 'KEEP OR THROW BACK?', fr: 'GARDER OU RELÂCHER ?' },
   axis: 'y', // swipes are up/down
   title: { en: "Legal size?", fr: "Taille légale ?" },
-  howto: { en: "Does the lobster's head reach the GREEN zone of the ruler? Keep it: swipe up or tap KEEP. Head in the RED zone? Too small: swipe down or tap THROW BACK.", fr: "La t\u00eate de la langouste arrive dans la zone VERTE de la r\u00e8gle ? Garde-la : glisse en haut ou touche GARDE. T\u00eate dans le ROUGE ? Trop petite : glisse en bas ou touche REL\u00c2CHE." },
+  howto: { en: "Does the lobster's head reach the GREEN zone of the ruler? Keep it: swipe up or tap KEEP. Head in the RED zone? Too small: swipe down or tap THROW BACK.", fr: "La t\u00eate de la langouste arrive dans la zone VERTE de la r\u00e8gle ? Garde-la : glisse en haut ou touche GARDE. T\u00eate dans eul’ ROUGE ? Trop petite : glisse en bas ou touche REL\u00c2CHE." },
   winLine: { en: "No fine today!", fr: "Pas d'amende aujourd'hui !" },
   rival: ["victor", "greg"],
   rivalLine: { en: "No fine today… what a shame.", fr: "Pas d'amende aujourd'hui… dommage." },

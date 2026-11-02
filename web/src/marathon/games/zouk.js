@@ -524,7 +524,7 @@ export default {
   min: 2.8,
   survive: false,
   verb: { en: 'GET A DANCE!', fr: 'DÉCROCHE UNE DANSE !' },
-  title: { en: 'Zouk ball', fr: 'Le bal zouk' },
+  title: { en: 'Zouk ball', fr: 'Eul’ bal zouk' },
   howto: {
     en: 'Tap the lady who smiles at you with a little heart. Not the others!',
     fr: 'Touche la dame qui te sourit avec un petit cœur. Pas les autres !',

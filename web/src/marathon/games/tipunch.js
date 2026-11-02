@@ -67,12 +67,12 @@ export default {
   base: 5,
   min: 2.6,
   survive: false,
-  verb: { en: 'STOP THE TI-PUNCH!', fr: 'ARRÊTE LE TI-PUNCH !' },
-  title: { en: "Ti-punch slide", fr: "Le ti-punch glissé" },
-  howto: { en: "The ti-punch slides down the bar. Tap to stop it in the glowing ring.", fr: "Le ti-punch glisse sur le bar. Touche pour l'arrêter dans le cercle lumineux." },
+  verb: { en: 'STOP THE TI-PUNCH!', fr: 'ARRÊTE EUL’ TI-PUNCH !' },
+  title: { en: "Ti-punch slide", fr: "Eul’ ti-punch glissé" },
+  howto: { en: "The ti-punch slides down the bar. Tap to stop it in the glowing ring.", fr: "Eul’ ti-punch glisse sur eul’ bar. Touche pour l'arrêter dans eul’ cercle lumineux." },
   winLine: { en: "Right in front of you. Santé!", fr: "Pile devant toi. Santé !" },
   rival: ["victor", "mamar"],
-  rivalLine: { en: "I wanted to drink it myself…", fr: "Je voulais le boire moi-même…" },
+  rivalLine: { en: "I wanted to drink it myself…", fr: "Je voulais eul’ boire me-même…" },
   loseLine: { en: "Hoho, my ti-punch!", fr: "Hoho, mon ti-punch !" },
   create(g) {
     const bartender = g.friend();

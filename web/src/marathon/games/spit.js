@@ -11,7 +11,7 @@ export default {
   base: 4.5,
   survive: true,
   verb: { en: 'DODGE!', fr: 'ESQUIVE !' },
-  title: { en: "Babar's spit", fr: "Le crachat de Babar" },
+  title: { en: "Babar's spit", fr: "Eul’ crachat de Babar" },
   howto: { en: "Babar is loading a spit. Swipe left or right to dodge every one.", fr: "Babar prépare un crachat. Glisse à gauche ou à droite pour les esquiver tous." },
   winLine: { en: "Dry as a bone!", fr: "Sec comme un os !" },
   rival: ["babar", "mamar"],

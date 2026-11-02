@@ -81,9 +81,9 @@ export default {
   base: 4.5,
   survive: false,
   verb: { en: 'CATCH HIM!', fr: 'PRENDS-LE !' },
-  title: { en: "Babar's lighter", fr: "Le briquet de Babar" },
+  title: { en: "Babar's lighter", fr: "Eul’ briquet de Babar" },
   howto: { en: "Babar sneaks up with his lighter. Tap to turn around once he's in the red zone.", fr: "Babar approche avec son briquet. Touche pour te retourner quand il est dans la zone rouge." },
-  winLine: { en: "Caught red-handed!", fr: "Pris la main dans le sac !" },
+  winLine: { en: "Caught red-handed!", fr: "Pris la main dans eul’ sac !" },
   rival: ["babar", "mamar"],
   rivalLine: { en: "What do I have to do with it?!", fr: "Qué don' qu' j'ai à voir ?!" },
   loseLine: { en: "Hoho, my shoulder!", fr: "Hoho, mon épaule !" },
@@ -176,7 +176,7 @@ export default {
           g.sfx.good();
           g.sfx.hoho();
           g.fx.burst(s.bx + 20, feetY - 120, { kind: 'confetti', n: 36 });
-          g.fx.text(200, feetY - 260, g.tr({ en: 'CAUGHT RED-HANDED!', fr: 'PRIS SUR LE FAIT !' }), { size: 30, color: PAL.mango });
+          g.fx.text(200, feetY - 260, g.tr({ en: 'CAUGHT RED-HANDED!', fr: 'PRIS SUR EUL’ FAIT !' }), { size: 30, color: PAL.mango });
           g.say(s.bx - 10, feetY - 170, g.tr({ en: 'Uh… lighting the barbecue?', fr: 'Euh… j\'allumais le barbecue ?' }), 1.6);
           g.win();
         } else {

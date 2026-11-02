@@ -222,11 +222,11 @@ export default {
   survive: false,
   verb: { en: 'FIND YOURSELF!', fr: 'TROUVE-TOI !' },
   title: { en: "Soirée fauve", fr: "Soirée fauve" },
-  howto: { en: "Everyone's in animal costume. Watch for the tiny \"Hoho\" and tap the real you.", fr: "Tout le monde est déguisé. Repère le petit « Hoho » et touche le vrai toi." },
-  winLine: { en: "Found you, wild one!", fr: "Trouvé, le fauve !" },
+  howto: { en: "Everyone's in animal costume. Watch for the tiny \"Hoho\" and tap the real you.", fr: "Tout eul’ monde est déguisé. Repère eul’ petit « Hoho » et touche eul’ vrai toi." },
+  winLine: { en: "Found you, wild one!", fr: "Trouvé, eul’ fauve !" },
   rival: ["cous", "greg"],
   rivalLine: { en: "My disguise plan failed…", fr: "Mon plan déguisement a raté…" },
-  loseLine: { en: "Hoho, y'est me! Under the mask!", fr: "Hoho, y'est me ! Sous le masque !" },
+  loseLine: { en: "Hoho, y'est me! Under the mask!", fr: "Hoho, y'est me ! Sous eul’ masque !" },
   create(g) {
     const W = g.W;
     const H = g.H;

@@ -63,10 +63,10 @@ export default {
   survive: true,
   verb: { en: 'DODGE THE COCONUTS!', fr: 'ESQUIVE LES COCOS !' },
   title: { en: "Coconut rain", fr: "Pluie de cocos" },
-  howto: { en: "Coconuts shake before they fall. Drag the beach chair out of the way.", fr: "Les cocos tremblent avant de tomber. Fais glisser le transat pour les éviter." },
+  howto: { en: "Coconuts shake before they fall. Drag the beach chair out of the way.", fr: "Les cocos tremblent avant de tomber. Fais glisser eul’ transat pour les éviter." },
   winLine: { en: "Not a single bump!", fr: "Pas une bosse !" },
   rival: ["babar", "mamar"],
-  rivalLine: { en: "I shook that palm for nothing…", fr: "J'ai secoué le cocotier pour rien…" },
+  rivalLine: { en: "I shook that palm for nothing…", fr: "J'ai secoué eul’ cocotier pour rien…" },
   loseLine: { en: "Hoho, my head!", fr: "Hoho, ma tête !" },
   create(g) {
     const friend = g.friend();

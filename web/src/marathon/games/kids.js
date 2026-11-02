@@ -45,7 +45,7 @@ export default {
   survive: true,
   verb: { en: 'SAVE THE CAR!', fr: 'SAUVE LA BAGNOLE !' },
   title: { en: "Hoho my bagnole!", fr: "Hoho ma bagnole !" },
-  howto: { en: "Kids are running at the Fiat Panda. Tap each kid to shoo it away.", fr: "Des gamins foncent sur la Fiat Panda. Touche chaque gamin pour le chasser." },
+  howto: { en: "Kids are running at the Fiat Panda. Tap each kid to shoo it away.", fr: "Des gamins foncent sur la Fiat Panda. Touche chaque gamin pour eul’ chasser." },
   winLine: { en: "Not a scratch on the Panda!", fr: "Pas une rayure sur la Panda !" },
   rival: ["babar", "mamar"],
   rivalLine: { en: "I paid those kids for nothing…", fr: "J'avais payé les gamins pour rien…" },

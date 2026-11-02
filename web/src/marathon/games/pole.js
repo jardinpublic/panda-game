@@ -203,7 +203,7 @@ export default {
               s.celebrated = true;
               g.sfx.hoho();
               g.fx.burst(poleX, pivotY - 120, { kind: 'confetti', n: 24 });
-              g.say(poleX - 60, pivotY - 150, g.tr({ en: 'Hoho! The human flag!', fr: 'Hoho ! Le drapeau humain !' }), 1.4);
+              g.say(poleX - 60, pivotY - 150, g.tr({ en: 'Hoho! The human flag!', fr: 'Hoho ! Eul’ drapeau humain !' }), 1.4);
             }
             // Ridiculous victory pose: the "human flag", arms out.
             s.pose = Math.min(1, s.pose + dt * 4);
