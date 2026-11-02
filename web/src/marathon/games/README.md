@@ -28,6 +28,7 @@ export default {
       move(x, y) {},        // finger moving
       swipe(dir) {},        // 'left' | 'right' | 'up' | 'down', fired as soon as the swipe is clear
       bot() {},             // test player: returns {press:[x,y]} | {release:[x,y]} | {move:[x,y]} | {swipe:dir} | null
+      rival: 'mamar',       // optional: who reacts on the ending scene (default: the first free id of `rival`)
     };
   },
 };

@@ -294,7 +294,8 @@ function finishMicroGame() {
   r.m.report(won);
   r.last = won ? 'win' : 'lose';
   r.outcomeWord = t(won ? 'm.win' : 'm.lose');
-  r.rival = r.micro.g.cast(...(r.def.rival || ['cous']));
+  // A game can name its rival itself (the friend the hero just fought)
+  r.rival = r.micro.inst.rival || r.micro.g.cast(...(r.def.rival || ['cous']));
   // When the hero loses, the rival rubs it in (picked once, so it does not flicker).
   r.tease = t('m.tease');
   r.endFx = 0;
