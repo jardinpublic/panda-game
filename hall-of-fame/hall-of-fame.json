@@ -1,18 +1,18 @@
 {
   "v": 1,
-  "updated": "2026-11-02T00:37:26.000Z",
+  "updated": "2026-11-02T02:27:32.000Z",
   "players": {
     "nvuillam": {
       "login": "nvuillam",
       "best": {
-        "score": 30,
-        "level": 6,
-        "streak": 2,
+        "score": 370,
+        "level": 30,
+        "streak": 11,
         "hero": "panda",
-        "at": 1793579831865
+        "at": 1793586438013
       },
-      "sends": 1,
-      "lastSent": 1793579846000
+      "sends": 2,
+      "lastSent": 1793586452000
     }
   }
 }
