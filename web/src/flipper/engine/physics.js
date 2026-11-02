@@ -50,6 +50,10 @@ export function createPhysics() {
   const fields = [];
   const paths = [];
   const flippers = [];
+  // Table v2: magnets under the playfield, creatures walking on it, captive balls on their rails
+  const magnets = [];
+  const creatures = [];
+  const captives = [];
   const balls = [];
   const grid = [];
   for (let i = 0; i < GRID_W * GRID_H; i++) {
@@ -69,6 +73,9 @@ export function createPhysics() {
   let kicks = true;
   // A coil never fires twice exactly the same: a small variation on every kick
   let jitter = () => 0;
+  // The creatures turn at random: a seeded generator, so the tests repeat (setRandom)
+  let seed = 12345;
+  let random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
   for (let i = 0; i < MAX_BALLS; i++) {
     balls.push({
@@ -254,7 +261,10 @@ export function createPhysics() {
       // it out no faster than exitMax: a ball back from a ramp reaches the
       // inlane slowly, as on a real table
       drag: o.drag === undefined ? 0.35 : o.drag,
-      exitMax: o.exitMax === undefined ? Infinity : o.exitMax
+      exitMax: o.exitMax === undefined ? Infinity : o.exitMax,
+      // The end of the path is a lock (the Silo): the ball stays there, held, for the rules
+      holdAtEnd: Boolean(o.holdAtEnd),
+      divert: null
     };
     paths.push(p);
     return p;
@@ -320,6 +330,130 @@ export function createPhysics() {
       }
     }
     return c[c.length - 1];
+  }
+
+  /**
+   * A bash toy: a big round target with hit points (the volcano). Every hit
+   * harder than minSpeed takes one point and emits "bash" with the points
+   * left (0: it gives in; the rules reset bash.hp). It bounces like a solid
+   * body, it does not kick.
+   */
+  function bashToy(x, y, r, options) {
+    const o = options || {};
+    const shape = circle(x, y, r, { bounce: o.bounce === undefined ? 0.5 : o.bounce, tag: o.tag || "", hop: o.hop || 0.1 });
+    shape.bash = { hp: o.hp || 4, minSpeed: o.minSpeed || 6, lastAt: -1 };
+    return shape;
+  }
+
+  /**
+   * An up-post: a round post that rises out of the playfield (between the
+   * flippers) and sinks back, toggled by the rules with raise(post, up). A
+   * ball over it as it rises is popped up the table.
+   */
+  function post(x, y, r, options) {
+    const o = options || {};
+    return circle(x, y, r, { bounce: o.bounce === undefined ? 0.6 : o.bounce, tag: o.tag || "", enabled: false });
+  }
+
+  function raise(shape, up) {
+    if (up && !shape.enabled) {
+      for (const ball of balls) {
+        if (ball.active && ball.mode === "table" && Math.hypot(ball.x - shape.ax, ball.y - shape.ay) < ball.r + shape.r) {
+          ball.vy = Math.max(ball.vy, 14);
+          ball.y = Math.max(ball.y, shape.ay + 0.05);
+        }
+      }
+    }
+    shape.enabled = up;
+  }
+
+  /**
+   * A creature that walks on the playfield by itself (the land crabs): a
+   * moving round body that wanders inside bounds [x0, y0, x1, y1], turns now
+   * and then, turns away from the other creatures, and walks towards
+   * creature.target ({ x, y }) when the rules give it one. A ball hitting it
+   * emits "hit" with its tag; flipped (flipCreature) it lies still and lets
+   * the balls by. speed in table units per second.
+   */
+  function creature(x, y, r, options) {
+    const o = options || {};
+    const shape = capsule(x, y, x, y, { r, rb: r, bounce: o.bounce === undefined ? 0.55 : o.bounce, tag: o.tag || "", moving: true });
+    const b = o.bounds || [x - 2, y - 1, x + 2, y + 1];
+    const c = { shape, x0: b[0], y0: b[1], x1: b[2], y1: b[3], speed: o.speed || 1.2, heading: o.heading === undefined ? 0 : o.heading, turnIn: 0.5, flipped: false, target: null, home: { x, y } };
+    creatures.push(c);
+    return c;
+  }
+
+  /** Flips a creature on its back (still, the balls roll by), or back on its feet at home. */
+  function flipCreature(c, flipped) {
+    c.flipped = flipped;
+    c.shape.enabled = !flipped;
+    c.shape.vx = 0;
+    c.shape.vy = 0;
+    if (!flipped) {
+      c.shape.ax = c.shape.bx = c.home.x;
+      c.shape.ay = c.shape.by = c.home.y;
+    }
+  }
+
+  /**
+   * A magnet under the playfield at (x, y): while on, a ball slower than
+   * maxSpeed that rolls within r is grabbed, pulled to the centre and held
+   * there; it emits "enter" with its tag once held, and the rules throw it
+   * with release(ball, vx, vy). A faster ball is only bent a little.
+   */
+  function magnet(x, y, r, options) {
+    const o = options || {};
+    const m = { kind: "magnet", ax: x, ay: y, r, tag: o.tag || "", maxSpeed: o.maxSpeed || 30, pull: o.pull || 40, on: o.on !== false, holding: null };
+    magnets.push(m);
+    return m;
+  }
+
+  /**
+   * A captive ball (the coconut) on a short rail from a (its rest, at the
+   * bottom) to b (the top switch): it moves along the rail only, gravity pulls
+   * it back to a, a play ball hitting it passes it its momentum (mass: the
+   * captive ball's weight against a play ball's). Reaching b emits "top" with
+   * its tag; a play ball hitting it emits "hit" with tag + "Ball".
+   */
+  function captive(ax, ay, bx, by, r, options) {
+    const o = options || {};
+    const len = Math.hypot(bx - ax, by - ay) || 1;
+    const c = { ax, ay, ux: (bx - ax) / len, uy: (by - ay) / len, len, r, s: 0, v: 0, x: ax, y: ay, mass: o.mass || 1.2, bounce: o.bounce === undefined ? 0.85 : o.bounce, tag: o.tag || "", lastHit: -1, tops: 0 };
+    captives.push(c);
+    return c;
+  }
+
+  /**
+   * A diverter on a path: past point `index` of `from`, while on, a ball
+   * climbing it is switched onto `to` (which starts at that point), and
+   * "divert" is emitted with the tag of `from`.
+   */
+  function diverter(from, index, to) {
+    from.divert = { index, to, on: false };
+    return from.divert;
+  }
+
+  /**
+   * A vertical loop on a path: the approach points [x, y, h, ...] up to the
+   * foot of the loop, then a full turn of radius r in the y-h plane (up the
+   * table first, over the top, back and down), drifting across from the
+   * foot's x to x1 so the ball passes by its own way in, then the points
+   * after it. A ball too slow for the top rolls back down and out of the
+   * mouth (rampBack).
+   */
+  function verticalLoop(before, r, x1, after, options) {
+    const n = before.length / 3;
+    const fx = before[(n - 1) * 3];
+    const fy = before[(n - 1) * 3 + 1];
+    const fh = before[(n - 1) * 3 + 2];
+    const points = before.slice();
+    const steps = 14;
+    for (let i = 1; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      points.push(fx + (x1 - fx) * (i / steps), fy + Math.sin(a) * r, fh + r - Math.cos(a) * r);
+    }
+    return path(points.concat(after), options);
   }
 
   /**
@@ -437,6 +571,8 @@ export function createPhysics() {
   function release(ball, vx, vy) {
     letGo(ball);
     ball.mode = "table";
+    ball.h = 0;
+    ball.hv = 0;
     ball.vx = vx;
     ball.vy = vy;
     // Still over the hole it was held in: not caught again on the way out
@@ -497,11 +633,18 @@ export function createPhysics() {
       s.ay = target;
       s.by = target;
     }
+    for (let i = 0; i < creatures.length; i++) {
+      stepCreature(creatures[i]);
+    }
     for (const ball of balls) {
       if (!ball.active) {
         continue;
       }
       if (ball.frozen || ball.mode === "held") {
+        continue;
+      }
+      if (ball.mode === "grab") {
+        stepGrab(ball);
         continue;
       }
       if (ball.mode === "path") {
@@ -511,8 +654,127 @@ export function createPhysics() {
       stepBall(ball);
     }
     collideBalls();
+    for (let i = 0; i < captives.length; i++) {
+      stepCaptive(captives[i]);
+    }
     if (plunger) {
       plunger.shape.vy = 0;
+    }
+  }
+
+  /** A creature walks one step: wanders, turns at its bounds and away from the others, or heads for its target. */
+  function stepCreature(c) {
+    const s = c.shape;
+    if (c.flipped || !s.enabled) {
+      s.vx = 0;
+      s.vy = 0;
+      return;
+    }
+    c.turnIn -= STEP;
+    if (c.target) {
+      const want = Math.atan2(c.target.y - s.ay, c.target.x - s.ax);
+      const d = Math.atan2(Math.sin(want - c.heading), Math.cos(want - c.heading));
+      c.heading += d * Math.min(1, 3 * STEP);
+    } else if (c.turnIn <= 0) {
+      // A crab walks sideways: it mostly keeps across the table, with a wobble
+      c.heading += (random() - 0.5) * 1.4;
+      c.turnIn = 0.7 + random() * 1.6;
+    }
+    for (let i = 0; i < creatures.length; i++) {
+      const o = creatures[i];
+      if (o === c || o.flipped || !o.shape.enabled) {
+        continue;
+      }
+      const dx = s.ax - o.shape.ax;
+      const dy = s.ay - o.shape.ay;
+      const reach = s.r + o.shape.r + 0.2;
+      if (dx * dx + dy * dy < reach * reach && Math.cos(c.heading) * dx + Math.sin(c.heading) * dy < 0) {
+        // Walking into the other one: turn away from it
+        c.heading = Math.atan2(dy, dx) + (random() - 0.5) * 0.6;
+      }
+    }
+    let nx = s.ax + Math.cos(c.heading) * c.speed * STEP;
+    let ny = s.ay + Math.sin(c.heading) * c.speed * STEP;
+    if (nx < c.x0 || nx > c.x1) {
+      c.heading = Math.PI - c.heading;
+      nx = Math.max(c.x0, Math.min(c.x1, nx));
+    }
+    if (ny < c.y0 || ny > c.y1) {
+      c.heading = -c.heading;
+      ny = Math.max(c.y0, Math.min(c.y1, ny));
+    }
+    s.vx = (nx - s.ax) / STEP;
+    s.vy = (ny - s.ay) / STEP;
+    s.ax = s.bx = nx;
+    s.ay = s.by = ny;
+  }
+
+  /** A ball grabbed by a magnet is pulled to its centre, then held there. */
+  function stepGrab(ball) {
+    const m = ball.holder;
+    const k = Math.min(1, 22 * STEP);
+    const px = ball.x;
+    const py = ball.y;
+    ball.x += (m.ax - ball.x) * k;
+    ball.y += (m.ay - ball.y) * k;
+    ball.spinX += ball.x - px;
+    ball.spinY += ball.y - py;
+    if (Math.hypot(m.ax - ball.x, m.ay - ball.y) < 0.01) {
+      ball.x = m.ax;
+      ball.y = m.ay;
+      ball.mode = "held";
+      emit("enter", m.tag, 0, ball);
+    }
+  }
+
+  /** The captive ball rolls on its rail, and takes the momentum of a play ball that hits it. */
+  function stepCaptive(c) {
+    c.v -= gravity * c.uy * STEP;
+    c.v -= c.v * 0.5 * STEP;
+    c.s += c.v * STEP;
+    if (c.s <= 0) {
+      c.s = 0;
+      c.v = c.v < -1 ? -c.v * 0.25 : 0;
+    } else if (c.s >= c.len) {
+      c.s = c.len;
+      if (c.v > 0) {
+        c.tops++;
+        emit("top", c.tag, c.v, null);
+        c.v = -c.v * 0.35;
+      }
+    }
+    c.x = c.ax + c.ux * c.s;
+    c.y = c.ay + c.uy * c.s;
+    for (let i = 0; i < balls.length; i++) {
+      const b = balls[i];
+      if (!ballMoving(b) || b.floor !== 0 || b.h > 0.4) {
+        continue;
+      }
+      const dx = b.x - c.x;
+      const dy = b.y - c.y;
+      const reach = b.r + c.r;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= reach * reach || d2 < 1e-12) {
+        continue;
+      }
+      const d = Math.sqrt(d2);
+      const nx = dx / d;
+      const ny = dy / d;
+      b.x += nx * (reach - d);
+      b.y += ny * (reach - d);
+      const cu = nx * c.ux + ny * c.uy;
+      const vn = (b.vx - c.ux * c.v) * nx + (b.vy - c.uy * c.v) * ny;
+      if (vn < 0) {
+        // Equal and opposite: the captive ball only takes the part along its rail
+        const j = (-(1 + c.bounce) * vn) / (1 + (cu * cu) / c.mass);
+        b.vx += j * nx;
+        b.vy += j * ny;
+        c.v -= (j * cu) / c.mass;
+        if (-vn > 2 && time - c.lastHit > 0.08) {
+          c.lastHit = time;
+          emit("hit", c.tag + "Ball", -vn, b);
+        }
+      }
     }
   }
 
@@ -579,6 +841,33 @@ export function createPhysics() {
       const k = Math.min(1, 9 * STEP);
       ball.vx += tx * (f.strength - along) * k + (dx / d) * 6 * STEP;
       ball.vy += ty * (f.strength - along) * k + (dy / d) * 6 * STEP;
+    }
+    for (let i = 0; i < magnets.length; i++) {
+      const m = magnets[i];
+      if (!m.on || ball.floor !== 0 || ball.h > 0.3) {
+        continue;
+      }
+      const dx = m.ax - ball.x;
+      const dy = m.ay - ball.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > m.r * m.r || m.holding || (ball.lastSensor === m && time - ball.lastSensorAt < 0.8)) {
+        continue;
+      }
+      const d = Math.sqrt(d2) || 1;
+      if (ball.vx * ball.vx + ball.vy * ball.vy > m.maxSpeed * m.maxSpeed) {
+        // Too fast to catch: only bent towards it
+        ball.vx += (dx / d) * m.pull * STEP;
+        ball.vy += (dy / d) * m.pull * STEP;
+        continue;
+      }
+      m.holding = ball;
+      ball.holder = m;
+      ball.mode = "grab";
+      ball.vx = 0;
+      ball.vy = 0;
+      ball.lastSensor = m;
+      ball.lastSensorAt = time;
+      return;
     }
     const cell = grid[cellY(ball.y) * GRID_W + cellX(ball.x)];
     for (let i = 0; i < cell.length; i++) {
@@ -672,6 +961,12 @@ export function createPhysics() {
         ball.vx += nx * kick;
         ball.vy += ny * kick;
       }
+      // A bash toy loses a hit point to every hard hit
+      if (shape.bash && kicks && -vn >= shape.bash.minSpeed && time - shape.bash.lastAt > 0.15 && shape.bash.hp > 0) {
+        shape.bash.lastAt = time;
+        shape.bash.hp--;
+        emit("bash", shape.tag, shape.bash.hp, ball);
+      }
       // One event per hit, not one per step of a ball resting on it
       if (shape.tag && (-vn > 2 || shape.kick) && time - shape.lastHit > 0.08) {
         shape.lastHit = time;
@@ -753,6 +1048,14 @@ export function createPhysics() {
     }
     ball.v -= ball.v * p.drag * STEP;
     ball.s += ball.v * STEP;
+    if (p.divert && p.divert.on && ball.v > 0 && ball.s >= p.lengths[p.divert.index]) {
+      // The diverter is across the ramp: on along the other way
+      ball.s -= p.lengths[p.divert.index];
+      ball.path = p.divert.to;
+      emit("divert", p.tag, ball.v, ball);
+      pathPoint(ball);
+      return;
+    }
     if (ball.s <= 0 && ball.v <= 0) {
       // Not enough speed: it rolls back where it came from. A deflector
       // under the entrance plate turns it towards the middle of the table,
@@ -771,6 +1074,18 @@ export function createPhysics() {
       ball.vx = (-ex / el) * back;
       ball.vy = (-ey / el) * back;
       emit("rampBack", p.tag, 0, ball);
+      return;
+    }
+    if (ball.s >= p.total && p.holdAtEnd) {
+      const n = pts.length / 3;
+      ball.mode = "held";
+      ball.path = null;
+      ball.x = pts[(n - 1) * 3];
+      ball.y = pts[(n - 1) * 3 + 1];
+      ball.h = pts[(n - 1) * 3 + 2];
+      ball.vx = 0;
+      ball.vy = 0;
+      emit("rampDone", p.tag, ball.v, ball);
       return;
     }
     if (ball.s >= p.total) {
@@ -882,7 +1197,8 @@ export function createPhysics() {
   }
 
   function ballStill(ball) {
-    return ball.active && (ball.mode === "held" || (ball.mode === "table" && ball.frozen));
+    // A ball held up in a lock, over the table, is out of the way of the others
+    return ball.active && (((ball.mode === "held" || ball.mode === "grab") && ball.h < 0.6) || (ball.mode === "table" && ball.frozen));
   }
 
   return {
@@ -901,6 +1217,18 @@ export function createPhysics() {
     flipper,
     disc,
     fields,
+    bashToy,
+    post,
+    raise,
+    creature,
+    creatures,
+    flipCreature,
+    magnet,
+    magnets,
+    captive,
+    captives,
+    diverter,
+    verticalLoop,
     setPlunger,
     transformY,
     build,
@@ -919,6 +1247,10 @@ export function createPhysics() {
     /** fn() returns the variation of a kick, a small fraction around 0. */
     setJitter(fn) {
       jitter = fn;
+    },
+    /** fn() returns a number in [0, 1): the creatures' wandering. */
+    setRandom(fn) {
+      random = fn;
     },
     /** Bumpers and slingshots on or off (off while the table is tilted). */
     setKicks(on) {

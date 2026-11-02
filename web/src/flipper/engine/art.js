@@ -344,10 +344,10 @@ export function paintField(THREE, t, lights, tier) {
   c.shadowColor = NIGHT.cyan;
   c.shadowBlur = U(0.2);
   c.beginPath();
-  c.moveTo(X(-3.3), Y(HORIZON));
-  c.bezierCurveTo(X(-3.0), Y(HORIZON + 1.2), X(-2.4), Y(HORIZON + 3.6), X(-1.5), Y(HORIZON + 4.1));
-  c.bezierCurveTo(X(-1.0), Y(HORIZON + 4.3), X(-0.6), Y(HORIZON + 3.4), X(-0.35), Y(HORIZON + 2.4));
-  c.bezierCurveTo(X(-0.1), Y(HORIZON + 1.6), X(0.4), Y(HORIZON + 0.8), X(0.7), Y(HORIZON));
+  c.moveTo(X(-3.3 + 3.6), Y(HORIZON));
+  c.bezierCurveTo(X(-3.0 + 3.6), Y(HORIZON + 1.2), X(-2.4 + 3.6), Y(HORIZON + 3.6), X(-1.5 + 3.6), Y(HORIZON + 4.1));
+  c.bezierCurveTo(X(-1.0 + 3.6), Y(HORIZON + 4.3), X(-0.6 + 3.6), Y(HORIZON + 3.4), X(-0.35 + 3.6), Y(HORIZON + 2.4));
+  c.bezierCurveTo(X(-0.1 + 3.6), Y(HORIZON + 1.6), X(0.4 + 3.6), Y(HORIZON + 0.8), X(0.7 + 3.6), Y(HORIZON));
   c.closePath();
   c.fill();
   c.stroke();
@@ -398,17 +398,102 @@ export function paintField(THREE, t, lights, tier) {
       c.stroke();
     }
   };
-  zone(-3.6, 10.65, -2.4, 15.9, "rgba(255,61,139,A)", true);
-  zone(2.4, 10.65, 3.6, 15.9, "rgba(255,166,43,A)", true);
-  zone(-0.85, 13.0, 0.85, 16.5, "rgba(34,211,238,A)");
+  // Table v2: the loop's lane (hibiscus), the coconut's lane (lime)
+  zone(-4.55, 10.65, -3.35, 13.2, "rgba(255,61,139,A)", true);
+  zone(3.95, 10.3, 4.95, 13.3, "rgba(155,225,93,A)");
+
+  // The beach in the middle where the land crabs walk: sand, crab tracks
+  c.save();
+  const beach = c.createRadialGradient(X(0), Y(9), U(0.4), X(0), Y(9), U(3.6));
+  beach.addColorStop(0, "rgba(255,214,150,0.32)");
+  beach.addColorStop(0.7, "rgba(255,190,120,0.16)");
+  beach.addColorStop(1, "rgba(255,190,120,0)");
+  c.fillStyle = beach;
+  c.beginPath();
+  c.ellipse(X(0), Y(9), U(3.4), U(1.6), 0, 0, Math.PI * 2);
+  c.fill();
+  const trk = seeded(9);
+  c.fillStyle = "rgba(60,30,90,0.35)";
+  for (let i = 0; i < 70; i++) {
+    const x = -2.6 + trk() * 5.2;
+    const y = 7.8 + trk() * 2.4;
+    c.fillRect(X(x), Y(y), U(0.05), U(0.05));
+    c.fillRect(X(x + 0.12), Y(y + 0.03), U(0.05), U(0.05));
+  }
+  c.restore();
+
+  // La Montagne Pelée: lava flows run from the foot of the volcano down the table
+  c.save();
+  c.lineCap = "round";
+  for (const [dx, len, w] of [
+    [-1.3, 2.4, 0.16],
+    [-0.5, 1.6, 0.12],
+    [0.55, 1.9, 0.14],
+    [1.1, 1.2, 0.1]
+  ]) {
+    const g = c.createLinearGradient(X(TABLE.volcano.x), Y(TABLE.volcano.y - 0.6), X(TABLE.volcano.x + dx), Y(TABLE.volcano.y - 0.6 - len));
+    g.addColorStop(0, "rgba(255,110,30,0.75)");
+    g.addColorStop(1, "rgba(255,40,0,0)");
+    c.strokeStyle = g;
+    c.lineWidth = U(w);
+    c.shadowColor = "rgba(255,80,0,0.9)";
+    c.shadowBlur = U(0.15);
+    c.beginPath();
+    c.moveTo(X(TABLE.volcano.x + dx * 0.4), Y(TABLE.volcano.y - 0.7));
+    c.quadraticCurveTo(X(TABLE.volcano.x + dx * 0.9), Y(TABLE.volcano.y - 0.7 - len * 0.5), X(TABLE.volcano.x + dx), Y(TABLE.volcano.y - 0.7 - len));
+    c.stroke();
+  }
+  // A glow round its foot
+  const foot = c.createRadialGradient(X(TABLE.volcano.x), Y(TABLE.volcano.y), U(0.8), X(TABLE.volcano.x), Y(TABLE.volcano.y), U(2.1));
+  foot.addColorStop(0, "rgba(255,90,20,0.45)");
+  foot.addColorStop(1, "rgba(255,90,20,0)");
+  c.fillStyle = foot;
+  c.fillRect(X(TABLE.volcano.x - 2.2), Y(TABLE.volcano.y + 2.2), U(4.4), U(4.4));
+  c.restore();
+
+  // Le Molière: a red carpet up to the door of the club, between ropes
+  c.save();
+  c.fillStyle = "rgba(200,20,60,0.55)";
+  c.fillRect(X(TABLE.moliere.x - 0.55), Y(12.7), U(1.1), U(1.5));
+  c.strokeStyle = "rgba(255,210,63,0.8)";
+  c.lineWidth = U(0.04);
+  c.strokeRect(X(TABLE.moliere.x - 0.55), Y(12.7), U(1.1), U(1.5));
+  c.restore();
+
+  // The rum cellar: a trapdoor of barrel staves round the hole
+  c.save();
+  c.fillStyle = "rgba(120,60,20,0.75)";
+  c.beginPath();
+  c.arc(X(TABLE.cellar.x), Y(TABLE.cellar.y), U(0.75), 0, Math.PI * 2);
+  c.fill();
+  c.strokeStyle = "rgba(255,166,43,0.7)";
+  c.lineWidth = U(0.04);
+  for (let k = -2; k <= 2; k++) {
+    c.beginPath();
+    c.moveTo(X(TABLE.cellar.x + k * 0.26), Y(TABLE.cellar.y - 0.7));
+    c.lineTo(X(TABLE.cellar.x + k * 0.26), Y(TABLE.cellar.y + 0.7));
+    c.stroke();
+  }
+  c.restore();
+
+  // Mamar's ball: a football pitch's centre circle round the magnet
+  c.save();
+  c.strokeStyle = "rgba(255,255,255,0.55)";
+  c.lineWidth = U(0.04);
+  c.beginPath();
+  c.arc(X(TABLE.magnet.x), Y(TABLE.magnet.y), U(0.95), 0, Math.PI * 2);
+  c.stroke();
+  c.fillStyle = "rgba(40,160,80,0.25)";
+  c.fill();
+  c.restore();
 
   // The Fiat road: asphalt from the flippers to the Fiat ramp, a dashed line
   c.save();
   c.lineCap = "round";
   const road = () => {
     c.beginPath();
-    c.moveTo(X(0.2), Y(6.9));
-    c.bezierCurveTo(X(1.3), Y(7.5), X(2.7), Y(8.4), X(3.0), Y(10.9));
+    c.moveTo(X(0.9), Y(6.9));
+    c.bezierCurveTo(X(1.8), Y(7.5), X(2.7), Y(8.4), X(2.9), Y(10.9));
   };
   c.strokeStyle = "rgba(20,14,30,0.75)";
   c.lineWidth = U(0.62);
@@ -418,21 +503,6 @@ export function paintField(THREE, t, lights, tier) {
   c.lineWidth = U(0.04);
   c.setLineDash([U(0.22), U(0.2)]);
   road();
-  c.stroke();
-  // The rum trail to the rhum ramp: a ribbon of cane
-  c.setLineDash([]);
-  c.strokeStyle = "rgba(255,61,139,0.35)";
-  c.lineWidth = U(0.3);
-  c.beginPath();
-  c.moveTo(X(-0.2), Y(6.9));
-  c.bezierCurveTo(X(-1.3), Y(7.5), X(-2.7), Y(8.4), X(-3.0), Y(10.9));
-  c.stroke();
-  // The road to the silo up the middle
-  c.strokeStyle = "rgba(34,211,238,0.22)";
-  c.lineWidth = U(0.9);
-  c.beginPath();
-  c.moveTo(X(0), Y(6.6));
-  c.lineTo(X(0), Y(15.0));
   c.stroke();
   c.restore();
 
@@ -504,7 +574,7 @@ export function paintField(THREE, t, lights, tier) {
         const lines = words.length > 1 && text.length > 9 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [text];
         lines.forEach((part, i) => fitText(c, part.toUpperCase(), x, y + (i - (lines.length - 1) / 2) * U(0.17), r * 1.5, U(0.16), "900"));
       } else {
-        fitText(c, text.toUpperCase(), x, y + (l.labelAt === "above" ? -r * 1.9 : r * 1.75), U(1.9), U(0.15), "900");
+        fitText(c, text.toUpperCase(), x, y + (l.labelAt === "above" ? -r * 1.9 : r * 1.75), U(l.labelWidth || 1.9), U(0.15), "900");
       }
     }
   }
@@ -520,105 +590,22 @@ export function paintField(THREE, t, lights, tier) {
     fitText(c, text, 0, 0, U(max || 2.6), U(size), "900");
     c.restore();
   };
-  label(tx("tbTourIle").toUpperCase(), -4.42, 15.9, 0.22, "#ffb3d6", -Math.PI / 2, 3.2);
-  label(tx("tbRoutePlage").toUpperCase(), 4.42, 15.9, 0.22, "#ffd9a0", Math.PI / 2, 3.2);
-  label(tx("tbRampSilo").toUpperCase(), 0, 14.55, 0.2, "#b8f6ff", 0, 1.6);
-  label(tx("tbMoliere").toUpperCase(), -1.55, 14.75, 0.17, "#ffc2ec", 0, 1.3);
-  label(tx("tbTaxes").toUpperCase(), -3.95, 10.9, 0.16, "#ffd9a0", -Math.PI / 2);
-  label(tx("tbTaxes").toUpperCase(), 3.95, 10.9, 0.16, "#ffd9a0", Math.PI / 2);
-  label(tx("tbTatou").toUpperCase(), -4.0, 8.6, 0.16, "#b8f6ff", -1.05);
-  label(tx("tbCans").toUpperCase(), 4.0, 8.6, 0.15, "#ffe9a0", 1.05);
-  label(tx("tbGarage").toUpperCase(), 1.95, 10.2, 0.14, "#ffd9a0");
-  label(tx("tbRampRhum").toUpperCase(), -3.0, 12.3, 0.15, "#ffc2dc", 0, 1.3);
-  label(tx("tbRampFiat").toUpperCase(), 3.0, 12.3, 0.15, "#ffe2b8", 0, 1.3);
-  label(tx("tbCyclone").toUpperCase(), TABLE.flow.x + 0.2, TABLE.flow.y - 0.95, 0.14, "#b8f6ff", 0, 1.5);
+  label(tx("tbLoop").toUpperCase(), -3.95, 11.55, 0.17, "#ffc2dc", 0, 1.15);
+  label(tx("tbCellar").toUpperCase(), TABLE.cellar.x, TABLE.cellar.y - 1.6, 0.15, "#ffd9a0", 0, 1.3);
+  label(tx("tbVolcano").toUpperCase(), TABLE.volcano.x - 0.2, 18.15, 0.2, "#ffb08a", 0, 1.4);
+  label(tx("tbBouncers").toUpperCase(), TABLE.moliere.x, 12.5, 0.13, "#ffc2ec", 0, 1.3);
+  label(tx("tbRampFiat").toUpperCase(), 2.9, 11.65, 0.14, "#ffe2b8", 0, 1.2);
+  label(tx("tbCoco").toUpperCase(), 4.45, 11.9, 0.18, "#d8ffb0", Math.PI / 2, 1.8);
+  label(tx("tbCrabs").toUpperCase(), 0, 10.75, 0.18, "#ffd9a0", 0, 2.6);
+  label(tx("tbMagnet").toUpperCase(), TABLE.magnet.x, TABLE.magnet.y - 1.1, 0.13, "#b8f6ff", 0, 1.8);
+  label(tx("tbSilo").toUpperCase(), 4.45, 14.0, 0.14, "#ffd9a0", 0, 1.1);
+  label(tx("tbIsland").toUpperCase(), 2.6, 21.6, 0.2, "#ffe9a0", 0, 2.4);
   // The plunger lane
   c.fillStyle = "rgba(0,0,0,0.45)";
   c.fillRect(X(5.0), Y(14), X(6.1) - X(5.0), Y(-1.6) - Y(14));
   return texture(THREE, canvas, tier);
 }
 
-/** The silo roof, printed: corrugated steel round the lagoon pool Georges swims in, the beach by the exit. */
-export function paintUpper(THREE, t, lights, tier) {
-  const scale = tier > 1 ? 96 : 72;
-  const w = TABLE.upperRight - TABLE.upperLeft + 0.6;
-  const l = TABLE.upperTop - TABLE.upperBottom;
-  const [canvas, c] = canvasOf(Math.round(w * scale), Math.round(l * scale));
-  const X = (x) => (x - (TABLE.upperLeft - 0.3)) * scale;
-  const Y = (y) => canvas.height - (y - TABLE.upperBottom) * scale;
-  const U = (u) => u * scale;
-  // Corrugated steel, warm under the work lights
-  const g = c.createLinearGradient(0, 0, 0, canvas.height);
-  g.addColorStop(0, "#3b3554");
-  g.addColorStop(1, "#1d1a30");
-  c.fillStyle = g;
-  c.fillRect(0, 0, canvas.width, canvas.height);
-  for (let x = 0; x < canvas.width; x += U(0.22)) {
-    c.fillStyle = "rgba(255,255,255,0.06)";
-    c.fillRect(x, 0, U(0.08), canvas.height);
-    c.fillStyle = "rgba(0,0,0,0.18)";
-    c.fillRect(x + U(0.11), 0, U(0.06), canvas.height);
-  }
-  // Rivets round the edge
-  c.fillStyle = "rgba(255,220,160,0.5)";
-  for (let y = 0; y < canvas.height; y += U(0.5)) {
-    c.beginPath();
-    c.arc(U(0.18), y + U(0.25), U(0.05), 0, Math.PI * 2);
-    c.arc(canvas.width - U(0.18), y + U(0.25), U(0.05), 0, Math.PI * 2);
-    c.fill();
-  }
-  // The lagoon pool across the top, where Georges swims
-  const rabbitY = lights.find((x) => x.id === "rabbit");
-  const poolY = 29.9;
-  const pool = c.createLinearGradient(0, Y(poolY + 1.2), 0, Y(poolY - 1.2));
-  pool.addColorStop(0, "rgba(10,93,122,0.95)");
-  pool.addColorStop(0.5, "rgba(34,211,238,0.85)");
-  pool.addColorStop(1, "rgba(10,93,122,0.95)");
-  rounded(c, X(-3.2), Y(poolY + 1.15), U(6.4), U(2.3), U(1.1));
-  c.fillStyle = pool;
-  c.fill();
-  c.strokeStyle = "rgba(180,255,255,0.8)";
-  c.lineWidth = U(0.05);
-  c.stroke();
-  c.strokeStyle = "rgba(255,255,255,0.35)";
-  c.lineWidth = U(0.03);
-  for (let k = -2; k <= 2; k++) {
-    c.beginPath();
-    c.moveTo(X(-2.6), Y(poolY + k * 0.35));
-    for (let x = -2.6; x <= 2.6; x += 0.3) {
-      c.lineTo(X(x), Y(poolY + k * 0.35 + Math.sin(x * 3 + k) * 0.06));
-    }
-    c.stroke();
-  }
-  // The beach by the exit hole (Romain blocks it)
-  const sand = c.createRadialGradient(X(TABLE.release.x), Y(TABLE.release.y), U(0.3), X(TABLE.release.x), Y(TABLE.release.y), U(1.4));
-  sand.addColorStop(0, "rgba(255,226,160,0.95)");
-  sand.addColorStop(1, "rgba(255,226,160,0)");
-  c.fillStyle = sand;
-  c.fillRect(0, 0, canvas.width, canvas.height);
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  neonText(c, tableText(t, "tbSiloFloor").toUpperCase(), canvas.width / 2, Y(TABLE.upperBottom + 2.45), canvas.width * 0.82, U(0.42), NIGHT.mango);
-  c.fillStyle = "#ffffff";
-  c.save();
-  c.shadowColor = "rgba(0,0,0,0.8)";
-  c.shadowBlur = U(0.05);
-  fitText(c, tableText(t, "tbBeach").toUpperCase(), X(TABLE.release.x + 0.9), Y(TABLE.release.y - 1.2), U(2.2), U(0.24), "900");
-  c.restore();
-  for (const light of lights) {
-    if (light.floor !== 1) {
-      continue;
-    }
-    insertPath(c, light.shape, X(light.x), Y(light.y), light.size * scale * 1.28, light.angle);
-    c.fillStyle = "#0a0418";
-    c.fill();
-    insertPath(c, light.shape, X(light.x), Y(light.y), light.size * scale, light.angle);
-    c.fillStyle = hex(light.color, 0.35);
-    c.fill();
-  }
-  void rabbitY;
-  return texture(THREE, canvas, tier);
-}
 
 /** The apron: Panda (Hoho!), the title, two rule cards on madras. */
 export function paintApron(THREE, t, pandaUrl) {
@@ -739,113 +726,7 @@ export function paintNeon(THREE, label, color, faceUrl) {
   return tex;
 }
 
-/** Eul' barbecue: the grill, two merguez, Babar's face. */
-export function paintTerminal(THREE, label, faceUrl) {
-  const text = str(label);
-  const [canvas, c] = canvasOf(320, 200);
-  const tex = texture(THREE, canvas, 2);
-  rounded(c, 4, 4, 312, 192, 22);
-  c.fillStyle = "#1c0f22";
-  c.fill();
-  c.lineWidth = 6;
-  c.strokeStyle = NIGHT.mango;
-  c.stroke();
-  face(c, tex, faceUrl, 66, 82, 46, NIGHT.mango);
-  // The grill and its coals
-  const coals = c.createRadialGradient(212, 92, 4, 212, 92, 70);
-  coals.addColorStop(0, "#ffcf5a");
-  coals.addColorStop(0.5, "#ff5a1f");
-  coals.addColorStop(1, "#5a1206");
-  c.fillStyle = coals;
-  c.beginPath();
-  c.ellipse(212, 92, 82, 44, 0, 0, Math.PI * 2);
-  c.fill();
-  c.strokeStyle = "#cfd6de";
-  c.lineWidth = 4;
-  for (let x = 140; x <= 284; x += 16) {
-    c.beginPath();
-    c.moveTo(x, 54);
-    c.lineTo(x, 130);
-    c.stroke();
-  }
-  // Two merguez
-  for (const [y, a] of [
-    [76, -0.12],
-    [106, 0.08]
-  ]) {
-    c.save();
-    c.translate(212, y);
-    c.rotate(a);
-    rounded(c, -58, -10, 116, 20, 10);
-    c.fillStyle = "#9b2f1c";
-    c.fill();
-    c.strokeStyle = "#3a0d06";
-    c.lineWidth = 3;
-    for (let x = -40; x <= 40; x += 20) {
-      c.beginPath();
-      c.moveTo(x - 4, -8);
-      c.lineTo(x + 4, 8);
-      c.stroke();
-    }
-    c.restore();
-  }
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  c.fillStyle = "#ffffff";
-  fitText(c, text.toUpperCase(), 160, 170, 290, 32, "900");
-  return tex;
-}
 
-/** Eul' cyclone: a hurricane spiral on the night sea; calm (refactored), a sun and a palm. */
-export function paintFlow(THREE, calm) {
-  const [canvas, c] = canvasOf(256, 256);
-  const g = c.createRadialGradient(128, 128, 10, 128, 128, 128);
-  g.addColorStop(0, calm ? "#ffe08a" : "#4ad8ff");
-  g.addColorStop(0.6, calm ? "#ff9a3d" : "#2a2fa8");
-  g.addColorStop(1, calm ? "#c2410c" : "#14062e");
-  c.fillStyle = g;
-  c.beginPath();
-  c.arc(128, 128, 126, 0, Math.PI * 2);
-  c.fill();
-  if (calm) {
-    c.fillStyle = "#fff6d8";
-    c.beginPath();
-    c.arc(128, 110, 46, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = "#0a5d7a";
-    c.fillRect(20, 158, 216, 60);
-    palm(c, 180, 200, 110, -0.12, "#1b0b3f", "#ffd23f");
-  } else {
-    // Three arms of cloud wound round the eye
-    for (let arm = 0; arm < 3; arm++) {
-      c.strokeStyle = "rgba(255,255,255," + (0.9 - arm * 0.15) + ")";
-      c.lineWidth = 16 - arm * 3;
-      c.lineCap = "round";
-      c.beginPath();
-      for (let a = 0; a < Math.PI * 2.4; a += 0.08) {
-        const r = 16 + a * 15;
-        const x = 128 + Math.cos(a + (arm * Math.PI * 2) / 3) * r;
-        const y = 128 + Math.sin(a + (arm * Math.PI * 2) / 3) * r;
-        if (a === 0) {
-          c.moveTo(x, y);
-        } else {
-          c.lineTo(x, y);
-        }
-      }
-      c.stroke();
-    }
-    c.fillStyle = "#0d0526";
-    c.beginPath();
-    c.arc(128, 128, 14, 0, Math.PI * 2);
-    c.fill();
-  }
-  c.lineWidth = 6;
-  c.strokeStyle = "rgba(255,255,255,0.8)";
-  c.beginPath();
-  c.arc(128, 128, 123, 0, Math.PI * 2);
-  c.stroke();
-  return texture(THREE, canvas, 1);
-}
 
 /** The cap of a pop bumper: a friend's face on a bright dome, his name under it. */
 export function paintBumperCap(THREE, color, faceUrl, name) {
@@ -869,26 +750,6 @@ export function paintBumperCap(THREE, color, faceUrl, name) {
   return tex;
 }
 
-/** A can of 8.6 (wrapped round Victor's standups). */
-export function paintCan(THREE) {
-  const [canvas, c] = canvasOf(256, 128);
-  const g = c.createLinearGradient(0, 0, 0, 128);
-  g.addColorStop(0, "#f4d24a");
-  g.addColorStop(0.5, "#ffe98a");
-  g.addColorStop(1, "#b8901a");
-  c.fillStyle = g;
-  c.fillRect(0, 0, 256, 128);
-  c.fillStyle = "#b3121b";
-  c.fillRect(0, 18, 256, 12);
-  c.fillRect(0, 98, 256, 12);
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  c.fillStyle = "#1a1030";
-  for (const x of [64, 192]) {
-    fitText(c, "8.6", x, 66, 110, 54, "900");
-  }
-  return texture(THREE, canvas, 1);
-}
 
 /** A letter of T-A-T-O-U on the face of a drop target. */
 export function paintLetter(THREE, letter, color) {
@@ -923,23 +784,3 @@ export function paintMadras(THREE, tint) {
   return tex;
 }
 
-/** The silo's corrugated wall. */
-export function paintCorrugated(THREE) {
-  const [canvas, c] = canvasOf(512, 64);
-  c.fillStyle = "#8a93a6";
-  c.fillRect(0, 0, 512, 64);
-  for (let x = 0; x < 512; x += 16) {
-    const g = c.createLinearGradient(x, 0, x + 16, 0);
-    g.addColorStop(0, "rgba(255,255,255,0.35)");
-    g.addColorStop(0.5, "rgba(0,0,0,0.25)");
-    g.addColorStop(1, "rgba(255,255,255,0.35)");
-    c.fillStyle = g;
-    c.fillRect(x, 0, 16, 64);
-  }
-  c.fillStyle = "rgba(60,30,20,0.35)";
-  c.fillRect(0, 56, 512, 8);
-  const tex = texture(THREE, canvas, 1);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.repeat.set(3, 1);
-  return tex;
-}

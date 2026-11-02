@@ -1,66 +1,89 @@
 // Engine from Pipeline Pinball (sfdx-hardis-training), same author.
 /*
- * Eul' Flipper, the table of Pandadventures, as data (rebuilt from the table
- * of Pipeline Pinball with a new disposition): every wall, post, flipper, target,
- * ramp and light, in table units (see physics.js). The physics, the view and
- * the rules all read it from here, so a post moved here moves everywhere.
+ * Eul' Flipper, table v2 "L'île de Panda", as data: every wall, post,
+ * flipper, target, toy, ramp and light, in table units (see physics.js). The
+ * physics, the view and the rules all read it from here, so a post moved here
+ * moves everywhere.
  *
  * The proportions are an arcade table's, 1 unit for 5 cm: a 27 mm ball,
  * 3 inch flippers with their pivots 7 inches apart, ramp mouths about two
  * balls and a half wide, a playfield a little over twice as long as wide.
  *
- * The table is built at its design size, then stretched (sy): everything from
- * the top of the banks up moves up STRETCH, which opens a band in the middle
- * for the Backups lane, the side bumpers and the Hotfix hole.
+ * v2 is built round element types Pipeline Pinball does not have (DESIGN.md,
+ * "Table v2"): no fan of three ramps, no orbits, no upper floor, no third
+ * flipper, no spinning disc, no saucers.
  *
- *   top         the silo roof "Carottés dans l'Silo", raised: two small
- *               flippers, Georges the croco swimming across (tag rabbit),
- *               Romain in front of the beach hole (salesManager, release)
- *               three top lanes (the skill shot) under the arc, on the right,
- *               with eul' barbecue saucer (terminal) and eul' cyclone (flow)
- *               under them; the pop bumpers Babar, Mamar and Greg up on the
- *               left, over Le Molière (the scoop)
- *               the shots, fanned out from the flippers: Tour de l'île (left
- *               orbit, the ti-punch spinner), the Rampe du Rhum (uat, LEFT,
- *               ends at the giant ti-punch glass), Le Molière, the Montée du
- *               Silo (production, closed until a promotion opens it), the
- *               Validate standup, the Rampe Fiat Panda (integration, RIGHT,
- *               the road ramp the little car drives on), the Route de la plage
- *               (right orbit)
- *   the band    the IMPÔTS targets on both walls under the orbit mouths,
- *               Mamar's ball (hotfix), the kids round the Fiat (admins)
- *   y 6 to 9.4  the T-A-T-O-U drop targets (left bank), Victor's three 8.6
- *               cans and the third flipper (right bank)
- *   y 0 to 6    the slingshots, the inlanes and outlanes, eul' sanglier and
- *               the Fiat reverse (kickbacks), the flippers; the plunger lane
- *               on the right
+ *   top          H-O-H-O, four rollovers under the arc (the skill shot, lane
+ *                change with the flippers); the pop bumpers Babar, Mamar and
+ *                Greg in a cluster under them, on the right
+ *   upper middle La Montagne Pelée, the volcano (a bash toy with hit points,
+ *                centre top) and its crater (a hole that opens when it
+ *                erupts); eul' ballon d'Mamar, a magnet under a disc on the
+ *                left; the G of MERGUEZ up on the left
+ *   the shots    from left to right: Le looping de 15h pétantes (a wire
+ *                loop-the-loop, left), La cave à rhum (a cellar hole: the
+ *                ball sinks, travels under the table and a VUK kicks it up
+ *                onto a wire to the left inlane), the volcano up the middle,
+ *                Le Molière (a scoop behind a drawbridge of three drop
+ *                targets, the bouncers), the Rampe Fiat Panda (right, with a
+ *                diverter into Le Silo, the visible lock hanging over the
+ *                right side), Eul' coco (a captive coconut in a short lane on
+ *                the right wall)
+ *   y 7.5 to 10  the land crabs walking sideways across the middle; the two
+ *                banks with the M-E and U-E of MERGUEZ
+ *   y 0 to 7     the slingshots (Victor, Greg), the inlanes and outlanes, the
+ *                kickback "Marche arrière" (right outlane), eul' sanglier (the
+ *                up-post between the flippers), the flippers; the plunger
+ *                lane on the right
  */
 import { createPhysics, BALL_RADIUS } from "./physics.js";
 
-// Everything from the top of the banks up moves up this much
-const SPLIT = 9.45;
-const STRETCH = 2.5;
-
-/** A design y, stretched: the y of the table as built. */
+/** Table v2 is built at its final size: kept for the callers of v1, it changes nothing. */
 export function sy(y) {
-  return y >= SPLIT ? y + STRETCH : y;
+  return y;
 }
 
-// The table at its design size
+// The toys and holes, where the view and the art find them too
+const VOLCANO = { x: -0.35, y: 16.4, r: 0.95 };
+const CRATER = { x: -0.35, y: 15.15, r: 0.42 };
+const CELLAR = { x: -2.1, y: 12.4 };
+const MOLIERE = { x: 1.35, y: 13.7 };
+const MAGNET = { x: -2.6, y: 15.9, r: 0.6 };
+// The coconut's rail, in its lane on the right wall: rest at the bottom, the switch at the top
+const COCO = { x: 4.45, y0: 11.1, y1: 12.9, r: 0.3 };
+// The Silo hangs over the right side, the balls stack in it (visible lock)
+const SILO = { x: 4.45, y: 14.85, h: 2.0 };
+const POST = { x: 0, y: 1.05, r: 0.2 };
+const CRAB_BOUNDS = [-2.6, 7.7, 2.6, 10.3];
+const CRAB_HOMES = [
+  [-1.5, 8.5],
+  [0.1, 9.5],
+  [1.5, 8.3],
+  [-0.6, 10.0]
+];
+const BUMPERS = [
+  [1.25, 18.35],
+  [3.45, 18.35],
+  [2.35, 17.15]
+];
+const HOHO = [0.65, 1.65, 2.65, 3.65];
+const HOHO_Y = 20.45;
+const BOUNCERS = [0.85, 1.35, 1.85];
+const BOUNCER_Y = 12.85;
+
 const DESIGN = {
   left: -5,
   right: 6.1,
   laneWall: 5,
-  top: 20.55,
-  upperBottom: 21.8,
-  upperTop: 30.4,
+  top: 23.05,
+  // No upper floor any more: kept so the callers that test a floor 1 read sane values
+  upperBottom: 99,
+  upperTop: 99,
   upperLeft: -3.6,
   upperRight: 3.6,
   upperHeight: 2.2,
   plunger: { x: 5.56, y: 0.6 },
-  scoop: { x: -1.55, y: 12.9 },
-  release: { x: -2.75, y: 27.6 },
-  arc: { x: 0.55, y: 15, r: 5.55 },
+  arc: { x: 0.55, y: 17.5, r: 5.55 },
   // The left slingshot's corners (the right one mirrors it): top, bottom, the tip over the flipper
   sling: [
     [-3.1, 5.9],
@@ -69,33 +92,32 @@ const DESIGN = {
   ]
 };
 
-/** The table as built, stretched: what the view, the rules and the tests read. */
+/** The table as built: what the view, the rules and the tests read. */
 export const TABLE = Object.assign({}, DESIGN, {
-  top: sy(DESIGN.top),
-  upperBottom: sy(DESIGN.upperBottom),
-  upperTop: sy(DESIGN.upperTop),
-  scoop: { x: DESIGN.scoop.x, y: sy(DESIGN.scoop.y) },
-  release: { x: DESIGN.release.x, y: sy(DESIGN.release.y) },
-  arc: { x: DESIGN.arc.x, y: sy(DESIGN.arc.y), r: DESIGN.arc.r },
-  ball: BALL_RADIUS
+  ball: BALL_RADIUS,
+  volcano: VOLCANO,
+  crater: CRATER,
+  cellar: CELLAR,
+  moliere: MOLIERE,
+  magnet: MAGNET,
+  coco: COCO,
+  silo: SILO,
+  post: POST,
+  crabBounds: CRAB_BOUNDS,
+  hoho: HOHO,
+  hohoY: HOHO_Y
 });
 
-// Under each orbit, a bank turned towards the far flipper sends a ball coming
-// down the side wall back into play: the drop targets of Recent Changes on the
-// left, three checks on the right. From the wall to the end over the inlane
+// Under each side, a bank turned towards the far flipper sends a ball coming
+// down the side wall back into play: M-E of MERGUEZ on the left, U-E on the right
 const BANK_TOP = [-5, 9.4];
 const BANK_END = [-3.9, 7.5];
-// The right bank ends inside the pivot of the third flipper (mirrored here):
-// its face runs on to the top of the flipper, with no step to stop a ball
-const RIGHT_BANK_END = [-3.87, 7.8];
-const DROPS = [0.1, 0.3, 0.5, 0.7, 0.9];
-const STANDUPS = [0.22, 0.5, 0.78];
+const BANK_TARGETS = [0.3, 0.72];
 
 /** A point along the left bank (mirrored for the right one), pushed off its face by `off`. */
 export function bankPoint(k, off, side) {
-  const end = side === -1 ? RIGHT_BANK_END : BANK_END;
-  const dx = end[0] - BANK_TOP[0];
-  const dy = end[1] - BANK_TOP[1];
+  const dx = BANK_END[0] - BANK_TOP[0];
+  const dy = BANK_END[1] - BANK_TOP[1];
   const len = Math.hypot(dx, dy);
   // The face looks up and across the table, towards the other flipper
   const nx = -dy / len;
@@ -105,38 +127,27 @@ export function bankPoint(k, off, side) {
   return [side === -1 ? -x : x, y];
 }
 const BANK_LENGTH = Math.hypot(BANK_END[0] - BANK_TOP[0], BANK_END[1] - BANK_TOP[1]);
-const ADMINS = [
-  [-1.6, 9.2],
-  [0.12, 10.1],
-  [1.6, 9.2]
-];
-// Babar, Mamar and Greg: up on the left, over Le Molière, where the ball
-// coming round the top, off the silo wire and off the roof of the scoop lands.
-// A tight triangle: no ball passes or rests between two of them
-const BUMPERS = [
-  [-0.9, 16.35],
-  [-3.1, 16.35],
-  [-2.0, 15.15]
-];
-// Under the arc on the right, where a plunge that is not a full one falls
-const LANES = [1.1, 2.2, 3.3];
-// The shots fan out from the flippers, as on the arcade tables: from left to
-// right the left orbit, the integration ramp, the scoop, the production ramp,
-// the uat ramp, the right orbit, each with a clear lane (measured with a ball
-// flipped from every point of each flipper). The orbits open level with the
-// ramp mouths, as built (after the stretch), between the side wall and their
-// inner walls; Backups and Code quality stand on the side walls under them
-const ORBIT_MOUTH = 13.0;
-const INNER = 3.8;
-const SIDE_TARGETS = [10.3, 10.9, 11.5];
-const SIDE_X = 4.84;
-// The Rollback kick, on the right side (mirrored on the left): up the outlane, over the post, down the inlane
+
+/**
+ * The seven MERGUEZ standups round the playfield, in letter order:
+ * [ax, ay, bx, by, light x, light y]. M and E on the left bank, R on the left
+ * wall, G up on the left, U and E on the right bank, Z on the right wall.
+ */
+function merguezSpots() {
+  const half = 0.2 / BANK_LENGTH;
+  const bank = (k, side) => {
+    const [ax, ay] = bankPoint(k - half, 0.04, side);
+    const [bx, by] = bankPoint(k + half, 0.04, side);
+    const [lx, ly] = bankPoint(k, 0.7, side);
+    return [ax, ay, bx, by, lx, ly];
+  };
+  return [bank(BANK_TARGETS[0], 1), bank(BANK_TARGETS[1], 1), [-4.86, 11.85, -4.86, 12.35, -4.35, 12.1], [-3.35, 19.15, -2.95, 18.8, -2.75, 19.45], bank(BANK_TARGETS[0], -1), bank(BANK_TARGETS[1], -1), [4.86, 14.45, 4.86, 14.95, 4.35, 14.7]];
+}
+
+// The right inlane wire, the way back of the Fiat ramp and of the Silo
+const RIGHT_WIRE = [6.45, 15.2, 2.15, 6.5, 9.5, 2.0, 6.4, 7.2, 1.7, 4.4, 6.3, 0.9, 3.6, 5.9, 0.3, 3.55, 5.5, 0];
+// The kick of "Marche arrière", in the right outlane: up the outlane, over the post, down the inlane
 const KICK_PATH = [4.5, 1.4, 0, 4.5, 5.2, 0.3, 4.45, 6.3, 0.9, 4.0, 6.75, 1.1, 3.6, 5.9, 0.3, 3.55, 5.5, 0];
-// Mamar's ball: a saucer low on the left, shot from the right flipper
-const HOTFIX = { x: -3.3, y: 10.2 };
-// Eul' cyclone spins under the top lanes, by eul' barbecue (as built)
-const FLOW = { x: 2.75, y: 18.35, r: 0.7 };
-const TERMINAL = { x: 1.2, y: 18.0 };
 
 /** Builds the table: { physics, parts, walls, lights }. */
 export function buildTable() {
@@ -155,68 +166,90 @@ export function buildTable() {
   keep(p.arc(T.arc.x, T.arc.y, T.arc.r, Math.PI, 0, 28, { r: 0.12, bounce: 0.4, friction: 0.01 }), "wall");
   keep(p.capsule(T.right, T.arc.y, T.right, -1.5, { r: 0.08, bounce: 0.4 }), "wall");
   // The plunger lane: its inner wall, and a gate that lets the ball out, not back
-  keep(p.capsule(T.laneWall, -1.5, T.laneWall, 13.6, { r: 0.1, bounce: 0.4 }), "wall");
-  keep(p.capsule(6.02, 14.45, 5.05, 13.72, { r: 0.06, bounce: 0.2, oneWay: { x: 0, y: 1 } }), "gate");
+  keep(p.capsule(T.laneWall, -1.5, T.laneWall, 16.1, { r: 0.1, bounce: 0.4 }), "wall");
+  keep(p.capsule(6.02, 16.95, 5.05, 16.22, { r: 0.06, bounce: 0.2, oneWay: { x: 0, y: 1 } }), "gate");
   p.setPlunger(5.12, 5.98, T.plunger.y);
 
-  // The orbits: an inner wall on each side makes a lane up to the arc
-  keep(p.capsule(-INNER, 10.8, -INNER, 14.7, { r: 0.1 }), "wall");
-  keep(p.arc(-INNER + 0.8, 14.7, 0.8, Math.PI, Math.PI / 2, 5, { r: 0.1 }), "wall");
-  keep(p.capsule(INNER, 10.8, INNER, 14.2, { r: 0.1 }), "wall");
-  keep(p.arc(INNER - 0.8, 14.2, 0.8, 0, Math.PI / 2, 5, { r: 0.1 }), "wall");
-  const spinner = p.line(-INNER, 11.2, T.left, 11.2, { tag: "spinner" });
-  const orbitLeft = p.line(T.left, 14.2, -INNER, 14.2, { tag: "orbitLeft" });
-  const orbitRight = p.line(INNER, 13.0, T.laneWall, 13.0, { tag: "orbitRight" });
+  /* ---------- Top: H-O-H-O and the bumpers ---------- */
 
-  // The top lanes, under the arc: three rollovers, lit for the skill shot
+  // The posts between the four rollovers, shorter to the right under the arc
   for (const [x, top] of [
-    [0.55, 18.7],
-    [1.65, 18.6],
-    [2.75, 18.45],
-    [3.85, 17.9]
+    [0.15, 21.2],
+    [1.15, 21.2],
+    [2.15, 21.05],
+    [3.15, 20.85],
+    [4.15, 20.6]
   ]) {
-    keep(p.capsule(x, 17.4, x, top, { r: 0.08, bounce: 0.5 }), "post");
+    keep(p.capsule(x, 19.85, x, top, { r: 0.08, bounce: 0.5 }), "post");
   }
-  const lanes = LANES.map((x, i) => p.line(x + 0.47, 17.9, x - 0.47, 17.9, { tag: "lane" + i }));
-
-  // Apex triggers: the pop bumpers
+  const hoho = HOHO.map((x, i) => p.line(x + 0.47, HOHO_Y, x - 0.47, HOHO_Y, { tag: "hoho" + i }));
+  // Babar, Mamar and Greg: a tight triangle under the lanes, no ball rests between two of them
   const bumpers = BUMPERS.map(([x, y], i) => p.circle(x, y, 0.6, { bounce: 0.6, kick: 15, tag: "bumper" + i }));
 
-  // The Pull Request scoop, with its back wall
-  keep(p.arc(T.scoop.x, T.scoop.y, 0.62, -0.25, Math.PI + 0.25, 8, { r: 0.08, bounce: 0.2 }), "wall");
-  // One roof over the scoop and the production chute, peaked over the chute:
-  // a ball on it rolls off one side or the other, it never rests in a corner
-  keep(p.wall([-2.28, 13.2, 0, 14.1, 0.66, 13.72], { r: 0.08, bounce: 0.35 }), "wall");
-  const scoop = p.hole(T.scoop.x, T.scoop.y, 0.32, { tag: "scoop", capture: true });
+  /* ---------- La Montagne Pelée and its crater ---------- */
 
-  // The ramps: their mouths, and the paths over the table.
-  // The Rampe du Rhum (uat), on the LEFT: up to the giant ti-punch glass at
-  // its crest, then a wire rail down the left side to the left inlane
-  const uatPath = p.path(
-    [-3.0, 10.9, 0, -3.0, 12.6, 0.9, -3.15, 14.2, 1.7, -3.7, 15.0, 1.9, -4.6, 15.2, 2.0, -5.4, 14.6, 2.1, -5.45, 9.5, 2.0, -5.35, 7.2, 1.7, -4.3, 6.3, 0.8, -3.6, 5.9, 0.3, -3.55, 5.5, 0],
-    { tag: "uat", exitMax: 9 }
-  );
-  // No walls at the mouth: the plastic ramp starts flat on the playfield
-  // A mouth about two balls and a half wide, as on the arcade
-  p.line(-3.6, 10.9, -2.4, 10.9, { path: uatPath, tag: "uatMouth" });
+  // Four hits and it erupts: the rules set its hit points, harder each time
+  const volcano = p.bashToy(VOLCANO.x, VOLCANO.y, VOLCANO.r, { hp: 4, minSpeed: 7, tag: "volcano", bounce: 0.45 });
+  // The crater: open only after an eruption, at the foot of the volcano facing the flippers
+  const crater = p.hole(CRATER.x, CRATER.y, CRATER.r, { tag: "crater", capture: true, enabled: false });
 
-  // The Rampe Fiat Panda (integration), on the RIGHT: the road the little car
-  // drives up, then a wire over the plunger lane down to the right inlane
-  const integrationPath = p.path(
-    [3.0, 10.9, 0, 3.0, 12.6, 0.9, 3.15, 14.2, 1.7, 3.7, 15.0, 1.9, 4.6, 15.2, 2.0, 6.45, 14.6, 2.1, 6.5, 9.5, 2.0, 6.4, 7.2, 1.7, 4.4, 6.3, 0.9, 3.6, 5.9, 0.3, 3.55, 5.5, 0],
-    { tag: "integration", exitMax: 9 }
-  );
-  p.line(2.4, 10.9, 3.6, 10.9, { path: integrationPath, tag: "integrationMouth" });
+  /* ---------- Eul' ballon d'Mamar: the magnet ---------- */
 
-  // The Montée du Silo (production) climbs to the silo roof; a gate closes its mouth until it is lit
-  const productionPath = p.path(
-    [0, 12.75, 0, 0, 14.6, 0.9, 0.15, 17.4, 1.9, 0.6, 20.0, 2.5, 1.6, 21.6, 2.6, 2.6, 22.6, 2.4, 2.75, 23.4, 2.2, 2.4, 24.2, 2.2],
-    { tag: "production", exitFloor: 1, exitMax: 14 }
+  const magnet = p.magnet(MAGNET.x, MAGNET.y, MAGNET.r, { tag: "magnet", maxSpeed: 26, pull: 30 });
+
+  /* ---------- La cave à rhum: a cellar hole, the VUK and its wire ---------- */
+
+  keep(p.arc(CELLAR.x, CELLAR.y, 0.62, -0.25, Math.PI + 0.25, 8, { r: 0.08, bounce: 0.2 }), "wall");
+  const cellar = p.hole(CELLAR.x, CELLAR.y, 0.32, { tag: "cellar", capture: true });
+  // The VUK kicks the ball straight up out of the cellar onto a wire, over the
+  // loop's mouth and down the left side to the left inlane
+  const cellarPath = p.path(
+    [CELLAR.x, CELLAR.y, 0, CELLAR.x, CELLAR.y + 0.1, 1.4, -2.5, 12.0, 2.2, -3.3, 11.3, 2.3, -4.6, 10.4, 2.15, -5.45, 9.4, 2.0, -5.35, 7.2, 1.7, -4.3, 6.3, 0.8, -3.6, 5.9, 0.3, -3.55, 5.5, 0],
+    { tag: "cellarWire", exitMax: 9 }
   );
-  keep(p.wall([-0.66, 13.7, -0.66, 12.55], { r: 0.08, bounce: 0.3 }), "rail");
-  keep(p.wall([0.66, 13.7, 0.66, 12.55], { r: 0.08, bounce: 0.3 }), "rail");
-  const productionGate = keep(p.capsule(-0.58, 12.45, 0.58, 12.45, { r: 0.1, bounce: 0.45, tag: "productionGate" }), "diverter");
-  p.line(-0.58, 12.75, 0.58, 12.75, { path: productionPath, tag: "productionMouth" });
+
+  /* ---------- Le Molière: the scoop behind the bouncers ---------- */
+
+  keep(p.arc(MOLIERE.x, MOLIERE.y, 0.62, -0.25, Math.PI + 0.25, 8, { r: 0.08, bounce: 0.2 }), "wall");
+  // Side guides from the back wall down to the bouncers: the door is the only way in
+  keep(p.capsule(MOLIERE.x - 0.6, MOLIERE.y - 0.15, BOUNCERS[0] - 0.25, BOUNCER_Y, { r: 0.08, bounce: 0.3 }), "wall");
+  keep(p.capsule(MOLIERE.x + 0.6, MOLIERE.y - 0.15, BOUNCERS[2] + 0.25, BOUNCER_Y, { r: 0.08, bounce: 0.3 }), "wall");
+  const moliere = p.hole(MOLIERE.x, MOLIERE.y, 0.32, { tag: "moliere", capture: true });
+  const bouncers = BOUNCERS.map((x, i) => p.capsule(x - 0.13, BOUNCER_Y, x + 0.13, BOUNCER_Y, { r: 0.12, bounce: 0.35, hop: 0.15, tag: "bouncer" + i }));
+
+  /* ---------- Le looping de 15h pétantes ---------- */
+
+  // The approach climbs to the foot of the loop, the loop turns over the
+  // table, and the ball comes out at the top left, rolling towards the magnet
+  const loopPath = p.verticalLoop(
+    [-3.95, 10.9, 0, -4.0, 12.4, 0.55, -4.05, 13.4, 0.9],
+    1.1,
+    -4.55,
+    [-4.6, 14.7, 0.75, -4.55, 15.7, 0.45, -4.3, 16.6, 0.15, -3.85, 17.0, 0, -3.4, 16.9, 0],
+    { tag: "loop", exitMax: 12, friction: 3, drag: 0.25 }
+  );
+  p.line(-4.55, 10.9, -3.35, 10.9, { path: loopPath, tag: "loopMouth" });
+
+  /* ---------- The Rampe Fiat Panda, its diverter and Le Silo ---------- */
+
+  const fiatPath = p.path([2.9, 10.9, 0, 2.95, 12.6, 0.9, 3.1, 14.2, 1.7, 3.45, 15.2, 2.0, 4.0, 15.7, 2.1, 4.9, 15.9, 2.2].concat(RIGHT_WIRE), { tag: "fiat", exitMax: 9 });
+  p.line(2.3, 10.9, 3.5, 10.9, { path: fiatPath, tag: "fiatMouth" });
+  // Past the bend, the diverter turns the ball into the Silo when the lock is lit
+  const siloPath = p.path([4.0, 15.7, 2.1, 4.3, 15.35, 2.1, SILO.x, SILO.y, SILO.h], { tag: "silo", holdAtEnd: true });
+  const fiatDiverter = p.diverter(fiatPath, 4, siloPath);
+  // Out of the Silo: the balls it lets go roll down the right wire to the right inlane
+  const siloExit = p.path([SILO.x, SILO.y, SILO.h, 4.9, 15.55, 2.25].concat(RIGHT_WIRE), { tag: "siloExit", exitMax: 9 });
+
+  /* ---------- Eul' coco: the captive coconut ---------- */
+
+  // Its lane on the right wall: the inner wall, and a cap sloped to the left (no ball rests on it)
+  keep(p.capsule(3.9, 10.35, 3.9, 13.25, { r: 0.1, bounce: 0.4 }), "wall");
+  keep(p.capsule(3.9, 13.3, 5.0, 13.6, { r: 0.1, bounce: 0.4 }), "wall");
+  const coco = p.captive(COCO.x, COCO.y0, COCO.x, COCO.y1, COCO.r, { tag: "coco", mass: 1.3, bounce: 0.8 });
+
+  /* ---------- MERGUEZ ---------- */
+
+  const merguez = merguezSpots().map(([ax, ay, bx, by], i) => p.capsule(ax, ay, bx, by, { r: 0.1, bounce: 0.4, hop: 0.2, tag: "merguez" + i }));
 
   // The two banks: a solid wedge from the wall, its face turned to the middle
   for (const side of [1, -1]) {
@@ -224,24 +257,14 @@ export function buildTable() {
     const [ex, ey] = bankPoint(1, 0, side);
     keep(p.wall([tx, ty, ex, ey, side * -5, 7.1], { r: 0.1, bounce: 0.45 }), "wall");
   }
-  // Recent Changes: five drop targets along the left bank
-  const half = (0.16 / BANK_LENGTH);
-  const drops = DROPS.map((k, i) => {
-    // Flush with the bank: a ball rolling down it does not knock them over, a shot does
-    const [ax, ay] = bankPoint(k - half, 0.04, 1);
-    const [bx, by] = bankPoint(k + half, 0.04, 1);
-    return p.capsule(ax, ay, bx, by, { r: 0.12, bounce: 0.35, tag: "drop" + i });
-  });
-  // Three checks along the right bank
-  const standups = STANDUPS.map((k, i) => {
-    const [ax, ay] = bankPoint(k - half * 1.4, 0.04, -1);
-    const [bx, by] = bankPoint(k + half * 1.4, 0.04, -1);
-    return p.capsule(ax, ay, bx, by, { r: 0.1, bounce: 0.4, tag: "check" + i });
-  });
-  // The admins who rise in the middle, with their change sets
-  const admins = ADMINS.map(([x, y], i) => p.circle(x, y, 0.44, { bounce: 0.45, tag: "admin" + i, enabled: false }));
 
-  // The inlanes, the outlanes, the slingshots
+  /* ---------- Les crabes de terre ---------- */
+
+  // Four crabs; the rules keep the fourth one home except in its missions
+  const crabs = CRAB_HOMES.map(([x, y], i) => p.creature(x, y, 0.36, { tag: "crab" + i, bounds: CRAB_BOUNDS, speed: 0.9, heading: i % 2 ? Math.PI : 0 }));
+
+  /* ---------- The lower playfield ---------- */
+
   for (const side of [-1, 1]) {
     // The inlane guide ends over the flipper's pivot: the ball rolls on to the bat
     keep(p.wall([side * 4.0, 6.4, side * 4.0, 3.5, side * 2.3, 2.75], { r: 0.1, bounce: 0.45, falloff: 0.0025 }), "wall");
@@ -262,81 +285,16 @@ export function buildTable() {
   p.line(T.laneWall, 4.6, 4.0, 4.6, { tag: "outlaneR" });
   p.line(-3.1, 4.6, -4.0, 4.6, { tag: "inlaneL" });
   p.line(4.0, 4.6, 3.1, 4.6, { tag: "inlaneR" });
-  // Rollback, in both outlanes: the lane is closed over its top by the bank,
-  // so the kick lifts the ball up the lane and over the inlane post, onto the
-  // inlane and its flipper (a path, not drawn: the ball hops back into play)
-  const kickback = p.line(-4.0, 1.4, T.left, 1.4, { tag: "kickback" });
+  // Marche arrière, in the right outlane: the bank closes the lane over its
+  // top, so the kick lifts the ball up the lane and over the inlane post
   const kickbackR = p.line(T.laneWall, 1.4, 4.0, 1.4, { tag: "kickbackR" });
-  const kickPath = (side) => p.path(KICK_PATH.map((v, i) => (i % 3 === 0 ? v * side : v)), { tag: side < 0 ? "kickback" : "kickbackR", exitMax: 9 });
-  const kickPaths = { left: kickPath(-1), right: kickPath(1) };
+  const kickPaths = { right: p.path(KICK_PATH, { tag: "kickbackR", exitMax: 9 }) };
 
-  // Arcade flippers: about three balls long, their pivots close to the middle
-  // As measured on the arcade: pivots 7 inches apart, the bats 31 degrees
-  // down at rest and 21 up, the tips under two balls apart
+  // Arcade flippers: pivots 7 inches apart, the bats 31 degrees down at rest and 21 up
   const left = p.flipper(-2.05, 2.4, 1.65, { side: 1, rest: -0.54, up: 0.37, r: 0.24, rb: 0.12, tag: "flipper" });
   const right = p.flipper(2.05, 2.4, 1.65, { side: -1, rest: -0.54, up: 0.37, r: 0.24, rb: 0.12, tag: "flipper" });
-  // A third, small flipper at the foot of the right bank, as on the arcade
-  // tables: a ball rolling down the bank lands on it, and it shoots across to
-  // the integration ramp, the scoop and the left orbit
-  const third = p.flipper(3.75, 7.75, 1.1, { side: -1, rest: -0.5, up: 0.45, r: 0.2, rb: 0.11, tag: "flipper" });
-
-  /* ---------- The Production floor ---------- */
-  const U = { floor: 1 };
-  keep(p.capsule(T.upperLeft, 24.4, T.upperLeft, 27.4, Object.assign({ r: 0.12 }, U)), "upper");
-  keep(p.capsule(T.upperRight, 24.4, T.upperRight, 27.4, Object.assign({ r: 0.12 }, U)), "upper");
-  keep(p.arc(0, 27.4, T.upperRight, Math.PI, 0, 18, Object.assign({ r: 0.12 }, U)), "upper");
-  keep(p.wall([T.upperLeft, 24.4, -1.92, 23.3], Object.assign({ r: 0.1 }, U)), "upper");
-  keep(p.wall([T.upperRight, 24.4, 1.92, 23.3], Object.assign({ r: 0.1 }, U)), "upper");
-  const upperLeft = p.flipper(-1.7, 23.05, 1.15, { side: 1, rest: -0.5, up: 0.42, r: 0.2, rb: 0.11, floor: 1, tag: "flipper" });
-  const upperRight = p.flipper(1.7, 23.05, 1.15, { side: -1, rest: -0.5, up: 0.42, r: 0.2, rb: 0.11, floor: 1, tag: "flipper" });
-  // The Data Cloud rabbit walks across the top; the Sales Manager stands in front of the Release hole
-  const rabbit = p.circle(0, 27.4, 0.72, Object.assign({ bounce: 0.75, kick: 6, tag: "rabbit", moving: true }, U));
-  const salesManager = p.circle(-2.05, 26.75, 0.42, Object.assign({ bounce: 0.5, tag: "salesManager" }, U));
-  keep(p.arc(T.release.x, T.release.y, 0.6, Math.PI * 0.35, Math.PI * 1.45, 6, Object.assign({ r: 0.08 }, U)), "upper");
-  // A slope from the top arc to the back of the Release hole: no corner for a ball to rest in
-  keep(p.wall([-3.4, 28.58, -2.45, 28.18], Object.assign({ r: 0.08 }, U)), "upper");
-  // Wide enough that a ball in its mouth drops in, even with the Sales Manager beside it
-  const release = p.hole(T.release.x, T.release.y, 0.45, Object.assign({ tag: "release", capture: true }, U));
-  const upperTargets = [25.3, 26.3].map((y, i) => p.capsule(3.45, y - 0.25, 3.45, y + 0.25, Object.assign({ r: 0.1, bounce: 0.4, tag: "upperCheck" + i }, U)));
-  p.line(3.6, 21.9, -3.6, 21.9, Object.assign({ tag: "upperDrain" }, U));
-  // Back down from the silo roof: a wire that drops the ball on the shoulder
-  // of Babar's bumper, into the three bumpers
-  const downPath = p.path([0, 22.0, 2.2, -0.7, 21.2, 2.0, -1.3, 19.8, 1.3, -1.5, 18.6, 0.45, -1.6, 18.05, 0], { tag: "down", exitMax: 9 });
-  // After the Release hole: the long way down to the left inlane
-  const releasePath = p.path([T.release.x, T.release.y, 2.2, -3.4, 26.4, 2.4, -3.9, 23.4, 2.6, -5.35, 19.0, 2.3, -5.4, 14.6, 2.1, -5.45, 9.5, 2.0, -5.35, 7.2, 1.7, -4.3, 6.3, 0.8, -3.6, 5.9, 0.3, -3.55, 5.5, 0], { tag: "releaseWire", exitMax: 9 });
-
-  // Stretch the table, then build what lives in the band it opens
-  p.transformY(sy);
-  // The admins who rise in the middle of the band
-  admins[0].ay = admins[0].by = 10.4;
-  admins[1].ay = admins[1].by = 10.0;
-  admins[2].ay = admins[2].by = 10.4;
-  // Spaced so that the gap between two of them is wider than the ball: no ball rests between them
-  // and none on the centre line, where a slow ball could rest exactly on top of it
-  admins[0].ax = admins[0].bx = -1.45;
-  admins[1].ax = admins[1].bx = 0.1;
-  admins[2].ax = admins[2].bx = 1.65;
-  // The inner walls of the orbits come down to their mouths
-  keep(p.capsule(-INNER, ORBIT_MOUTH, -INNER, sy(10.8), { r: 0.1, bounce: 0.45, falloff: 0.0025 }), "wall");
-  keep(p.capsule(INNER, ORBIT_MOUTH, INNER, sy(10.8), { r: 0.1, bounce: 0.45, falloff: 0.0025 }), "wall");
-  // The Backups lane: three targets on the left wall, under the orbit
-  const backups = SIDE_TARGETS.map((y, i) => p.capsule(-SIDE_X, y - 0.2, -SIDE_X, y + 0.2, { r: 0.1, bounce: 0.45, hop: 0.2, tag: "backup" + i }));
-  // Code quality: three round targets to push in on the right wall, under the orbit
-  const quality = SIDE_TARGETS.map((y, i) => p.capsule(SIDE_X, y - 0.2, SIDE_X, y + 0.2, { r: 0.1, bounce: 0.45, hop: 0.2, tag: "quality" + i }));
-  // The shots fan out from the flippers with nothing in their way, as on the
-  // arcade tables: the toys stand between them or above them.
-  // Eul' cyclone: a disc under the top lanes that spins a ball off its line
-  const flow = p.disc(FLOW.x, FLOW.y, FLOW.r, { tag: "flow", strength: 16 });
-  // Validate: a standup between the production and the uat shots, the first half of a Quick deploy
-  const validate = p.capsule(1.3, 13.85, 1.85, 14.0, { r: 0.1, bounce: 0.45, hop: 0.2, tag: "validate" });
-  // Eul' barbecue: a saucer under the first top lane; Babar grills a random merguez
-  const terminal = p.hole(TERMINAL.x, TERMINAL.y, 0.36, { tag: "terminal", capture: true, maxSpeed: 34 });
-  // The Hotfix hole, by the Backups lane, and its wire loop over the left side to the left inlane
-  const hotfix = p.hole(HOTFIX.x, HOTFIX.y, 0.3, { tag: "hotfix", capture: true, maxSpeed: 30 });
-  const hotfixPath = p.path(
-    [HOTFIX.x, HOTFIX.y, 0, -4.0, 11.6, 0.8, -4.35, 12.8, 1.3, -4.6, 16.4, 2.3, -3.7, 19.3, 2.8, -2.2, 20.2, 2.9, -1.2, 19.4, 2.8, -1.9, 18.3, 2.7, -3.4, 18.6, 2.6, -5.35, 18.0, 2.2, -5.4, 17.1, 2.1, -5.45, 12.0, 2.0, -5.35, 7.2, 1.7, -4.3, 6.3, 0.8, -3.6, 5.9, 0.3, -3.55, 5.5, 0],
-    { tag: "hotfix", exitMax: 9 }
-  );
+  // Eul' sanglier: the up-post between the flippers, down until the coconut lights it
+  const post = p.post(POST.x, POST.y, POST.r, { tag: "post", bounce: 0.55 });
   p.build();
 
   const lights = buildLights();
@@ -345,32 +303,24 @@ export function buildTable() {
     walls,
     lights,
     parts: {
-      flippers: { left, right, third, upperLeft, upperRight },
+      flippers: { left, right },
       bumpers,
       slings,
-      drops,
-      standups,
-      admins,
-      rabbit,
-      salesManager,
-      productionGate,
-      upperTargets,
-      scoop,
-      release,
-      kickback,
+      hoho,
+      volcano,
+      crater,
+      magnet,
+      cellar,
+      moliere,
+      bouncers,
+      fiatDiverter,
+      coco,
+      merguez,
+      crabs,
+      post,
       kickbackR,
       kickPaths,
-      spinner,
-      orbitLeft,
-      orbitRight,
-      lanes,
-      backups,
-      quality,
-      hotfix,
-      flow,
-      validate,
-      terminal,
-      paths: { integration: integrationPath, uat: uatPath, production: productionPath, down: downPath, release: releasePath, hotfix: hotfixPath }
+      paths: { loop: loopPath, fiat: fiatPath, silo: siloPath, siloExit, cellar: cellarPath }
     }
   };
 }
@@ -378,37 +328,53 @@ export function buildTable() {
 /**
  * The inserts of the playfield the rules light, as on an arcade table: a
  * delta in front of each shot, chevrons chasing towards it, the honeycomb of
- * the ten missions over the flippers with Release day under it, the ladder of
- * the missions done up the middle, round inserts for the targets, the locks
- * and the lanes, warm bulbs. Each one { id, x, y, floor, size, shape ("round",
- * "delta", "hex", "star", "chevron", "bulb"), angle, color, label (a text key
- * painted under it) }. The playfield is painted with a bezel under each one.
+ * the ten missions over the flippers, round inserts for the targets, the
+ * Silo's locks and the lanes, warm bulbs. Each one { id, x, y, floor, size,
+ * shape ("round", "delta", "hex", "star", "chevron", "bulb"), angle, color,
+ * label (a text key painted near it), text (a letter painted inside) }.
  */
 function buildLights() {
   const lights = [];
   const add = (id, x, y, options) => {
     lights.push(Object.assign({ id, x, y, floor: 0, size: 0.32, shape: "round", angle: 0, color: 0x0176d3, label: "" }, options));
   };
-  // The shots, from left to right: a big delta for each
-  add("shot-preprod", -4.45, 10.05, { shape: "delta", color: 0x9b6bff, size: 0.4 });
-  add("shot-uat", -3.0, 9.95, { shape: "delta", color: 0xff3d8b, size: 0.52 });
-  add("shot-scoop", -1.55, 11.85, { shape: "delta", angle: 0.2, color: 0xff6ad5, size: 0.44 });
-  add("shot-production", 0, 11.65, { shape: "delta", color: 0x22d3ee, size: 0.5 });
-  add("shot-integration", 3.0, 9.95, { shape: "delta", color: 0xffa62b, size: 0.52 });
-  add("shot-orbitRight", 4.45, 10.05, { shape: "delta", color: 0x9b6bff, size: 0.4 });
-  // The promotion steps in front of the Montée du Silo
-  ["integration", "uat", "preprod"].forEach((name, i) => add("promo-" + name, -0.5 + i * 0.5, 10.95, { size: 0.17, color: 0x22d3ee }));
-  // The garage of the Fiat (the locks), beside the Rampe Fiat Panda
-  [0, 1, 2].forEach((i) => add("lock" + i, 2.3, 8.2 + i * 0.45, { size: 0.19, color: 0xffa62b }));
-  // Chasing chevrons that lead to a lit shot
-  for (const [shot, x, y] of [
-    ["integration", 3.0, 9.95],
-    ["uat", -3.0, 9.95],
-    ["scoop", -1.55, 11.85]
-  ]) {
-    for (let k = 0; k < 3; k++) {
-      add("chev-" + shot + "-" + k, x, y - 0.62 - k * 0.42, { shape: "chevron", size: 0.26, color: 0xffd23f });
+  // The shots, from left to right: a big delta in front of each
+  const shots = [
+    ["loop", -3.95, 9.95, 0xff3d8b, 0.46, 0],
+    ["cellar", -2.1, 11.2, 0xffa62b, 0.42, 0],
+    ["volcano", -0.35, 13.6, 0xff4a1c, 0.52, 0],
+    ["moliere", 1.35, 11.95, 0xff6ad5, 0.42, 0],
+    ["fiat", 2.9, 9.95, 0xffd23f, 0.5, 0],
+    ["coco", 4.45, 9.85, 0x9be15d, 0.36, 0]
+  ];
+  for (const [name, x, y, color, size, angle] of shots) {
+    add("shot-" + name, x, y, { shape: "delta", color, size, angle });
+  }
+  // Chasing chevrons under the main shots
+  for (const [name, x, y] of shots) {
+    if (name === "coco" || name === "cellar") {
+      continue;
     }
+    for (let k = 0; k < 3; k++) {
+      add("chev-" + name + "-" + k, x, y - 0.6 - k * 0.38, { shape: "chevron", size: 0.22, color: 0xffd23f });
+    }
+  }
+  // The volcano's hit points, a row of embers under it; the crater, a red eye
+  for (let i = 0; i < 4; i++) {
+    add("lava" + i, -0.95 + i * 0.4, 14.35, { size: 0.13, color: 0xff4a1c });
+  }
+  add("crater", CRATER.x, CRATER.y, { size: 0.36, color: 0xff2a00, label: "tbCrater", labelAt: "inside" });
+  // The magnet glows under Mamar's disc
+  add("magnet", MAGNET.x, MAGNET.y, { size: 0.55, color: 0x22d3ee });
+  // Le Silo: three lock lamps by the Fiat ramp's mouth
+  [0, 1, 2].forEach((i) => add("lock" + i, 3.62, 8.95 + i * 0.42, { size: 0.17, color: 0xffa62b }));
+  // H-O-H-O in the lanes
+  HOHO.forEach((x, i) => add("hoho" + i, x, HOHO_Y - 0.5, { shape: "star", size: 0.34, color: 0xffd23f, text: "HOHO"[i] }));
+  // M-E-R-G-U-E-Z by their standups
+  merguezSpots().forEach((spot, i) => add("merguez" + i, spot[4], spot[5], { size: 0.2, color: 0xff6a3d, text: "MERGUEZ"[i] }));
+  // The crabs flipped, a row of four over the honeycomb
+  for (let i = 0; i < 4; i++) {
+    add("crab" + i, -0.75 + i * 0.5, 7.05, { size: 0.15, color: 0xff3d3d });
   }
   // The general illumination: warm bulbs round the top arc and along the bottom
   for (let i = 0; i < 11; i++) {
@@ -418,23 +384,12 @@ function buildLights() {
   for (let i = 0; i < 4; i++) {
     add("gi-a" + i, [-4.5, -3.55, 3.55, 4.5][i], 1.9, { shape: "bulb", size: 0.1, color: 0xffd28a });
   }
-  // T-A-T-O-U on the drops, 8.6 on Victor's cans (text: painted inside the insert)
-  DROPS.forEach((k, i) => {
-    const [x, y] = bankPoint(k, 0.72, 1);
-    add("drop" + i, x, y, { size: 0.2, color: 0x22d3ee, text: "TATOU"[i] });
-  });
-  STANDUPS.forEach((k, i) => {
-    const [x, y] = bankPoint(k, 0.72, -1);
-    add("check" + i, x, y, { size: 0.22, color: 0xffd23f, text: "8.6" });
-  });
-  // The stars of the top lanes, in the lanes themselves, over the bumpers
-  LANES.forEach((x, i) => add("lane" + i, x, 18.15, { shape: "star", size: 0.36, color: 0xffd23f }));
-  add("kickback", -4.5, 2.6, { size: 0.24, color: 0xff3d3d, label: "tbSanglier" });
-  add("kickbackR", 4.5, 2.6, { size: 0.24, color: 0xff3d3d, label: "tbReverse" });
+  add("kickbackR", 4.5, 2.6, { size: 0.24, color: 0xff3d3d, label: "tbReverse", labelWidth: 0.95 });
+  add("post", POST.x, POST.y, { size: 0.3, color: 0xff6a3d, label: "tbSanglier", labelAt: "below" });
   add("ballSave", 0, 2.3, { size: 0.4, color: 0x22d3ee, label: "pbFieldShootAgain", labelAt: "inside" });
   add("extraBall", -1.25, 6.3, { size: 0.24, shape: "star", color: 0xffa62b, label: "pbFieldExtraBall", labelAt: "above" });
   add("note", 1.25, 6.3, { size: 0.24, shape: "star", color: 0xb06bff, label: "tbAubergine", labelAt: "above" });
-  // The honeycomb of the ten missions, over the flippers, Release day under it
+  // The honeycomb of the ten missions, over the flippers, Eul' Grand Hoho under it
   const rows = [
     [5.55, [-0.78, 0, 0.78]],
     [4.87, [-1.17, -0.39, 0.39, 1.17]],
@@ -448,25 +403,5 @@ function buildLights() {
     }
   }
   add("missionWizard", 0, 3.51, { shape: "hex", size: 0.38, color: 0xffb020, label: "pbNameWizard" });
-  // The ladder up the middle: the missions done on this level
-  for (let i = 0; i < 6; i++) {
-    add("ladder" + i, 0, 6.85 + i * 0.47, { shape: "delta", size: 0.3, color: 0xff6a3d });
-  }
-  // The Production floor
-  add("rabbit", 0, 25.4, { floor: 1, size: 0.3, color: 0x3ddc84 });
-  add("release", -2.2, 25.7, { floor: 1, shape: "delta", angle: 0.55, size: 0.36, color: 0xffd23f });
-  // Stretched with the table; a chevron follows the shot it leads to
-  for (const l of lights) {
-    l.y = /^chev-(integration|uat)-/.test(l.id) || /^lock/.test(l.id) ? l.y + STRETCH : sy(l.y);
-  }
-  // The band, placed as built
-  SIDE_TARGETS.forEach((y, i) => add("backup" + i, -SIDE_X + 0.5, y, { size: 0.16, color: 0xffa62b }));
-  SIDE_TARGETS.forEach((y, i) => add("quality" + i, SIDE_X - 0.5, y, { size: 0.16, color: 0xffa62b }));
-  add("shot-hotfix", HOTFIX.x + 0.65, HOTFIX.y - 0.55, { shape: "delta", angle: 0.85, size: 0.3, color: 0xff3d8b, label: "tbMamarBall", labelAt: "below" });
-  TABLE.hotfix = HOTFIX;
-  TABLE.terminal = TERMINAL;
-  TABLE.flow = FLOW;
-  add("shot-terminal", TERMINAL.x, TERMINAL.y - 0.85, { shape: "delta", size: 0.3, color: 0xff6a3d, label: "tbBarbecue", labelAt: "below" });
-  add("validate", 1.55, 13.4, { size: 0.15, color: 0x22d3ee, label: "pbFieldValidate", labelAt: "below" });
   return lights;
 }

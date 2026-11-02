@@ -1,43 +1,41 @@
 // Engine from Pipeline Pinball (sfdx-hardis-training), same author.
 /*
- * The ten missions of Eul' Flipper, one per world of Pandadventures, and
- * Eul' Grand Hoho (the wizard mode) once all ten are done. A mission starts
- * at Le Molière (the scoop) and runs on the game clock; a mission that runs out
- * of time is simply still to do, with the story of its world on the way out.
+ * The ten missions of Eul' Flipper, one per world of Pandadventures, played on
+ * table v2 "L'île de Panda", and Eul' Grand Hoho (the wizard mode) once all
+ * ten are done. A mission starts at Le Molière (the scoop behind the
+ * bouncers) and runs on the game clock; a mission that runs out of time is
+ * simply still to do.
  *
- * A mission keeps its state in m, a plain object the checkpoint saves as is.
- * The rules call start(m, api), shot(m, shot, api) for every shot of the ball,
- * and update(m, dt, api); a mission calls api.done() when it is won. goal(m)
- * gives the text key and values of its goal line (index.js GOAL_TOTALS holds
- * what each goal counts to).
+ * A mission keeps its state in m, a plain object. The rules call start(m,
+ * api), shot(m, shot, api) for every shot of the ball, and update(m, dt,
+ * api); a mission calls api.done() when it is won. goal(m) gives the text key
+ * and values of its goal line (index.js GOAL_TOTALS holds what each counts to).
  *
- * shot: { name, index } with name one of integration (Rampe Fiat Panda), uat
- * (Rampe du Rhum), preprod (Tour de l'île, the left orbit), orbitRight (Route
- * de la plage), production (Montée du Silo made), scoop (Le Molière), release,
- * bumper, sling, drop (T-A-T-O-U), check (8.6 cans), admin (the kids round the
- * Fiat), rabbit (Georges eul' croco), salesManager (Romain), spinner (index:
- * spins), hotfix (La boule de Mamar), outlane, drain.
- *
- * The mission ids are fixed: rules.js gives mission 3 the giant ball and
- * mission 5 its second ball back on a resume, keeps the kids' raid away from
- * mission 2 and makes Georges swim faster in mission 8.
+ * shot: { name, index } with name one of volcano (a hard hit on La Montagne
+ * Pelée), crater, crab (index: which crab), coco (the coconut on its top
+ * switch), magnet (Mamar caught the ball), cellar (La cave à rhum), fiat (the
+ * Rampe Fiat Panda made, or diverted), silo (a ball in Le Silo), bouncer, moliere,
+ * loop (Le looping de 15h pétantes), hoho, merguez (index: the letter),
+ * bumper, sling, outlane.
  */
 
 export const MISSION_COUNT = 10;
 
-const MAJOR_SHOTS = ["integration", "uat", "preprod", "orbitRight"];
+const BURP_SHOTS = ["loop", "cellar", "volcano", "fiat", "coco"];
 const RED = 0xea001e;
 const GREEN = 0x45c65a;
 const MANGO = 0xfe9339;
+// Where the crabs go to pinch the Fiat (the foot of its ramp)
+const FIAT_SPOT = { x: 2.9, y: 10.4 };
 
 export const MISSIONS = [
-  // 0 15h pétantes: Romain wants everything before 3 pm sharp, one lit shot after the other
+  // 0 15h pétantes: Romain wants it in order before 3 pm sharp: the loop, the Fiat ramp, the volcano
   {
     time: 60,
     start(m, api) {
-      m.order = api.shuffle(MAJOR_SHOTS);
+      m.order = ["loop", "fiat", "volcano"];
       m.n = 0;
-      api.light("shot-" + m.order[0], 3, MANGO);
+      api.light("shot-loop", 3, MANGO);
       api.say("chat", "pbChaseStart");
     },
     shot(m, shot, api) {
@@ -46,7 +44,7 @@ export const MISSIONS = [
       }
       api.light("shot-" + shot.name, 0);
       m.n++;
-      api.award(60000, "pbChaseHit", { n: m.n });
+      api.award(80000, "pbChaseHit", { n: m.n });
       if (m.n >= m.order.length) {
         api.done();
         return;
@@ -58,7 +56,7 @@ export const MISSIONS = [
       return ["pbGoal0", { n: m.n, hour: "14:" + String(minute).padStart(2, "0") }];
     },
     end(m, api) {
-      for (const s of MAJOR_SHOTS) {
+      for (const s of m.order) {
         api.light("shot-" + s, 0);
       }
     }
@@ -80,7 +78,7 @@ export const MISSIONS = [
       }
       if (m.phase === "wait") {
         m.phase = "burp";
-        m.t = 3.4;
+        m.t = 4;
         api.light("shot-" + m.target, 3, GREEN);
         api.say("toast", "pbBurpNow");
       } else {
@@ -112,141 +110,109 @@ export const MISSIONS = [
       return ["pbGoal1", { n: m.n }];
     },
     end(m, api) {
-      for (const s of MAJOR_SHOTS) {
+      for (const s of BURP_SHOTS) {
         api.light("shot-" + s, 0);
       }
     }
   },
 
-  // 2 Hoho ma bagnole: kids pop up round the Fiat; hit each before it scratches the car, polish the scratches on the Fiat ramp
+  // 2 Hoho ma bagnole: three Fiat ramps while the crabs walk to the car to pinch it
   {
     time: 75,
     start(m, api) {
-      m.caught = 0;
-      m.rise = 1.5;
-      m.up = [0, 0, 0];
-      m.scratches = 0;
+      m.n = 0;
+      m.pinches = 0;
+      api.crabs.show(3, true);
+      api.crabs.target(FIAT_SPOT);
+      api.crabs.speed(0.8);
+      api.light("shot-fiat", 2);
       api.say("chat", "pbBagnoleStart");
     },
     update(m, dt, api) {
-      m.rise -= dt;
-      if (m.rise <= 0) {
-        const free = [0, 1, 2].filter((i) => m.up[i] <= 0);
-        if (free.length) {
-          const i = free[Math.floor(api.random() * free.length)];
-          m.up[i] = 7;
-          api.admin(i, true);
+      for (let i = 0; i < api.crabs.count(); i++) {
+        if (!api.crabs.isUp(i)) {
+          continue;
         }
-        m.rise = 3.2;
-      }
-      for (let i = 0; i < 3; i++) {
-        if (m.up[i] > 0) {
-          m.up[i] -= dt;
-          if (m.up[i] <= 0) {
-            api.admin(i, false);
-            m.scratches++;
-            api.light("shot-integration", 3, RED);
-            api.say("tip", "pbScratched");
-          }
+        const c = api.crabs.position(i);
+        if (Math.hypot(c.ax - FIAT_SPOT.x, c.ay - FIAT_SPOT.y) < 0.55) {
+          // A crab reached the car: a scratch, and it scuttles back home
+          m.pinches++;
+          m.timeLeft = Math.max(1, m.timeLeft - 6);
+          api.crabs.home(i);
+          api.say("tip", "pbScratched");
         }
       }
     },
     shot(m, shot, api) {
-      if (shot.name === "admin" && m.up[shot.index] > 0) {
-        m.up[shot.index] = 0;
-        api.admin(shot.index, false);
-        m.caught++;
-        api.award(50000, "pbKidShooed");
-      } else if (shot.name === "integration" && m.scratches > 0) {
-        m.scratches--;
-        m.caught++;
-        api.award(80000, "pbPolished");
-        if (!m.scratches) {
-          api.light("shot-integration", 0);
+      if (shot.name === "crab") {
+        api.award(30000, "pbKidShooed");
+      } else if (shot.name === "fiat") {
+        m.n++;
+        api.award(100000, "pbPolished", { n: m.n });
+        if (m.n >= 3) {
+          api.done();
         }
-      }
-      if (m.caught >= 6) {
-        api.done();
       }
     },
     goal(m) {
-      return ["pbGoal2", { n: m.caught }];
+      return ["pbGoal2", { n: m.n }];
     },
     end(m, api) {
-      for (let i = 0; i < 3; i++) {
-        api.admin(i, false);
-      }
-      api.light("shot-integration", 0);
+      api.light("shot-fiat", 0);
     }
   },
 
-  // 3 Plongée langouste: a giant ball dives through the coral (bumpers), finds the lobster's holes (both orbits), then back up the rum ramp
+  // 3 Plongée langouste: down the rum cellar twice to find it, then the coconut to crack it open
   {
     time: 70,
     start(m, api) {
       m.step = 0;
-      m.hits = 0;
-      m.holes = [];
-      api.setGiant(true);
+      m.n = 0;
+      api.light("shot-cellar", 3, MANGO);
       api.say("chat", "pbDiveStart");
     },
     shot(m, shot, api) {
-      if (m.step === 0 && shot.name === "bumper") {
-        m.hits++;
-        api.award(6000, "");
-        if (m.hits >= 8) {
+      if (m.step === 0 && shot.name === "cellar") {
+        m.n++;
+        api.award(70000, "pbLobsterHole");
+        if (m.n >= 2) {
           m.step = 1;
-          m.hits = 0;
-          api.award(60000, "pbReefDone");
-          api.light("shot-preprod", 2);
-          api.light("shot-orbitRight", 2);
+          m.n = 0;
+          api.light("shot-cellar", 0);
+          api.light("shot-coco", 3, MANGO);
         }
-      } else if (m.step === 1 && (shot.name === "preprod" || shot.name === "orbitRight") && !m.holes.includes(shot.name)) {
-        m.holes.push(shot.name);
-        m.hits = m.holes.length;
-        api.light("shot-" + shot.name, 0);
-        api.award(60000, "pbLobsterHole");
-        if (m.holes.length >= 2) {
-          m.step = 2;
-          api.light("shot-uat", 3, MANGO);
-        }
-      } else if (m.step === 2 && shot.name === "uat") {
-        api.award(120000, "pbLobsterCaught");
+      } else if (m.step === 1 && shot.name === "coco") {
+        api.award(150000, "pbLobsterCaught");
         api.done();
       }
     },
     goal(m) {
-      return ["pbGoal3_" + m.step, { n: m.hits }];
+      return ["pbGoal3_" + m.step, { n: m.n }];
     },
     end(m, api) {
-      api.setGiant(false);
-      for (const s of ["preprod", "orbitRight", "uat"]) {
-        api.light("shot-" + s, 0);
-      }
+      api.light("shot-cellar", 0);
+      api.light("shot-coco", 0);
     }
   },
 
-  // 4 Nuit au Molière: the bouncer looks left, then right; slip past on the orbits in turn, then in through the door
+  // 4 Nuit au Molière: knock the bouncers down, slip in through the door, twice
   {
-    time: 65,
+    time: 70,
     start(m, api) {
       m.n = 0;
-      m.next = "preprod";
-      api.light("shot-preprod", 2);
+      api.resetBouncers();
+      api.light("shot-moliere", 3, MANGO);
       api.say("chat", "pbMoliereStart");
     },
     shot(m, shot, api) {
-      if (shot.name === m.next) {
-        api.light("shot-" + m.next, 0);
+      if (shot.name === "bouncer") {
+        api.award(20000, "pbBouncerDodged");
+      } else if (shot.name === "moliere") {
         m.n++;
-        if (m.next === "scoop") {
-          api.award(150000, "pbMoliereIn");
+        api.award(150000, "pbMoliereIn", { n: m.n });
+        if (m.n >= 2) {
           api.done();
-          return;
         }
-        api.award(50000, "pbBouncerDodged");
-        m.next = m.n >= 4 ? "scoop" : m.next === "preprod" ? "orbitRight" : "preprod";
-        api.light("shot-" + m.next, m.next === "scoop" ? 3 : 2);
       } else if (shot.name === "outlane") {
         api.say("tip", "pbBouncerOut");
       }
@@ -255,28 +221,27 @@ export const MISSIONS = [
       return ["pbGoal4", { n: m.n }];
     },
     end(m, api) {
-      for (const s of ["preprod", "orbitRight", "scoop"]) {
-        api.light("shot-" + s, 0);
-      }
+      api.light("shot-moliere", 0);
     }
   },
 
-  // 5 La boule de Mamar: two balls, every big shot is a goal; Mamar's ball (the capture saucer) scores two
+  // 5 La boule de Mamar: two balls, the magnet always on; four throws by Mamar
   {
-    time: 50,
+    time: 60,
     start(m, api) {
       m.n = 0;
       api.addBall(10);
-      api.light("shot-hotfix", 3, MANGO);
+      api.forceMagnet(true);
+      api.light("magnet", 3, MANGO);
       api.say("chat", "pbMamarStart");
     },
     shot(m, shot, api) {
-      if (![...MAJOR_SHOTS, "production", "hotfix"].includes(shot.name)) {
+      if (shot.name !== "magnet") {
         return;
       }
-      m.n = Math.min(8, m.n + (shot.name === "hotfix" ? 2 : 1));
-      api.award(shot.name === "hotfix" ? 100000 : 50000, "pbBatigol");
-      if (m.n >= 8) {
+      m.n++;
+      api.award(80000, "pbBatigol");
+      if (m.n >= 4) {
         api.done();
       }
     },
@@ -284,61 +249,57 @@ export const MISSIONS = [
       return ["pbGoal5", { n: m.n }];
     },
     end(m, api) {
-      api.light("shot-hotfix", 0);
+      api.light("magnet", 0);
     }
   },
 
-  // 6 Soirée fauve: the ti-punch spinner and the shots on the beat warm the party up to 100%; the bumpers cool it down
+  // 6 Soirée fauve: the four crabs dance; flip them all on their backs
   {
     time: 60,
     start(m, api) {
-      m.vibe = 40;
-      m.jealous = false;
-      api.light("shot-preprod", 2);
+      m.n = 0;
+      api.crabs.show(3, true);
+      for (let i = 0; i < 3; i++) {
+        api.crabs.home(i);
+      }
+      api.crabs.speed(1.5);
+      api.crabs.stay(true);
       api.say("chat", "pbFauveStart");
     },
     shot(m, shot, api) {
-      if (shot.name === "spinner") {
-        m.vibe = Math.min(100, m.vibe + shot.index * 1.6);
-        api.award(2000 * shot.index, "");
-      } else if (shot.name === "bumper") {
-        m.vibe = Math.max(0, m.vibe - 0.6);
-      } else if ([...MAJOR_SHOTS, "drop", "check", "scoop"].includes(shot.name) && api.onBeat()) {
-        m.vibe = Math.min(100, m.vibe + 6);
-        api.award(40000, "pbOnBeat");
+      if (shot.name !== "crab") {
+        return;
       }
-      if (!m.jealous && m.vibe >= 70) {
-        m.jealous = true;
+      m.n++;
+      api.award(60000, "pbOnBeat");
+      if (m.n === 3) {
         api.say("chat", "pbRomainJealous");
       }
-      if (m.vibe >= 100) {
+      if (m.n >= 4) {
         api.award(150000, "pbFauveDone");
         api.done();
       }
     },
     goal(m) {
-      return ["pbGoal6", { n: Math.floor(m.vibe) }];
-    },
-    end(m, api) {
-      api.light("shot-preprod", 0);
+      return ["pbGoal6", { n: m.n }];
     }
   },
 
-  // 7 Old Cous / New Cous: the Fiat ramp (Old Cous), then the rum ramp (New Cous), in turn
+  // 7 Old Cous / New Cous: the Fiat ramp (Old Cous), then the loop (New Cous), in turn
   {
     time: 60,
     start(m, api) {
       m.n = 0;
-      m.next = "integration";
-      api.light("shot-integration", 2);
+      m.next = "fiat";
+      api.light("shot-fiat", 2);
       api.say("chat", "pbOldNewStart");
     },
     shot(m, shot, api) {
       if (shot.name === m.next) {
         m.n++;
         api.light("shot-" + m.next, 0);
-        api.award(50000, m.next === "integration" ? "pbOldCousShot" : "pbNewCousShot");
-        m.next = m.next === "integration" ? "uat" : "integration";
+        api.award(60000, m.next === "fiat" ? "pbOldCousShot" : "pbNewCousShot");
+        m.next = m.next === "fiat" ? "loop" : "fiat";
         api.light("shot-" + m.next, 2);
         if (m.n >= 4) {
           api.done();
@@ -351,81 +312,82 @@ export const MISSIONS = [
       return ["pbGoal7", { n: m.n }];
     },
     end(m, api) {
-      api.light("shot-integration", 0);
-      api.light("shot-uat", 0);
+      api.light("shot-fiat", 0);
+      api.light("shot-loop", 0);
     }
   },
 
-  // 8 Carottés dans l'Silo: up the Silo to the roof, five hits on Georges eul' croco
+  // 8 Carottés dans l'Silo: the diverter stays on the Silo; two balls in it
   {
-    time: 80,
+    time: 75,
     start(m, api) {
       m.n = 0;
-      api.openProduction(true);
-      api.light("rabbit", 2);
+      api.forceDiverter(true);
+      api.light("shot-fiat", 3, MANGO);
       api.say("chat", "pbSiloStart");
     },
     shot(m, shot, api) {
-      if (shot.name === "rabbit") {
-        m.n++;
-        api.award(60000, "pbCrocoHit");
-        if (m.n >= 5) {
-          api.done();
-        }
+      if (shot.name !== "silo") {
+        return;
+      }
+      m.n++;
+      api.award(120000, "pbSiloLocked", { n: m.n });
+      if (m.n >= 2) {
+        api.done();
       }
     },
     goal(m) {
       return ["pbGoal8", { n: m.n }];
     },
     end(m, api) {
-      api.light("rabbit", 0);
-      api.openProduction(false);
+      api.light("shot-fiat", 0);
     }
   },
 
-  // 9 Babar contre-attaque: grab the green merguez drops, dodge the red ones (Babar's traps)
+  // 9 Babar contre-attaque: four green MERGUEZ letters, and the red crabs (Babar's) to keep away from
   {
-    time: 55,
+    time: 60,
     start(m, api) {
-      api.resetDrops();
-      const order = api.shuffle([0, 1, 2, 3, 4]);
-      m.green = order.slice(0, 3);
-      m.red = order.slice(3);
+      m.green = api.shuffle([0, 1, 2, 3, 4, 5, 6]).slice(0, 4);
       m.hit = [];
-      for (let i = 0; i < 5; i++) {
-        api.light("drop" + i, 2, m.green.includes(i) ? 0x2e844a : RED);
+      for (const i of m.green) {
+        api.light("merguez" + i, 2, GREEN);
+      }
+      for (let i = 0; i < 3; i++) {
+        api.crabs.red(i, true);
       }
       api.say("chat", "pbBabarStart");
     },
     shot(m, shot, api) {
-      if (shot.name !== "drop" || m.hit.includes(shot.index)) {
-        return;
-      }
-      m.hit.push(shot.index);
-      api.light("drop" + shot.index, 0);
-      if (m.red.includes(shot.index)) {
-        api.fail("pbBabarGotYou", shot.index === m.red[0] ? "pbBabarTrap0" : "pbBabarTrap1");
-        return;
-      }
-      api.award(50000, "pbMerguezGrabbed");
-      if (m.green.every((i) => m.hit.includes(i))) {
-        api.done();
+      if (shot.name === "merguez" && m.green.includes(shot.index) && !m.hit.includes(shot.index)) {
+        m.hit.push(shot.index);
+        api.light("merguez" + shot.index, 1, GREEN);
+        api.award(60000, "pbMerguezGrabbed");
+        if (m.hit.length >= m.green.length) {
+          api.done();
+        }
+      } else if (shot.name === "crab") {
+        // A red crab: Babar's trap, a letter lost
+        const lost = m.hit.pop();
+        if (lost !== undefined) {
+          api.light("merguez" + lost, 2, GREEN);
+        }
+        api.say("tip", lost !== undefined ? "pbBabarTrap0" : "pbBabarTrap1");
       }
     },
     goal(m) {
-      return ["pbGoal9", { n: m.hit.filter((i) => m.green.includes(i)).length }];
+      return ["pbGoal9", { n: m.hit.length }];
     },
     end(m, api) {
-      for (let i = 0; i < 5; i++) {
-        api.light("drop" + i, 0);
+      for (let i = 0; i < 7; i++) {
+        api.light("merguez" + i, 0);
       }
-      api.resetDrops();
     }
   }
 ];
 
 function nextBurp(m, api) {
-  const others = MAJOR_SHOTS.filter((s) => s !== m.target);
+  const others = BURP_SHOTS.filter((s) => s !== m.target);
   m.target = others[Math.floor(api.random() * others.length)];
   m.phase = "wait";
   m.t = 2 + api.random() * 2.5;
@@ -434,13 +396,15 @@ function nextBurp(m, api) {
 }
 
 /**
- * Eul' Grand Hoho: four balls, all the friends cheer, every shot a jackpot;
- * then Romain blocks the way to the beach for the last round: no more clock,
- * a number of flips to hit him three times.
+ * Eul' Grand Hoho: four balls, all the friends cheer, the volcano erupts every
+ * ten seconds, every main shot is a jackpot; then Romain climbs on the volcano
+ * to block the way to the beach: no more clock, a number of flips to hit the
+ * volcano three times.
  */
 const LAST_ROUND_FLIPS = 40;
 const CHEER_EVERY_S = 6;
 const CHEERS = 8;
+const WIZARD_SHOTS = ["loop", "cellar", "volcano", "moliere", "fiat", "coco", "crater"];
 
 export const WIZARD = {
   time: 100,
@@ -449,9 +413,8 @@ export const WIZARD = {
     m.boss = 0;
     m.cheer = 1;
     m.cheerAt = CHEER_EVERY_S;
-    api.openProduction(true);
-    api.salesManager(true);
-    for (const s of ["integration", "uat", "preprod", "orbitRight", "scoop"]) {
+    m.eruptAt = 2;
+    for (const s of WIZARD_SHOTS) {
       api.light("shot-" + s, 3);
     }
     api.addBall(12);
@@ -460,16 +423,21 @@ export const WIZARD = {
     api.say("chat", "pbCheer0");
   },
   update(m, dt, api) {
-    // The friends cheer one after the other
+    // The friends cheer one after the other; the volcano erupts every ten seconds
     m.cheerAt -= dt;
     if (m.cheerAt <= 0) {
       m.cheerAt = CHEER_EVERY_S;
       api.say("chat", "pbCheer" + (m.cheer % CHEERS));
       m.cheer++;
     }
+    m.eruptAt -= dt;
+    if (m.eruptAt <= 0) {
+      m.eruptAt = 10;
+      api.erupt(5);
+    }
   },
   shot(m, shot, api) {
-    if (["integration", "uat", "preprod", "orbitRight", "scoop"].includes(shot.name)) {
+    if (m.jackpots < 6 && WIZARD_SHOTS.includes(shot.name)) {
       m.jackpots++;
       api.award(1000000, "pbReleaseJackpot");
       if (m.jackpots === 6) {
@@ -477,7 +445,7 @@ export const WIZARD = {
         m.flips = LAST_ROUND_FLIPS;
         api.award(0, "pbCodeFreeze", { n: LAST_ROUND_FLIPS });
       }
-    } else if (shot.name === "salesManager" && m.jackpots >= 6) {
+    } else if (m.jackpots >= 6 && shot.name === "volcano") {
       m.boss++;
       api.award(500000, "pbSalesManagerHit");
       if (m.boss >= 3) {
@@ -506,10 +474,7 @@ export const WIZARD = {
     }
   },
   end(m, api) {
-    // Romain stands in front of the way out again, as before
-    api.salesManager(true);
-    api.openProduction(false);
-    for (const s of ["integration", "uat", "preprod", "orbitRight", "scoop"]) {
+    for (const s of WIZARD_SHOTS) {
       api.light("shot-" + s, 0);
     }
   }

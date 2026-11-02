@@ -84,11 +84,32 @@ const DMD_WORDS = {
   pbCheh2: "dmdCheh",
   pbCheh3: "dmdCheh",
   pbCheh4: "dmdCheh",
-  pbCheh5: "dmdCheh"
+  pbCheh5: "dmdCheh",
+  pbCheh6: "dmdCheh",
+  pbCheh7: "dmdCheh",
+  pbCheh8: "dmdCheh",
+  // Table v2
+  pbCrab: "dmdMatoutou",
+  pbCrabFrenzy: "dmdFrenzy",
+  pbLoop: "dmdLoop",
+  pbEruptionLit: "dmdEruption",
+  pbEruption: "dmdEruption",
+  pbCraterJackpot: "dmdCrater",
+  pbCoco: "dmdCoco",
+  pbDoorOpen: "dmdDoor",
+  pbSiloLocked: "dmdSilo",
+  pbMerguezAll: "dmdMerguez",
+  pbCellarRum: "dmdCellar",
+  pbCellarLock: "dmdCellar",
+  pbCellarSave: "dmdCellar",
+  pbCellarCan: "dmdCellar",
+  pbCellarMagnet: "dmdCellar",
+  pbCellarNote: "dmdCellar",
+  pbCellarBoar: "dmdCellar"
 };
-const DMD_ONLY = new Set(["pbLoops", "pbSecretSkill", "pbHotfix", "pbReplay", "pbJackpot", "pbReleaseJackpot", "pbSuperJackpot", "pbSkillShot", "pbSuperSkill", "pbCombo", "pbBallSaved", "pbKickback", "pbKickbackR", "pbBonusXUp", "pbLocked", "pbBallN", "pbShootAgain", "pbTilt", "pbTiltWarning", "pbExtraBall", "pbMultiball", "pbOldCous", "pbNewCous", "pbOldCousShot", "pbNewCousShot", "pbBurpNow", "pbBatigol", "pbCrocoHit", "pbKidShooed", "pbMerguezGrabbed"]);
+const DMD_ONLY = new Set(["pbLoops", "pbSecretSkill", "pbHotfix", "pbReplay", "pbJackpot", "pbReleaseJackpot", "pbSuperJackpot", "pbSkillShot", "pbSuperSkill", "pbCombo", "pbBallSaved", "pbKickback", "pbKickbackR", "pbBonusXUp", "pbLocked", "pbBallN", "pbShootAgain", "pbTilt", "pbTiltWarning", "pbExtraBall", "pbMultiball", "pbOldCous", "pbNewCous", "pbOldCousShot", "pbNewCousShot", "pbBurpNow", "pbBatigol", "pbCrocoHit", "pbKidShooed", "pbMerguezGrabbed", "pbCrab", "pbLoop", "pbCoco", "pbCraterJackpot", "pbSiloLocked"]);
 // What a mission counts to, for its line on the display (see missions.js goal())
-const GOAL_TOTALS = { pbGoal0: 4, pbGoal1: 4, pbGoal2: 6, pbGoal3_0: 8, pbGoal3_1: 2, pbGoal4: 5, pbGoal5: 8, pbGoal6: 100, pbGoal7: 4, pbGoal8: 5, pbGoal9: 3, pbGoalWizard: 6, pbGoalWizardBoss: 3 };
+const GOAL_TOTALS = { pbGoal0: 3, pbGoal1: 4, pbGoal2: 3, pbGoal3_0: 2, pbGoal3_1: 1, pbGoal4: 2, pbGoal5: 4, pbGoal6: 4, pbGoal7: 4, pbGoal8: 2, pbGoal9: 4, pbGoalWizard: 6, pbGoalWizardBoss: 3 };
 const PULL_S = 0.9;
 const WHEEK_GAP_S = 1.5;
 const NUDGE_SPEED = 4.5;
@@ -433,44 +454,40 @@ export async function startFlipper(options) {
         case "sling":
           view.flashSling(data);
           return;
-        case "quality":
-          view.pushQuality(data);
-          return;
-        case "terminal":
-          view.terminal();
-          dmd.flash(data.cmd, "", 2.8, true);
-          return;
-        case "flow":
-          view.flow(data);
-          if (data === "apex") {
-            view.show(1.6);
-            dmd.flash(t("dmdRefactored"), "", 2);
+        case "volcano":
+          // "hit", "erupt", "crater", "close"
+          view.volcano(data);
+          if (data === "erupt") {
+            view.show(2.4);
+            if (view.shake) {
+              view.shake();
+            }
           }
           return;
-        case "validate":
-          view.validate();
-          dmd.flash(t(data === "start" ? "dmdValidating" : "dmdQuickLit"), "", data === "start" ? 3 : 2.2);
-          return;
-        case "raid":
-          if (data === "start") {
-            view.show(0.8);
-            dmd.flash(t("dmdRaid"), "", 2.5);
-          } else if (data === "caught") {
-            dmd.flash(t("dmdCaught"), "", 2);
+        case "eruption":
+          if (data) {
+            view.show(3);
+            music.setSection("chorus");
           }
           return;
-        case "spinner":
-          view.spin(data);
+        case "crab":
+          view.crab(data);
           return;
-        case "rabbit":
-          view.rabbitHit();
+        case "coco":
+          view.coco();
           return;
-        case "salesManager":
-          view.salesManagerHit();
+        case "magnet":
+          view.magnet(data);
           return;
-        case "giant":
-          view.setGiant(Boolean(data));
-          sound.play(data ? "grow" : "shrink");
+        case "silo":
+        case "divert":
+        case "fiat":
+        case "loop":
+        case "cellar":
+        case "bouncers":
+        case "merguez":
+        case "post":
+          view.toy(name, data);
           return;
         case "flipperHit":
           if (data > 10 && clock - lastWheek > WHEEK_GAP_S) {
@@ -605,7 +622,7 @@ export async function startFlipper(options) {
   /** What the lights play over the rules: the attract chase while the first launch waits, dark when tilted. */
   function mood() {
     const s = rules.state;
-    return { attract: s.saveArmed && Boolean(physics.ballOnPlunger()), tilted: s.tilted };
+    return { attract: s.saveArmed && Boolean(physics.ballOnPlunger()), tilted: s.tilted, locks: s.mb ? 0 : s.locks };
   }
 
   /* ---------- The HUD over the table: what a ball passes under fades ---------- */
@@ -650,7 +667,6 @@ export async function startFlipper(options) {
     }
     held[which] = down;
     const lower = side < 0 ? parts.flippers.left : parts.flippers.right;
-    const upper = side < 0 ? parts.flippers.upperLeft : parts.flippers.upperRight;
     if (lower.enabled) {
       sound.play(down ? "pbFlipper" : "pbFlipperDown");
       if (down) {
@@ -658,10 +674,6 @@ export async function startFlipper(options) {
       }
     }
     lower.held = down;
-    upper.held = down;
-    if (side > 0) {
-      parts.flippers.third.held = down;
-    }
   }
 
   function plunger(down) {

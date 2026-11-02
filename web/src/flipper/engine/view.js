@@ -17,10 +17,10 @@
 import { TABLE, sy } from "./layout.js";
 import { BALL_RADIUS } from "./physics.js";
 import { createBallMesh } from "./ball.js";
-import { paintField, paintUpper, paintApron, paintSign, paintBumperCap, paintFlow, paintTerminal, paintNeon, paintCan, paintLetter, paintMadras, paintCorrugated, shapePoints, tableText, castUrl } from "./art.js";
+import { paintField, paintApron, paintSign, paintBumperCap, paintNeon, paintLetter, paintMadras, shapePoints, tableText, castUrl } from "./art.js";
 
 const LEAN = 0.11;
-const WALL_HEIGHT = { wall: 0.5, rubber: 0.4, rail: 0.3, post: 0.45, gate: 0.3, diverter: 0.42, sling: 0.42, upper: 0.45 };
+const WALL_HEIGHT = { wall: 0.5, rubber: 0.4, rail: 0.3, post: 0.45, gate: 0.3, sling: 0.42 };
 // As on the arcade: brushed chrome guides, mirror posts, black rubbers; the
 // mouths of the ramps are their own coloured plastic (RAMP_TINT)
 const WALL_LOOK = {
@@ -33,7 +33,7 @@ const WALL_LOOK = {
   diverter: { color: 0x22d3ee, metalness: 0.2, roughness: 0.3, emissive: 0x22d3ee, emissiveIntensity: 0.3 }
 };
 // Rampe Fiat Panda (mango), Rampe du Rhum (hibiscus), Montée du Silo (lagoon)
-const RAMP_TINT = { integration: 0xffa62b, uat: 0xff3d8b, production: 0x22d3ee };
+const RAMP_TINT = { fiat: 0xffa62b };
 // The friends on the bumper caps, in the order of layout.js
 const BUMPER_CAST = [
   ["babar", 0xff6a3d, "Babar"],
@@ -253,6 +253,8 @@ export function createView(THREE, ctx, table, options) {
       uv.setXY(i, (Math.abs(uv.getX(i)) - 1.75) / 1.4, (uv.getY(i) - 3.45) / 2.55);
     }
     const material = slingMaterial.clone();
+    // Victor's aubergine on the left plastic, Greg's burger on the right one
+    material.map = keep(paintPlastic(THREE, castUrl(side < 0 ? "victor" : "greg")));
     keep(material);
     const mesh = new THREE.Mesh(geometry, material);
     // Shape y is table y: laid flat, it lands on -z and the depth goes up
@@ -327,58 +329,247 @@ export function createView(THREE, ctx, table, options) {
     return { f, group: g };
   });
 
-  /* ---------- Targets ---------- */
+  /* ---------- Table v2: the toys of L'île de Panda ---------- */
 
-  // T-A-T-O-U: a letter on each drop target, square to the bank
-  const drops = table.parts.drops.map((d, i) => {
-    const material = keep(new THREE.MeshStandardMaterial({ map: keep(paintLetter(THREE, "TATOU"[i] || "", 0x22d3ee)), roughness: 0.35, emissive: 0x22d3ee, emissiveIntensity: 0.12 }));
-    const m = new THREE.Mesh(box, material);
-    m.scale.set(Math.max(0.3, Math.hypot(d.bx - d.ax, d.by - d.ay) + 0.24), 0.5, 0.14);
-    m.rotation.y = Math.atan2(d.by - d.ay, d.bx - d.ax);
-    m.position.set((d.ax + d.bx) / 2, 0.25, -(d.ay + d.by) / 2);
-    m.castShadow = tier > 0;
-    group.add(m);
-    return { mesh: m, sink: 0 };
+  const parts = table.parts;
+  // M-E-R-G-U-E-Z: an orange standup with its letter, flashing when hit
+  const merguezMeshes = parts.merguez.map((m, i) => {
+    const material = keep(new THREE.MeshStandardMaterial({ map: keep(paintLetter(THREE, "MERGUEZ"[i], 0xff6a3d)), roughness: 0.35, emissive: 0xff6a3d, emissiveIntensity: 0.15 }));
+    const mesh = new THREE.Mesh(box, material);
+    mesh.scale.set(Math.hypot(m.bx - m.ax, m.by - m.ay) + 0.22, 0.46, 0.12);
+    mesh.rotation.y = Math.atan2(m.by - m.ay, m.bx - m.ax);
+    mesh.position.set((m.ax + m.bx) / 2, 0.23, -(m.ay + m.by) / 2);
+    mesh.castShadow = tier > 0;
+    group.add(mesh);
+    return { mesh, material, flash: 0 };
   });
-  // Victor's three 8.6 cans
-  const canMaterial = keep(new THREE.MeshStandardMaterial({ map: keep(paintCan(THREE)), metalness: 0.65, roughness: 0.28 }));
-  const canGeometry = keep(new THREE.CylinderGeometry(0.2, 0.2, 0.52, 18));
-  for (const c of table.parts.standups) {
-    const m = new THREE.Mesh(canGeometry, canMaterial);
-    m.position.set((c.ax + c.bx) / 2, 0.26, -(c.ay + c.by) / 2);
-    m.rotation.y = -0.6;
-    m.castShadow = tier > 0;
-    group.add(m);
-  }
-  const checkMaterial = keep(new THREE.MeshStandardMaterial({ color: 0xffa62b, roughness: 0.4, emissive: 0xffa62b, emissiveIntensity: 0.3 }));
-  for (const c of table.parts.upperTargets) {
-    const m = new THREE.Mesh(box, checkMaterial);
-    m.scale.set(0.2, 0.46, 0.5);
-    m.position.set(c.ax, floorY(c.floor) + 0.23, -(c.ay + c.by) / 2);
-    group.add(m);
-  }
-
-  // IMPÔTS: three targets on the left wall (backups)...
-  const backupMaterial = keep(new THREE.MeshStandardMaterial({ color: 0xffa62b, roughness: 0.35, emissive: 0xffa62b, emissiveIntensity: 0.3 }));
-  for (const b of table.parts.backups) {
-    const m = new THREE.Mesh(box, backupMaterial);
-    m.scale.set(0.18, 0.42, 0.52);
-    m.position.set(b.ax + 0.05, 0.21, -(b.ay + b.by) / 2);
-    group.add(m);
-  }
-
-  // ...and three round ones on the right wall (quality), that sink in when hit
-  const qualityFace = keep(new THREE.CylinderGeometry(0.26, 0.26, 0.12, 20));
-  const quality = table.parts.quality.map((q) => {
-    const material = keep(new THREE.MeshStandardMaterial({ color: 0xffa62b, roughness: 0.3, emissive: 0xffa62b, emissiveIntensity: 0.2 }));
-    const m = new THREE.Mesh(qualityFace, material);
-    m.rotation.z = Math.PI / 2;
-    m.position.set(q.ax - 0.02, 0.26, -(q.ay + q.by) / 2);
-    group.add(m);
-    return { mesh: m, material, base: q.ax - 0.02, push: 0 };
+  // Le Molière's bouncers: three drop targets in black suits and dark glasses, the door of the club
+  const bouncerMaterial = keep(new THREE.MeshStandardMaterial({ map: keep(paintBouncer(THREE)), roughness: 0.4, emissive: 0xff6ad5, emissiveIntensity: 0.08 }));
+  const bouncerMeshes = parts.bouncers.map((b) => {
+    const mesh = new THREE.Mesh(box, bouncerMaterial);
+    mesh.scale.set(Math.hypot(b.bx - b.ax, b.by - b.ay) + 0.24, 0.55, 0.14);
+    mesh.position.set((b.ax + b.bx) / 2, 0.27, -b.ay);
+    mesh.castShadow = tier > 0;
+    group.add(mesh);
+    return { mesh, sink: 0 };
   });
 
-  // The monster Flow: a disc that spins in the playfield, until it is refactored into Apex
+  // La Montagne Pelée: a rock cone with lava running down, a glowing crater on top
+  const V = TABLE.volcano;
+  const volcano = new THREE.Group();
+  const rockMaterial = keep(new THREE.MeshStandardMaterial({ color: 0x3b2724, roughness: 0.9, flatShading: true }));
+  const lavaMaterial = keep(new THREE.MeshStandardMaterial({ color: 0xff6a1c, emissive: 0xff3a00, emissiveIntensity: 0.7, roughness: 0.45 }));
+  const greenMaterial = keep(new THREE.MeshStandardMaterial({ color: 0x1f7a3a, roughness: 0.8, flatShading: true }));
+  const coneGeometry = keep(new THREE.CylinderGeometry(0.4, V.r + 0.04, 1.75, 11, 4));
+  {
+    // A rough rock: every vertex but the rim pushed in or out a little, the same every time
+    const pos = coneGeometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      if (Math.abs(y) < 0.86) {
+        const k = 1 + Math.sin(i * 12.9898) * 0.07;
+        pos.setXYZ(i, pos.getX(i) * k, y, pos.getZ(i) * k);
+      }
+    }
+    coneGeometry.computeVertexNormals();
+  }
+  const cone = new THREE.Mesh(coneGeometry, rockMaterial);
+  cone.position.y = 0.875;
+  cone.castShadow = tier > 0;
+  // A green skirt of forest at its foot
+  const skirt = new THREE.Mesh(keep(new THREE.CylinderGeometry(V.r + 0.02, V.r + 0.08, 0.22, 11)), greenMaterial);
+  skirt.position.y = 0.11;
+  volcano.add(cone, skirt);
+  // Lava streaks down its slopes
+  const slope = Math.atan2(V.r - 0.4, 1.75);
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + 0.3;
+    const streak = new THREE.Mesh(box, lavaMaterial);
+    streak.scale.set(0.08 + (k % 2) * 0.04, 1.3 - (k % 3) * 0.25, 0.04);
+    const r = 0.62;
+    streak.position.set(Math.cos(a) * r, 1.0 + (k % 3) * 0.12, Math.sin(a) * r);
+    streak.rotation.set(0, -a + Math.PI / 2, 0);
+    streak.rotateX(-slope);
+    volcano.add(streak);
+  }
+  const craterRim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.34, 0.08, 8, 18)), lavaMaterial);
+  craterRim.rotation.x = Math.PI / 2;
+  craterRim.position.y = 1.74;
+  const lavaPool = new THREE.Mesh(keep(new THREE.CircleGeometry(0.32, 18)), keep(new THREE.MeshBasicMaterial({ color: 0xff7a1a, toneMapped: false })));
+  lavaPool.rotation.x = -Math.PI / 2;
+  lavaPool.position.y = 1.7;
+  // A fountain of lava that shoots out of the crater when it erupts
+  const fountain = new THREE.Mesh(keep(new THREE.ConeGeometry(0.34, 1, 12, 1, true)), keep(new THREE.MeshBasicMaterial({ color: 0xff7a1a, toneMapped: false, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+  fountain.rotation.x = Math.PI;
+  fountain.visible = false;
+  volcano.add(craterRim, lavaPool, fountain);
+  volcano.position.set(V.x, 0, -V.y);
+  group.add(volcano);
+  let lavaLight = null;
+  if (tier >= 1) {
+    lavaLight = new THREE.PointLight(0xff5a1c, 0.6, 7, 1.6);
+    lavaLight.position.set(V.x, 2.4, -V.y);
+    group.add(lavaLight);
+  }
+  // The crater's mouth at the foot of the volcano: a glowing hole while it is open
+  const C = TABLE.crater;
+  const craterMouth = new THREE.Group();
+  const mouthHole = new THREE.Mesh(keep(new THREE.CircleGeometry(C.r, 24)), keep(new THREE.MeshBasicMaterial({ color: 0x1a0400 })));
+  mouthHole.rotation.x = -Math.PI / 2;
+  mouthHole.position.y = 0.015;
+  const mouthRim = new THREE.Mesh(keep(new THREE.TorusGeometry(C.r, 0.06, 6, 24)), keep(new THREE.MeshBasicMaterial({ color: 0xff4a00, toneMapped: false })));
+  mouthRim.rotation.x = Math.PI / 2;
+  mouthRim.position.y = 0.04;
+  craterMouth.add(mouthHole, mouthRim);
+  craterMouth.position.set(C.x, 0, -C.y);
+  craterMouth.scale.setScalar(0.01);
+  group.add(craterMouth);
+  let volcanoShake = 0;
+  let eruptT = 0;
+  // Smoke and sparks out of the crater: a pool of puffs and embers, reused
+  const SMOKE = 26;
+  const SPARKS = 40;
+  const smokeMesh = new THREE.InstancedMesh(keep(new THREE.IcosahedronGeometry(1, 1)), keep(new THREE.MeshStandardMaterial({ color: 0x6c6470, roughness: 1, transparent: true, opacity: 0.5, depthWrite: false })), SMOKE);
+  const sparkMesh = new THREE.InstancedMesh(keep(new THREE.SphereGeometry(1, 6, 4)), keep(new THREE.MeshBasicMaterial({ color: 0xffa040, toneMapped: false })), SPARKS);
+  const puffs = [];
+  for (let i = 0; i < SMOKE; i++) {
+    puffs.push({ life: 0, x: 0, y: 0, z: 0, vx: 0, vz: 0, s: 0 });
+  }
+  const sparks = [];
+  for (let i = 0; i < SPARKS; i++) {
+    sparks.push({ life: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0 });
+  }
+  smokeMesh.frustumCulled = false;
+  sparkMesh.frustumCulled = false;
+  group.add(smokeMesh, sparkMesh);
+  let smokeAcc = 0;
+
+  // Les crabes de terre: violet-blue land crabs with mango claws, walking sideways
+  const crabViews = parts.crabs.map((c, i) => {
+    const crab = buildCrab(THREE, keep);
+    crab.group.scale.setScalar(1.3);
+    group.add(crab.group);
+    return { c, crab, flip: 0, shown: i < 3, red: false, hop: 0 };
+  });
+
+  // Eul' coco: Babar's coconut on its rail, its top switch, Babar watching over the lane
+  const K = TABLE.coco;
+  const coconut = new THREE.Mesh(keep(new THREE.SphereGeometry(K.r, 18, 12)), keep(new THREE.MeshStandardMaterial({ map: keep(paintCoconut(THREE)), roughness: 0.85 })));
+  coconut.castShadow = tier > 0;
+  group.add(coconut);
+  const cocoSwitch = new THREE.Mesh(box, keep(new THREE.MeshStandardMaterial({ color: 0x9be15d, emissive: 0x9be15d, emissiveIntensity: 0.3 })));
+  cocoSwitch.scale.set(0.5, 0.1, 0.1);
+  cocoSwitch.position.set(K.x, 0.05, -(K.y1 + K.r + 0.02));
+  group.add(cocoSwitch);
+  let cocoFlash = 0;
+  let cocoLastS = 0;
+  const babarMaterial = faceMaterial(castUrl("babar"));
+  const babarFace = new THREE.Mesh(keep(new THREE.CircleGeometry(0.36, 28)), babarMaterial);
+  babarFace.position.set(K.x, 1.05, -(K.y1 + 0.75));
+  group.add(babarFace);
+
+  // Eul' ballon d'Mamar: a disc over the magnet, Mamar on it, a ring that glows while it is on
+  const M = TABLE.magnet;
+  const magnetDisc = new THREE.Mesh(keep(new THREE.CylinderGeometry(M.r * 0.75, M.r * 0.75, 0.03, 32)), keep(new THREE.MeshStandardMaterial({ map: keep(paintBumperCap(THREE, 0x22d3ee, castUrl("mamar"), "Mamar")), roughness: 0.3, metalness: 0.2, transparent: true, opacity: 0.85 })));
+  magnetDisc.position.set(M.x, 0.02, -M.y);
+  magnetDisc.rotation.y = Math.PI;
+  group.add(magnetDisc);
+  const magnetRingMaterial = keep(new THREE.MeshBasicMaterial({ color: 0x22d3ee, toneMapped: false, transparent: true, opacity: 0.9 }));
+  const magnetRing = new THREE.Mesh(keep(new THREE.TorusGeometry(M.r, 0.04, 6, 32)), magnetRingMaterial);
+  magnetRing.rotation.x = Math.PI / 2;
+  magnetRing.position.set(M.x, 0.03, -M.y);
+  group.add(magnetRing);
+  let magnetFlash = 0;
+
+  // Eul' sanglier: Babar's boar on the up-post between the flippers
+  const boar = buildBoar(THREE, keep);
+  boar.position.set(TABLE.post.x, -0.7, -TABLE.post.y);
+  group.add(boar);
+  let boarRise = 0;
+
+  // Le Silo: a clear tube hanging over the right side on an arm from the wall, the locked balls stacked in it
+  const S = TABLE.silo;
+  // Leaning back up the table and lit from inside, so the stack reads from the phone's camera
+  const silo = new THREE.Group();
+  const lean = new THREE.Group();
+  // The phone camera looks steeply down: leaning back up the table shows the whole tube
+  lean.rotation.x = -0.75;
+  silo.add(lean);
+  const tubeMaterial = keep(new THREE.MeshStandardMaterial({ color: 0xc8f4ff, emissive: 0x1a8fb0, emissiveIntensity: 0.35, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false }));
+  const tube = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.44, 0.44, 2.9, 24, 1, true)), tubeMaterial);
+  tube.position.y = 2.25;
+  tube.renderOrder = 3;
+  const tubeBottom = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.47, 0.32, 0.14, 24)), chrome);
+  tubeBottom.position.y = 0.8;
+  const siloRimMaterial = keep(new THREE.MeshBasicMaterial({ color: 0xffa62b, toneMapped: false }));
+  const ringGeometry = keep(new THREE.TorusGeometry(0.46, 0.06, 6, 24));
+  for (const y of [0.88, 2.25, 3.7]) {
+    const ring = new THREE.Mesh(ringGeometry, siloRimMaterial);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = y;
+    lean.add(ring);
+  }
+  const arm = new THREE.Mesh(box, chrome);
+  arm.scale.set(0.55, 0.08, 0.1);
+  arm.position.set(0.4, 1.5, 0);
+  const armPost = new THREE.Mesh(cylinder, chrome);
+  armPost.scale.set(0.05, 1.5, 0.05);
+  armPost.position.set(0.62, 0.75, 0);
+  lean.add(tube, tubeBottom);
+  silo.add(arm, armPost);
+  // The locked balls, each with a warm halo
+  const haloMaterial = keep(new THREE.MeshBasicMaterial({ color: 0xffb040, toneMapped: false, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const haloGeometry = keep(new THREE.SphereGeometry(0.42, 16, 10));
+  const lockedBalls = [];
+  const halos = [];
+  for (let i = 0; i < 3; i++) {
+    const m = createBallMesh(THREE);
+    m.group.position.set(0, 1.15 + i * 0.6, 0);
+    m.group.visible = false;
+    lean.add(m.group);
+    lockedBalls.push(m);
+    const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+    halo.position.copy(m.group.position);
+    halo.visible = false;
+    lean.add(halo);
+    halos.push(halo);
+  }
+  let siloLight = null;
+  if (tier >= 1) {
+    siloLight = new THREE.PointLight(0xffb040, 0, 3, 1.5);
+    siloLight.position.set(0, 1.8, 0);
+    lean.add(siloLight);
+  }
+  silo.position.set(S.x, 0, -S.y);
+  group.add(silo);
+  // Its name in neon over the top, Aline on it, always turned to the player
+  const alineMaterial = keep(new THREE.MeshBasicMaterial({ map: keep(paintNeon(THREE, tableText(t, "tbSilo"), "#ffa62b", castUrl("aline"))), toneMapped: false, transparent: true }));
+  const alineFace = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.5, 0.58)), alineMaterial);
+  alineFace.position.set(S.x + 0.95, 2.5, -(S.y + 1.9));
+  alineFace.scale.setScalar(0.85);
+  group.add(alineFace);
+  let siloFlash = 0;
+  // The diverter on the Fiat ramp: a cyan flap that swings across towards the Silo
+  const fiatPts = parts.paths.fiat.points;
+  const diverterFlap = new THREE.Mesh(box, keep(new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x22d3ee, emissiveIntensity: 0.5, roughness: 0.3 })));
+  diverterFlap.scale.set(0.6, 0.25, 0.05);
+  diverterFlap.position.set(fiatPts[12], fiatPts[14] + 0.12, -fiatPts[13]);
+  group.add(diverterFlap);
+
+  // La cave à rhum: Eugénie's neon over the cellar hole
+  const cellarMaterial = keep(new THREE.MeshBasicMaterial({ map: keep(paintNeon(THREE, tableText(t, "tbCellar"), "#ffa62b", castUrl("eugenie"))), toneMapped: false, transparent: true }));
+  const cellarSign = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.9, 0.74)), cellarMaterial);
+  cellarSign.position.set(TABLE.cellar.x, 0.85, -(TABLE.cellar.y + 0.75));
+  cellarSign.rotation.x = -0.3;
+  group.add(cellarSign);
+  let cellarFlash = 0;
+  // Le looping de 15h pétantes: Romain's clock sign beside the loop, on the left rail
+  const loopSign = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.35, 1.7)), keep(new THREE.MeshStandardMaterial({ map: keep(paintSign(THREE, tableText(t, "tbLoop"), 0xff3d8b, { face: castUrl("romain") })), transparent: true, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.3, side: THREE.DoubleSide })));
+  // Over the top of the loop, inside the table's width, turned to the player
+  loopSign.scale.setScalar(0.62);
+  loopSign.position.set(-4.3, 4.1, -13.4);
+  group.add(loopSign);
+  let loopFlash = 0;
   /**
    * A round portrait in a white ring, as on the cards. Drawn into a canvas
    * first, as the other worlds do: an SVG handed straight to a texture draws
@@ -416,84 +607,24 @@ export function createView(THREE, ctx, table, options) {
     return material;
   }
 
-  // Eul' cyclone: a hurricane disc that spins; calm (a sun and a palm) once beaten
-  const flowTextures = { spin: keep(paintFlow(THREE, false)), apex: keep(paintFlow(THREE, true)) };
-  const flowMaterial = keep(new THREE.MeshStandardMaterial({ map: flowTextures.spin, emissiveMap: flowTextures.spin, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.25 }));
-  const flowDisc = new THREE.Mesh(keep(new THREE.CylinderGeometry(TABLE.flow.r, TABLE.flow.r, 0.03, 40)), flowMaterial);
-  flowDisc.position.set(TABLE.flow.x, 0.02, -TABLE.flow.y);
-  group.add(flowDisc);
-  let flowFlash = 0;
-  // The admin who built the monster Flow, over it until it is refactored into Apex
-  const flowFace = new THREE.Group();
-  const flowFaceMaterial = faceMaterial(options.flowFaceUrl);
-  // On a post, high enough to stand clear of the Flow's own picture
-  const flowFacePost = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8)), keep(new THREE.MeshStandardMaterial({ color: 0x032d60, roughness: 0.5 })));
-  flowFacePost.position.y = 0.8;
-  const flowFaceDisc = new THREE.Mesh(keep(new THREE.CircleGeometry(FLOW_FACE_R, 32)), flowFaceMaterial);
-  flowFaceDisc.position.y = FLOW_FACE_HEIGHT;
-  flowFace.add(flowFacePost, flowFaceDisc);
-  flowFace.position.set(TABLE.flow.x, 0, -TABLE.flow.y);
-  group.add(flowFace);
-  let flowFaceSink = 0;
-  // Eul' barbecue: Babar's grill sign, behind its saucer
-  const terminalScreen = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.5, 0.94)), keep(new THREE.MeshBasicMaterial({ map: keep(paintTerminal(THREE, tableText(t, "tbBarbecue"), castUrl("babar"))), toneMapped: false, transparent: true })));
-  terminalScreen.position.set(TABLE.terminal.x, 0.95, -(TABLE.terminal.y + 0.72));
-  terminalScreen.rotation.x = -0.35;
-  group.add(terminalScreen);
-  let terminalFlash = 0;
-  // Validate: a green target
-  const validateShape = table.parts.validate;
-  const validateMaterial = keep(new THREE.MeshStandardMaterial({ color: 0x0e8fa8, roughness: 0.35, emissive: 0x22d3ee, emissiveIntensity: 0.3 }));
-  const validateMesh = new THREE.Mesh(box, validateMaterial);
-  validateMesh.scale.set(Math.hypot(validateShape.bx - validateShape.ax, validateShape.by - validateShape.ay) + 0.2, 0.42, 0.18);
-  validateMesh.position.set((validateShape.ax + validateShape.bx) / 2, 0.21, -(validateShape.ay + validateShape.by) / 2);
-  validateMesh.rotation.y = Math.atan2(validateShape.by - validateShape.ay, validateShape.bx - validateShape.ax);
-  group.add(validateMesh);
-  let validateFlash = 0;
 
-  /* ---------- The admins who rise, with their faces ---------- */
-
-  // Bigger than the admin's post (0.44, what the ball hits): a face read on a phone
-  const disc = keep(new THREE.CircleGeometry(FACE_R, 32));
-  const admins = table.parts.admins.map((a, i) => {
-    const g = new THREE.Group();
-    const post = new THREE.Mesh(cylinder, keep(new THREE.MeshStandardMaterial({ color: 0x032d60, roughness: 0.5 })));
-    post.scale.set(0.42, 0.5, 0.42);
-    post.position.y = 0.25;
-    const face = new THREE.Mesh(disc, faceMaterial(options.faceUrl(i)));
-    face.position.y = FACE_HEIGHT;
-    g.add(post, face);
-    g.position.set(a.ax, -1.2, -a.ay);
-    g.visible = false;
-    group.add(g);
-    return { group: g, face, rise: 0, up: false };
-  });
-
-  /* ---------- Scoop, release hole, spinner, plunger ---------- */
+  /* ---------- The holes: La cave à rhum, Le Molière; the plunger ---------- */
 
   const holeMaterial = keep(new THREE.MeshBasicMaterial({ color: 0x050a14 }));
   const rimGeometry = keep(new THREE.TorusGeometry(0.44, 0.05, 6, 24));
-  for (const [x, y, floor, hue] of [
-    [TABLE.scoop.x, TABLE.scoop.y, 0, 0xff6ad5],
-    [TABLE.release.x, TABLE.release.y, 1, 0xffd23f],
-    [TABLE.hotfix.x, TABLE.hotfix.y, 0, 0xff3d8b],
-    [TABLE.terminal.x, TABLE.terminal.y, 0, 0xff6a3d]
+  for (const [x, y, hue] of [
+    [TABLE.cellar.x, TABLE.cellar.y, 0xffa62b],
+    [TABLE.moliere.x, TABLE.moliere.y, 0xff6ad5]
   ]) {
     const h = new THREE.Mesh(keep(new THREE.CircleGeometry(0.42, 24)), holeMaterial);
     h.rotation.x = -Math.PI / 2;
-    h.position.set(x, floorY(floor) + 0.012, -y);
+    h.position.set(x, 0.012, -y);
     group.add(h);
     const rim = new THREE.Mesh(rimGeometry, keep(new THREE.MeshStandardMaterial({ color: hue, emissive: hue, emissiveIntensity: 0.8 })));
     rim.rotation.x = Math.PI / 2;
-    rim.position.set(x, floorY(floor) + 0.03, -y);
+    rim.position.set(x, 0.03, -y);
     group.add(rim);
   }
-  // The ti-punch spinner: a lime-green plate
-  const spinner = new THREE.Mesh(box, keep(new THREE.MeshStandardMaterial({ color: 0x9be15d, emissive: 0x4a8a1c, emissiveIntensity: 0.3, metalness: 0.5, roughness: 0.25 })));
-  spinner.scale.set(1.0, 0.42, 0.03);
-  spinner.position.set(-4.47, 0.42, -sy(11.2));
-  group.add(spinner);
-  let spinLeft = 0;
   const plunger = new THREE.Group();
   const rod = new THREE.Mesh(cylinder, chrome);
   rod.scale.set(0.08, 1.4, 0.08);
@@ -513,9 +644,7 @@ export function createView(THREE, ctx, table, options) {
   // The signs of the ramps, with a friend each: Cous (Old / New, flips on each
   // Fiat shot), Eugenie at the rum bar, Aline at the silo
   const signs = {
-    integration: { text: "tbOldCous", face: "cous", alt: "tbNewCous" },
-    uat: { text: "tbRampRhum", face: "eugenie" },
-    production: { text: "tbRampSilo", face: "aline" }
+    fiat: { text: "tbOldCous", face: "cous", alt: "tbNewCous" }
   };
   let cousSign = null;
   let fiat = null;
@@ -557,7 +686,12 @@ export function createView(THREE, ctx, table, options) {
           const u = crest + ((1 - crest) * i) / segments;
           const at = curve.getPointAt(u);
           const tangent = curve.getTangentAt(u);
-          const sideV = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+          const sideV = new THREE.Vector3(-tangent.z, 0, tangent.x);
+          // Up and over the loop the wire turns in the y-h plane: its rails stay across the table
+          if (sideV.lengthSq() < 0.09) {
+            sideV.set(1, 0, 0);
+          }
+          sideV.normalize();
           offset.push(at.clone().addScaledVector(sideV, side).add(new THREE.Vector3(0, drop, 0)));
         }
         const rail = new THREE.Mesh(keep(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(offset), segments, 0.028, 5, false)), rampMaterial);
@@ -569,7 +703,7 @@ export function createView(THREE, ctx, table, options) {
       // A printed sign standing on the ramp at its crest, out of the way of the mouth
       const sign = signs[name];
       const signMaterial = keep(new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.35, side: THREE.DoubleSide }));
-      const front = keep(paintSign(THREE, tableText(t, sign.text), name === "integration" ? 0x8a6a4a : plastic[name], { face: castUrl(sign.face) }));
+      const front = keep(paintSign(THREE, tableText(t, sign.text), name === "fiat" ? 0x8a6a4a : plastic[name], { face: castUrl(sign.face) }));
       signMaterial.map = front;
       signMaterial.emissiveMap = front;
       const flag = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.35, 1.7)), signMaterial);
@@ -584,7 +718,7 @@ export function createView(THREE, ctx, table, options) {
         const back = keep(paintSign(THREE, tableText(t, sign.alt), plastic[name], { face: castUrl(sign.face) }));
         cousSign = { material: signMaterial, textures: [front, back], at: 0, turn: 0, flag };
       }
-      if (name === "integration") {
+      if (name === "fiat") {
         // The road of the Fiat: a dashed line up its plastic
         const dashes = new THREE.InstancedMesh(box, keep(new THREE.MeshBasicMaterial({ color: 0xffd23f, toneMapped: false })), 9);
         for (let k = 0; k < 9; k++) {
@@ -612,56 +746,12 @@ export function createView(THREE, ctx, table, options) {
       }
     }
   }
-  // The giant ti-punch glass at the end of the Rampe du Rhum: its wire runs into it
+  // The giant ti-punch glass of Eugénie's bar, standing on the left bank (solid: no ball goes there)
   const tiPunch = buildTiPunch(THREE, keep);
-  tiPunch.position.set(TABLE.left - 0.45, 0.85, -sy(14.75));
+  tiPunch.position.set(-4.65, 0.5, -8.2);
+  tiPunch.scale.setScalar(0.5);
   group.add(tiPunch);
 
-  /* ---------- The Production floor ---------- */
-
-  const upperTexture = keep(paintUpper(THREE, t, table.lights, tier));
-  const upperW = TABLE.upperRight - TABLE.upperLeft + 0.6;
-  const upperL = TABLE.upperTop - TABLE.upperBottom;
-  const deck = new THREE.Mesh(box, [wood, wood, keep(new THREE.MeshStandardMaterial({ map: upperTexture, roughness: 0.5 })), wood, wood, wood]);
-  deck.scale.set(upperW, 0.18, upperL);
-  deck.position.set(0, -0.09, -(TABLE.upperBottom + TABLE.upperTop) / 2);
-  deck.receiveShadow = true;
-  upper.add(deck);
-  // The silo under the roof: corrugated steel, a neon rim, Aline on its front
-  const siloR = 4.4;
-  const siloY = (TABLE.upperBottom + TABLE.upperTop) / 2;
-  const siloTexture = keep(paintCorrugated(THREE));
-  const silo = new THREE.Mesh(keep(new THREE.CylinderGeometry(siloR, siloR, TABLE.upperHeight + 0.2, tier > 1 ? 48 : 32, 1, true)), keep(new THREE.MeshStandardMaterial({ map: siloTexture, metalness: 0.7, roughness: 0.35 })));
-  silo.position.set(0, TABLE.upperHeight / 2 - 0.2, -siloY);
-  group.add(silo);
-  const siloRim = new THREE.Mesh(keep(new THREE.TorusGeometry(siloR, 0.06, 6, 48)), keep(new THREE.MeshBasicMaterial({ color: 0xffa62b, toneMapped: false })));
-  siloRim.rotation.x = Math.PI / 2;
-  siloRim.position.set(0, TABLE.upperHeight - 0.12, -siloY);
-  group.add(siloRim);
-  const aline = new THREE.Mesh(keep(new THREE.CircleGeometry(0.55, 28)), faceMaterial(castUrl("aline")));
-  aline.position.set(-2.3, 1.05, -(siloY - Math.sqrt(siloR * siloR - 2.3 * 2.3) - 0.04));
-  group.add(aline);
-  // Georges the croco swims across the silo roof (the rabbit of the rules);
-  // Romain stands in front of the beach hole (the Sales Manager of the rules)
-  const rabbitShape = table.parts.rabbit;
-  const croco = buildCroco(THREE, keep);
-  const rabbit = croco.group;
-  rabbit.position.set(0, TABLE.upperHeight, -rabbitShape.ay);
-  group.add(rabbit);
-  let rabbitHop = 0;
-  const smShape = table.parts.salesManager;
-  const salesManager = new THREE.Group();
-  const smMaterial = faceMaterial(options.salesManagerUrl);
-  const smPost = new THREE.Mesh(cylinder, keep(new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.5 })));
-  smPost.scale.set(0.42, 0.6, 0.42);
-  smPost.position.y = 0.3;
-  const smFace = new THREE.Mesh(keep(new THREE.CircleGeometry(0.55, 28)), smMaterial);
-  smFace.position.y = 1.15;
-  smFace.rotation.x = -0.3;
-  salesManager.add(smPost, smFace);
-  salesManager.position.set(smShape.ax, TABLE.upperHeight, -smShape.ay);
-  group.add(salesManager);
-  let smShake = 0;
 
   /* ---------- Toys and dome lights ---------- */
 
@@ -679,14 +769,9 @@ export function createView(THREE, ctx, table, options) {
   // Le Molière: the neon club entrance behind the scoop, Violaine at the decks
   const moliereMaterial = keep(new THREE.MeshBasicMaterial({ map: keep(paintNeon(THREE, tableText(t, "tbMoliere"), "#ff3d8b", castUrl("violaine"))), toneMapped: false, transparent: true }));
   const moliere = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.1, 0.82)), moliereMaterial);
-  moliere.position.set(TABLE.scoop.x, 0.85, -(TABLE.scoop.y + 0.75));
+  moliere.position.set(TABLE.moliere.x, 0.85, -(TABLE.moliere.y + 0.75));
   moliere.rotation.x = -0.3;
   group.add(moliere);
-  // Victor, by his 8.6 cans on the right bank
-  const victorMaterial = faceMaterial(castUrl("victor"));
-  const victor = new THREE.Mesh(keep(new THREE.CircleGeometry(0.36, 28)), victorMaterial);
-  victor.position.set(4.62, 0.95, -8.2);
-  group.add(victor);
   // Dome lights on the side rails and over the slingshots
   const domeGeometry = keep(new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2));
   const domes = [
@@ -792,7 +877,8 @@ export function createView(THREE, ctx, table, options) {
     camera.fov = vfov;
     const half = (vfov * Math.PI) / 360;
     const hfov = 2 * Math.atan(Math.tan(half) * aspect);
-    const width = TABLE.right - TABLE.left + 1.0;
+    // A phone frames the wires over both side rails too
+    const width = TABLE.right - TABLE.left + (portrait ? 1.7 : 1.0);
     // A wide screen sits lower, about 35 degrees off the vertical, as the arcade
     // desktop views do: the ramps and the toys stand up off the playfield
     const pitch = portrait ? 1.18 : 0.96;
@@ -839,7 +925,7 @@ export function createView(THREE, ctx, table, options) {
     const tx = vec.x;
     const ty = vec.y;
     const tz = vec.z;
-    camera.position.set(tx, ty + Math.sin(pitch) * distance, tz + Math.cos(pitch) * distance);
+    camera.position.set(tx + Math.sin(time * 57) * shakeT * 0.14, ty + Math.sin(pitch) * distance, tz + Math.cos(pitch) * distance + Math.cos(time * 43) * shakeT * 0.1);
     camera.lookAt(tx, ty, tz);
     camera.updateProjectionMatrix();
     engine.aimSun(tx, tz);
@@ -872,6 +958,157 @@ export function createView(THREE, ctx, table, options) {
   let fiatHop = 0;
   const q = new THREE.Quaternion();
   const axis = new THREE.Vector3();
+  let shakeT = 0;
+
+  /** One frame of the toys of table v2. mood.locks: the balls locked in the Silo. */
+  function updateToys(dt, mood) {
+    shakeT = Math.max(0, shakeT - dt);
+    // MERGUEZ letters flash; the bouncers drop into the table
+    for (const m of merguezMeshes) {
+      m.flash = Math.max(0, m.flash - dt * 3);
+      m.material.emissiveIntensity = 0.15 + m.flash * 1.5;
+    }
+    parts.bouncers.forEach((b, i) => {
+      const v = bouncerMeshes[i];
+      v.sink += ((b.enabled ? 0 : 1) - v.sink) * Math.min(1, dt * 14);
+      v.mesh.position.y = 0.27 - v.sink * 0.56;
+    });
+    // The volcano: shakes when hit, lava brighter as its hit points run out, erupts
+    volcanoShake = Math.max(0, volcanoShake - dt * 2.5);
+    eruptT = Math.max(0, eruptT - dt);
+    volcano.position.x = V.x + Math.sin(time * 61) * volcanoShake * 0.06;
+    volcano.position.z = -V.y + Math.cos(time * 53) * volcanoShake * 0.05;
+    const open = parts.crater.enabled;
+    const heat = Math.max(eruptT > 0 ? 1 : 0, open ? 0.75 : 0, 1 - parts.volcano.bash.hp / 6);
+    lavaMaterial.emissiveIntensity = 0.5 + heat * 1.4 + (eruptT > 0 ? Math.abs(Math.sin(time * 14)) * 1.2 : 0);
+    lavaPool.material.color.setHex(0xff7a1a).multiplyScalar(0.8 + heat * 0.6);
+    if (lavaLight) {
+      lavaLight.intensity = 0.6 + heat * 3 + (eruptT > 0 ? 4 + Math.sin(time * 22) * 2 : 0);
+    }
+    fountain.visible = eruptT > 0;
+    if (fountain.visible) {
+      const k = Math.min(1, eruptT / 0.4) * (0.75 + Math.abs(Math.sin(time * 17)) * 0.35);
+      fountain.scale.set(1 + k * 0.3, 2.6 * k, 1 + k * 0.3);
+      fountain.position.y = 1.72 + 1.3 * k;
+    }
+    const mouth = craterMouth.scale.x + ((open ? 1 : 0.01) - craterMouth.scale.x) * Math.min(1, dt * 6);
+    craterMouth.scale.setScalar(mouth);
+    mouthRim.material.color.setHex(0xff4a00).multiplyScalar(0.7 + Math.abs(Math.sin(time * 6)) * 0.8);
+    // Smoke: a slow plume while the crater is open, a column when it erupts
+    smokeAcc += dt * (eruptT > 0 ? 30 : open ? 5 : heat > 0.5 ? 1.2 : 0.4);
+    while (smokeAcc >= 1) {
+      smokeAcc -= 1;
+      const p = puffs.find((x) => x.life <= 0);
+      if (p) {
+        p.life = 1.6 + Math.random() * 0.8;
+        p.x = V.x + (Math.random() - 0.5) * 0.3;
+        p.y = 1.8;
+        p.z = -V.y + (Math.random() - 0.5) * 0.3;
+        p.vx = (Math.random() - 0.5) * 0.5;
+        p.vz = (Math.random() - 0.5) * 0.5;
+        p.s = 0.12 + Math.random() * 0.1;
+      }
+      if (eruptT > 0) {
+        const sp = sparks.find((x) => x.life <= 0);
+        if (sp) {
+          sp.life = 1.2;
+          sp.x = V.x;
+          sp.y = 1.8;
+          sp.z = -V.y;
+          const a = Math.random() * Math.PI * 2;
+          const v = 1.2 + Math.random() * 2;
+          sp.vx = Math.cos(a) * v;
+          sp.vz = Math.sin(a) * v;
+          sp.vy = 4 + Math.random() * 3.5;
+        }
+      }
+    }
+    puffs.forEach((p, i) => {
+      if (p.life > 0) {
+        p.life -= dt;
+        p.x += p.vx * dt;
+        p.z += p.vz * dt;
+        p.y += dt * 1.3;
+        p.s += dt * 0.35;
+      }
+      tmp.position.set(p.x, p.y, p.z);
+      tmp.rotation.set(0, 0, 0);
+      tmp.scale.setScalar(p.life > 0 ? p.s * Math.min(1, p.life) : 0.0001);
+      tmp.updateMatrix();
+      smokeMesh.setMatrixAt(i, tmp.matrix);
+    });
+    smokeMesh.instanceMatrix.needsUpdate = true;
+    sparks.forEach((p, i) => {
+      if (p.life > 0) {
+        p.life -= dt;
+        p.vy -= 9 * dt;
+        p.x += p.vx * dt;
+        p.y = Math.max(0.05, p.y + p.vy * dt);
+        p.z += p.vz * dt;
+      }
+      tmp.position.set(p.x, p.y, p.z);
+      tmp.scale.setScalar(p.life > 0 ? 0.075 : 0.0001);
+      tmp.updateMatrix();
+      sparkMesh.setMatrixAt(i, tmp.matrix);
+    });
+    sparkMesh.instanceMatrix.needsUpdate = true;
+    // The crabs walk sideways, legs going; a flipped one rolls on its back and kicks its legs
+    for (const v of crabViews) {
+      const s = v.c.shape;
+      const g = v.crab.group;
+      g.visible = v.shown;
+      if (!v.shown) {
+        continue;
+      }
+      v.flip += ((v.c.flipped ? 1 : 0) - v.flip) * Math.min(1, dt * 9);
+      v.hop = Math.max(0, v.hop - dt * 2.5);
+      g.position.set(s.ax, Math.sin(v.flip * Math.PI) * 0.35 + v.hop * 0.15, -s.ay);
+      g.rotation.y = v.c.heading;
+      v.crab.tilt.rotation.x = v.flip * Math.PI;
+      const walking = !v.c.flipped && Math.hypot(s.vx, s.vy) > 0.1;
+      v.crab.legs.forEach((leg, k) => {
+        leg.rotation.x = leg.userData.base + (walking || v.c.flipped ? Math.sin(time * (v.c.flipped ? 18 : 12) + k * 1.3) * 0.35 : 0);
+      });
+      v.crab.claws.forEach((claw, k) => {
+        claw.rotation.y = Math.sin(time * 3 + k) * 0.25;
+      });
+      v.crab.shell.color.setHex(v.red ? 0xff2a2a : 0xb79bff);
+    }
+    // The coconut rolls up and down its rail
+    coconut.position.set(parts.coco.x, parts.coco.r, -parts.coco.y);
+    coconut.rotation.x -= (parts.coco.s - cocoLastS) / parts.coco.r;
+    cocoLastS = parts.coco.s;
+    cocoFlash = Math.max(0, cocoFlash - dt * 1.5);
+    cocoSwitch.material.emissiveIntensity = 0.3 + cocoFlash * 2;
+    // The magnet's ring glows while it is on
+    magnetFlash = Math.max(0, magnetFlash - dt * 2);
+    magnetRing.visible = parts.magnet.on || magnetFlash > 0;
+    magnetRingMaterial.opacity = 0.45 + Math.abs(Math.sin(time * 4)) * 0.45 + magnetFlash * 0.5;
+    magnetDisc.rotation.y += dt * (parts.magnet.holding ? 9 : parts.magnet.on ? 1.2 : 0.2);
+    // The boar rises between the flippers
+    boarRise += ((parts.post.enabled ? 1 : 0) - boarRise) * Math.min(1, dt * 10);
+    boar.position.y = -0.7 + boarRise * 0.7;
+    boar.visible = boarRise > 0.02;
+    // The Silo: the locked balls stacked in it, its rim flashing; the diverter swings across
+    const locks = (mood && mood.locks) || 0;
+    lockedBalls.forEach((m, i) => {
+      m.group.visible = i < locks;
+      halos[i].visible = i < locks;
+      halos[i].scale.setScalar(1 + Math.sin(time * 4 + i) * 0.12 + siloFlash * 0.4);
+    });
+    siloFlash = Math.max(0, siloFlash - dt * 1.5);
+    siloRimMaterial.color.setHex(parts.fiatDiverter.on ? 0x22d3ee : 0xffa62b).multiplyScalar(1 + siloFlash * 1.5 + (parts.fiatDiverter.on ? Math.abs(Math.sin(time * 8)) * 0.8 : 0));
+    tubeMaterial.emissiveIntensity = 0.35 + siloFlash * 1.2 + locks * 0.15;
+    if (siloLight) {
+      siloLight.intensity = locks > 0 || siloFlash > 0 ? 1.5 + locks + siloFlash * 3 : 0;
+    }
+    const swing = parts.fiatDiverter.on ? -0.9 : 0;
+    diverterFlap.rotation.y += (swing - diverterFlap.rotation.y) * Math.min(1, dt * 10);
+    cellarFlash = Math.max(0, cellarFlash - dt * 1.5);
+    cellarMaterial.color.setScalar(1 + cellarFlash);
+    loopFlash = Math.max(0, loopFlash - dt * 1.5);
+    loopSign.material.emissiveIntensity = 0.3 + loopFlash * 1.2;
+  }
 
   /**
    * mood: { attract (the ball waits on the plunger), tilted }. Lights follow
@@ -888,13 +1125,22 @@ export function createView(THREE, ctx, table, options) {
     // Balls
     physics.balls.forEach((b, i) => {
       const m = ballMeshes[i];
-      m.group.visible = b.active;
+      // A ball held up in the Silo is shown by the stack in its tube
+      m.group.visible = b.active && !(b.mode === "held" && b.h > 1.2);
       if (!b.active) {
         return;
       }
-      const h = b.mode === "path" ? b.h : floorY(b.floor) + b.h;
+      let h = b.mode === "path" ? b.h : floorY(b.floor) + b.h;
+      let sx = b.x;
+      if (b.mode === "held" && (b.holder === parts.cellar || b.holder === parts.crater)) {
+        // Down the cellar, into the crater: the ball sinks out of sight
+        h -= 0.45;
+      } else if ((b.mode === "held" || b.mode === "grab") && b.holder === parts.magnet) {
+        // Mamar's magnet shakes the ball it holds
+        sx += Math.sin(time * 70) * 0.035;
+      }
       const scale = giant ? 1.5 : 1;
-      m.group.position.set(b.x, h + b.r * scale, -b.y);
+      m.group.position.set(sx, h + b.r * scale, -b.y);
       m.group.scale.setScalar(scale);
       // Rolling: the distance covered turns it round the axis across the motion
       const dx = b.spinX;
@@ -930,60 +1176,7 @@ export function createView(THREE, ctx, table, options) {
       s.material.emissive.setHex(0xff2d7a);
       s.material.emissiveIntensity = s.flash;
     }
-    // Drop targets sink, admins rise
-    table.parts.drops.forEach((d, i) => {
-      const target = d.enabled ? 0 : 1;
-      drops[i].sink += (target - drops[i].sink) * Math.min(1, dt * 14);
-      drops[i].mesh.position.y = 0.25 - drops[i].sink * 0.5;
-    });
-    table.parts.admins.forEach((a, i) => {
-      const v = admins[i];
-      const target = a.enabled ? 1 : 0;
-      v.rise += (target - v.rise) * Math.min(1, dt * 8);
-      v.group.visible = v.rise > 0.02;
-      v.group.position.y = -1.2 + v.rise * 1.2;
-      v.group.rotation.y = Math.sin(time * 3 + i) * 0.15;
-      if (v.group.visible) {
-        // The face turns to the player, read whole from any view
-        v.face.lookAt(camera.position);
-        fadeFace(v.face.material, a.ax, a.ay, FACE_HEIGHT, FACE_R, dt);
-      }
-    });
-    if (gateEntry) {
-      const open = !table.parts.productionGate.enabled;
-      const y = open ? -gateEntry.h : 0;
-      gateEntry.bodies.position.y += (y - gateEntry.bodies.position.y) * Math.min(1, dt * 8);
-      gateEntry.ends.position.y = gateEntry.bodies.position.y;
-    }
-    if (spinLeft > 0) {
-      spinner.rotation.x += dt * 30;
-      spinLeft -= dt;
-    } else {
-      spinner.rotation.x += (Math.round(spinner.rotation.x / Math.PI) * Math.PI - spinner.rotation.x) * Math.min(1, dt * 6);
-    }
-    // The monster Flow spins while it is on
-    if (table.parts.flow.enabled) {
-      flowDisc.rotation.y += dt * 4.5;
-    }
-    // Its author stands over the monster Flow, and sinks once it is refactored into Apex
-    flowFaceSink += ((table.parts.flow.enabled ? 0 : 1) - flowFaceSink) * Math.min(1, dt * 3);
-    flowFace.visible = flowFaceSink < 0.98;
-    if (flowFace.visible) {
-      flowFace.position.y = -flowFaceSink * 1.5 + Math.sin(time * 2.4) * 0.06;
-      flowFaceDisc.lookAt(camera.position);
-      fadeFace(flowFaceMaterial, TABLE.flow.x, TABLE.flow.y, FLOW_FACE_HEIGHT, FLOW_FACE_R, dt);
-    }
-    flowFlash = Math.max(0, flowFlash - dt * 3);
-    flowMaterial.emissiveIntensity = 0.25 + flowFlash;
-    terminalFlash = Math.max(0, terminalFlash - dt * 0.8);
-    terminalScreen.material.color.setScalar(1 + terminalFlash);
-    validateFlash = Math.max(0, validateFlash - dt * 2);
-    validateMaterial.emissiveIntensity = 0.3 + validateFlash * 1.4;
-    for (const q of quality) {
-      q.push = Math.max(0, q.push - dt * 5);
-      q.mesh.position.x = q.base + q.push * 0.1;
-      q.material.emissiveIntensity = 0.2 + q.push * 1.5;
-    }
+    updateToys(dt, mood);
     for (const toy of toys) {
       toy.object.rotation.y += dt * toy.spin;
       toy.object.position.y = toy.base + Math.sin(time * 1.6 + toy.base) * toy.bob;
@@ -1023,26 +1216,18 @@ export function createView(THREE, ctx, table, options) {
         cousSign.material.needsUpdate = true;
       }
     }
-    // The signs standing on the table fade while a ball rolls behind them
-    fadeFace(moliereMaterial, TABLE.scoop.x, TABLE.scoop.y + 0.6, 0.72, 0.8, dt);
-    fadeFace(terminalScreen.material, TABLE.terminal.x, TABLE.terminal.y + 0.6, 0.95, 0.6, dt);
-    victor.lookAt(camera.position);
-    fadeFace(victorMaterial, 4.62, 8.2, 0.95, 0.36, dt);
+    // The signs and faces standing on the table fade while a ball rolls behind them
+    fadeFace(moliereMaterial, TABLE.moliere.x, TABLE.moliere.y + 0.6, 0.72, 0.8, dt);
+    fadeFace(cellarMaterial, TABLE.cellar.x, TABLE.cellar.y + 0.6, 0.72, 0.8, dt);
+    babarFace.lookAt(camera.position);
+    fadeFace(babarMaterial, K.x, K.y1 + 0.75, 1.05, 0.36, dt);
+    alineFace.lookAt(camera.position);
+    fadeFace(alineMaterial, S.x + 0.95, S.y + 1.9, 2.5, 0.65, dt);
+    loopSign.lookAt(camera.position);
+    fadeFace(loopSign.material, -4.3, 13.4, 4.1, 0.6, dt);
     for (const dome of domes) {
       dome.material.emissiveIntensity = tilted ? 0 : showTime > 0 ? (Math.sin(time * 24 + dome.phase) > 0 ? 2.4 : 0.2) : 0.35 + Math.max(0, Math.sin(time * 2.2 + dome.phase)) * 0.9 + giFlash;
     }
-    // Georges swims across and snaps his jaws (wide when hit); Romain shakes his head
-    rabbit.position.x = rabbitShape.ax;
-    rabbitHop = Math.max(0, rabbitHop - dt * 3);
-    rabbit.position.y = TABLE.upperHeight + Math.sin(time * 2.2) * 0.04 + rabbitHop * 0.35;
-    const heading = rabbitShape.vx >= 0 ? -0.35 : Math.PI + 0.35;
-    rabbit.rotation.y += (heading - rabbit.rotation.y) * Math.min(1, dt * 5);
-    croco.jaw.rotation.z = 0.08 + Math.max(0, Math.sin(time * 3.1)) * 0.22 + rabbitHop * 0.5;
-    croco.tail.rotation.y = Math.sin(time * 5) * 0.35;
-    const smUp = smShape.enabled;
-    salesManager.position.y += ((smUp ? TABLE.upperHeight : TABLE.upperHeight - 1.6) - salesManager.position.y) * Math.min(1, dt * 6);
-    smShake = Math.max(0, smShake - dt * 2.5);
-    salesManager.rotation.y = Math.sin(time * 18) * smShake * 0.5;
     // Lights
     for (const { mesh, list } of Object.values(lightMeshes)) {
       list.forEach(({ i, l: place }, k) => {
@@ -1108,41 +1293,65 @@ export function createView(THREE, ctx, table, options) {
       showTime = Math.max(showTime, seconds || 1.8);
       giFlash = 1;
     },
-    /** state: "hit" (a ball through it), "apex" (refactored, it stops), "spin" (back for a new ball). */
-    flow(state) {
+    /** La Montagne Pelée: "hit" (it shakes), "erupt" (lava, smoke, sparks), "crater" (a ball in), "close". */
+    volcano(state) {
       if (state === "hit") {
-        flowFlash = 1;
-      } else {
-        flowMaterial.map = state === "apex" ? flowTextures.apex : flowTextures.spin;
-        flowMaterial.emissive.setHex(state === "apex" ? 0x1b96ff : 0xfe9339);
-        flowMaterial.needsUpdate = true;
-        flowFlash = 1;
+        volcanoShake = Math.max(volcanoShake, 0.6);
+      } else if (state === "erupt") {
+        eruptT = 3.4;
+        volcanoShake = 1.5;
+      } else if (state === "crater") {
+        eruptT = Math.max(eruptT, 1.4);
+        volcanoShake = 1;
       }
     },
-    terminal() {
-      terminalFlash = 1.5;
-    },
-    validate() {
-      validateFlash = 1;
-    },
-    pushQuality(i) {
-      if (quality[i]) {
-        quality[i].push = 1;
+    /** A crab: { i, flipped } (the physics shows that), { i, red }, { i, shown }; null for a new ball. */
+    crab(data) {
+      if (!data) {
+        return;
       }
+      const v = crabViews[data.i];
+      if (!v) {
+        return;
+      }
+      if (data.red !== undefined) {
+        v.red = data.red;
+      }
+      if (data.shown !== undefined) {
+        v.shown = data.shown;
+      }
+      if (data.flipped) {
+        v.hop = 1;
+      }
+    },
+    coco() {
+      cocoFlash = 1;
+    },
+    magnet() {
+      magnetFlash = 1;
+    },
+    /** The other toys: a flash on what was hit (merguez letter i, the Silo, the cellar, the loop, the boar). */
+    toy(name, data) {
+      if (name === "merguez" && merguezMeshes[data]) {
+        merguezMeshes[data].flash = 1;
+      } else if (name === "silo" || name === "divert") {
+        siloFlash = 1;
+      } else if (name === "cellar") {
+        cellarFlash = 1;
+      } else if (name === "loop") {
+        loopFlash = 1;
+      } else if (name === "post") {
+        boarRise = Math.min(boarRise, 0.7);
+      }
+    },
+    /** The table shakes (a nudge, an eruption). */
+    shake() {
+      shakeT = 0.45;
     },
     flashSling(i) {
       if (slingFlash[i]) {
         slingFlash[i].flash = 1;
       }
-    },
-    spin(n) {
-      spinLeft = Math.min(1.5, spinLeft + n * 0.08);
-    },
-    rabbitHit() {
-      rabbitHop = 1;
-    },
-    salesManagerHit() {
-      smShake = 1;
     },
     setGiant(on) {
       giant = on;
@@ -1152,7 +1361,7 @@ export function createView(THREE, ctx, table, options) {
     },
     dispose() {
       engine.scene.environment = null;
-      for (const m of ballMeshes) {
+      for (const m of ballMeshes.concat(lockedBalls)) {
         m.dispose();
       }
       for (const thing of disposables) {
@@ -1309,8 +1518,8 @@ function paintRoom(THREE) {
   return texture;
 }
 
-/** A printed slingshot plastic: hibiscus to lagoon, a white edge, a hibiscus flower. */
-function paintPlastic(THREE) {
+/** A printed slingshot plastic: hibiscus to lagoon, a white edge, a hibiscus flower, a friend's face. */
+function paintPlastic(THREE, faceUrl) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
@@ -1341,7 +1550,195 @@ function paintPlastic(THREE) {
   c.restore();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  if (faceUrl && typeof Image !== "undefined") {
+    // The friend in a white ring in the middle of the print, once the picture loads
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => {
+      c.save();
+      c.beginPath();
+      c.arc(118, 128, 62, 0, Math.PI * 2);
+      c.fillStyle = "#ffffff";
+      c.fill();
+      c.beginPath();
+      c.arc(118, 128, 56, 0, Math.PI * 2);
+      c.clip();
+      c.drawImage(img, 62, 72, 112, 112);
+      c.restore();
+      texture.needsUpdate = true;
+    };
+    img.onerror = () => {};
+    img.src = faceUrl;
+  }
   return texture;
+}
+
+/** A bouncer of Le Molière printed on a drop target: black suit, dark glasses, an earpiece. */
+function paintBouncer(THREE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const c = canvas.getContext("2d");
+  c.fillStyle = "#ff6ad5";
+  c.fillRect(0, 0, 128, 128);
+  c.fillStyle = "#14121a";
+  c.fillRect(6, 6, 116, 116);
+  // The suit, the white shirt, the head, the glasses
+  c.fillStyle = "#26232e";
+  c.beginPath();
+  c.moveTo(18, 124);
+  c.quadraticCurveTo(64, 70, 110, 124);
+  c.fill();
+  c.fillStyle = "#ffffff";
+  c.beginPath();
+  c.moveTo(56, 124);
+  c.lineTo(64, 92);
+  c.lineTo(72, 124);
+  c.fill();
+  c.fillStyle = "#8a5a3c";
+  c.beginPath();
+  c.arc(64, 56, 26, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = "#050505";
+  c.fillRect(40, 48, 22, 10);
+  c.fillRect(66, 48, 22, 10);
+  c.fillRect(60, 50, 8, 3);
+  c.fillStyle = "#22d3ee";
+  c.fillRect(88, 58, 5, 9);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/** The coconut's husk: brown fibres, three dark eyes on one side. */
+function paintCoconut(THREE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 64;
+  const c = canvas.getContext("2d");
+  c.fillStyle = "#6b4325";
+  c.fillRect(0, 0, 128, 64);
+  for (let i = 0; i < 160; i++) {
+    const x = (i * 37) % 128;
+    const y = (i * 23) % 64;
+    c.strokeStyle = i % 3 ? "rgba(40,22,10,0.55)" : "rgba(170,120,70,0.5)";
+    c.lineWidth = 1 + (i % 2);
+    c.beginPath();
+    c.moveTo(x, y);
+    c.lineTo(x + 6 + (i % 5), y + 3 - (i % 7));
+    c.stroke();
+  }
+  c.fillStyle = "#1f120a";
+  for (const [x, y] of [
+    [56, 28],
+    [72, 28],
+    [64, 40]
+  ]) {
+    c.beginPath();
+    c.arc(x, y, 4, 0, Math.PI * 2);
+    c.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * A land crab of Martinique, cute: a round violet-blue shell (shell, its
+ * material, turns red for Babar's mission), mango claws, eyes on stalks, six
+ * legs. Walks sideways along its local x. { group, tilt (rolls over when
+ * flipped), legs, claws, shell }.
+ */
+function buildCrab(THREE, keep) {
+  const group = new THREE.Group();
+  const tilt = new THREE.Group();
+  tilt.position.y = 0.16;
+  group.add(tilt);
+  const shell = keep(new THREE.MeshStandardMaterial({ color: 0xb79bff, roughness: 0.4, emissive: 0x6a40ff, emissiveIntensity: 0.45 }));
+  const mango = keep(new THREE.MeshStandardMaterial({ color: 0xffa62b, roughness: 0.5 }));
+  const white = keep(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
+  const black = keep(new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.2 }));
+  const ball = keep(new THREE.SphereGeometry(1, 12, 8));
+  const cube = keep(new THREE.BoxGeometry(1, 1, 1));
+  const body = new THREE.Mesh(ball, shell);
+  body.scale.set(0.3, 0.15, 0.24);
+  body.castShadow = true;
+  tilt.add(body);
+  // Eyes on stalks, looking at the player
+  for (const side of [-1, 1]) {
+    const stalk = new THREE.Mesh(cube, mango);
+    stalk.scale.set(0.03, 0.14, 0.03);
+    stalk.position.set(side * 0.08, 0.14, 0.14);
+    const eye = new THREE.Mesh(ball, white);
+    eye.scale.setScalar(0.055);
+    eye.position.set(side * 0.08, 0.22, 0.15);
+    const pupil = new THREE.Mesh(ball, black);
+    pupil.scale.setScalar(0.028);
+    pupil.position.set(side * 0.08, 0.225, 0.2);
+    tilt.add(stalk, eye, pupil);
+  }
+  // Two claws held up in front
+  const claws = [];
+  for (const side of [-1, 1]) {
+    const claw = new THREE.Group();
+    const arm = new THREE.Mesh(cube, mango);
+    arm.scale.set(0.05, 0.05, 0.14);
+    arm.position.set(0, 0, 0.07);
+    const pincer = new THREE.Mesh(ball, mango);
+    pincer.scale.set(0.09, 0.07, 0.11);
+    pincer.position.set(0, 0.02, 0.17);
+    claw.add(arm, pincer);
+    claw.position.set(side * 0.22, 0.02, 0.12);
+    tilt.add(claw);
+    claws.push(claw);
+  }
+  // Six legs, three a side, splayed along the walking axis
+  const legs = [];
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < 3; k++) {
+      const leg = new THREE.Mesh(cube, shell);
+      leg.scale.set(0.035, 0.035, 0.22);
+      leg.position.set(side * (0.2 + k * 0.03), -0.06, -0.08 + k * 0.08);
+      leg.rotation.y = side * (1.2 - k * 0.35);
+      leg.userData.base = 0.35;
+      leg.rotation.x = 0.35;
+      tilt.add(leg);
+      legs.push(leg);
+    }
+  }
+  return { group, tilt, legs, claws, shell };
+}
+
+/** Eul' sanglier, Babar's boar, on its up-post: a brown post, the head with a pink snout, tusks and ears. */
+function buildBoar(THREE, keep) {
+  const group = new THREE.Group();
+  const brown = keep(new THREE.MeshStandardMaterial({ color: 0x5a3a26, roughness: 0.8, flatShading: true }));
+  const pink = keep(new THREE.MeshStandardMaterial({ color: 0xe88a8a, roughness: 0.6 }));
+  const ivory = keep(new THREE.MeshStandardMaterial({ color: 0xfff6e0, roughness: 0.4 }));
+  const black = keep(new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.2 }));
+  const post = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.2, 0.22, 0.42, 14)), brown);
+  post.position.y = 0.21;
+  const head = new THREE.Mesh(keep(new THREE.SphereGeometry(0.2, 10, 8)), brown);
+  head.scale.set(1, 0.85, 1.1);
+  head.position.set(0, 0.5, 0.02);
+  const snout = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.08, 0.09, 0.1, 10)), pink);
+  snout.rotation.x = Math.PI / 2;
+  snout.position.set(0, 0.46, 0.22);
+  group.add(post, head, snout);
+  const cone = keep(new THREE.ConeGeometry(1, 1, 6));
+  for (const side of [-1, 1]) {
+    const tusk = new THREE.Mesh(cone, ivory);
+    tusk.scale.set(0.025, 0.1, 0.025);
+    tusk.position.set(side * 0.07, 0.43, 0.25);
+    const ear = new THREE.Mesh(cone, brown);
+    ear.scale.set(0.06, 0.12, 0.04);
+    ear.position.set(side * 0.12, 0.66, -0.02);
+    ear.rotation.z = -side * 0.4;
+    const eye = new THREE.Mesh(keep(new THREE.SphereGeometry(0.025, 6, 4)), black);
+    eye.position.set(side * 0.08, 0.56, 0.17);
+    group.add(tusk, ear, eye);
+  }
+  return group;
 }
 
 /* ---------- Toys built from primitives ---------- */
