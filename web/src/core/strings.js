@@ -2,7 +2,7 @@
 // loads (see registerTexts). A value may be an array: t() picks one at random.
 
 export const STRINGS = {
-  title: { en: 'Pandadventures', fr: 'Pandadventures' },
+  title: { en: 'PandAventures', fr: 'PandAventures' },
   tagline: { en: 'The legendary days of Panda and the gang', fr: 'Les journées légendaires de Panda et de la bande' },
   play: { en: 'Play', fr: 'Jouer' },
   map: { en: 'World map', fr: 'Carte des mondes' },
@@ -26,7 +26,7 @@ export const STRINGS = {
   hall: { en: 'Hall of fame', fr: 'Panthéon' },
   hall_empty: { en: 'No scores yet. Go play!', fr: 'Aucun score. Va jouer !' },
   share: { en: 'Brag on WhatsApp', fr: 'Frimer sur WhatsApp' },
-  share_text: { en: 'I scored {score} in "{world}" on Pandadventures! Hoho! {url}', fr: 'J\'ai fait {score} dans « {world} » sur Pandadventures ! Hoho ! {url}' },
+  share_text: { en: 'I scored {score} in "{world}" on PandAventures! Hoho! {url}', fr: 'J\'ai fait {score} dans « {world} » sur PandAventures ! Hoho ! {url}' },
   copied: { en: 'Copied! Paste it in the group.', fr: 'Copié ! Colle-eul’ dans eul’ groupe.' },
   your_name: { en: 'Your name', fr: 'Ton prénom' },
   win_title: { en: ['Hoho!', 'Bravo!', 'Stylé!'], fr: ['Hoho !', 'Bravo !', 'Stylé !'] },

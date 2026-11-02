@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>Eul' Flipper (dev)</title>
+    <link rel="icon" href="cast/panda.svg" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      #root { position: fixed; inset: 0; }
+      #over { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; color: #fff; font: 600 18px system-ui, sans-serif; background: rgba(0,0,0,0.7); }
+      #over[hidden] { display: none; }
+      #over button { font: inherit; padding: 8px 18px; border-radius: 10px; border: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="over" hidden><div id="msg"></div><button id="again" type="button">Rejouer</button></div>
+    <script type="module">
+      // Dev page for Eul' Flipper: ?auto (the bot plays), ?lang=en, ?mute. Not linked from the game.
+      import { startFlipper } from "./src/flipper/index.js";
+      const params = new URLSearchParams(location.search);
+      const root = document.getElementById("root");
+      const over = document.getElementById("over");
+      const msg = document.getElementById("msg");
+      let handle = null;
+      async function play() {
+        over.hidden = true;
+        handle = await startFlipper({
+          root,
+          lang: params.get("lang") || "fr",
+          t: (key) => key,
+          hero: "panda",
+          hat: null,
+          sound: !params.has("mute"),
+          auto: params.has("auto"),
+          onGameOver({ score }) {
+            msg.textContent = "Game over : " + score.toLocaleString("fr-FR");
+            over.hidden = false;
+          },
+          onExit() {
+            handle.dispose();
+            handle = null;
+            msg.textContent = "Quitté";
+            over.hidden = false;
+          }
+        });
+        window.__flipper = handle;
+      }
+      document.getElementById("again").onclick = () => {
+        if (handle) handle.dispose();
+        play();
+      };
+      play();
+    </script>
+  </body>
+</html>

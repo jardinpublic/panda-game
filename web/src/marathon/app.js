@@ -18,7 +18,6 @@ import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
 import { makeShareCard } from './sharecard.js';
-import { createPinballScreen } from '../pinball/screen.js';
 import './texts.js';
 
 const params = new URLSearchParams(location.search);
@@ -123,22 +122,14 @@ canvas.addEventListener('pointerdown', (e) => {
     // Some browsers refuse capture for synthetic or stale pointers: play on.
   }
   const [x, y] = toLogical(e);
-  if (A.screen === 'pinball') {
-    if (!A.paused) A.pb?.pointer('down', e.pointerId, x, y);
-    e.preventDefault();
-    return;
-  }
+  if (A.screen === 'pinball') return;
   Object.assign(touch, { id: e.pointerId, x0: x, y0: y, t0: performance.now(), swiped: false });
   if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result' || A.run.phase === 'outcome')) skipPhase();
   else micro()?.input('press', x, y);
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (A.screen === 'pinball') {
-    const [px, py] = toLogical(e);
-    A.pb?.pointer('move', e.pointerId, px, py);
-    return;
-  }
+  if (A.screen === 'pinball') return;
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   micro()?.input('move', x, y);
@@ -151,10 +142,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const up = (e) => {
-  if (A.screen === 'pinball') {
-    A.pb?.pointer('up', e.pointerId);
-    return;
-  }
+  if (A.screen === 'pinball') return;
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   touch.id = null;
@@ -166,10 +154,8 @@ canvas.addEventListener('pointercancel', up);
 const KEY_SWIPE = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyQ: 'left', KeyZ: 'up' };
 window.addEventListener('keydown', (e) => {
   if (A.screen === 'pinball') {
-    unlock();
+    // Eul' Flipper listens to the keyboard itself; Escape leaves it.
     if (e.code === 'Escape') leavePinball();
-    else if (!e.repeat) A.pb?.key(e.code, true);
-    e.preventDefault();
     return;
   }
   if (e.repeat) return;
@@ -186,18 +172,12 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && A.screen === 'run') togglePause();
 });
 window.addEventListener('keyup', (e) => {
-  if (A.screen === 'pinball') {
-    A.pb?.key(e.code, false);
-    return;
-  }
+  if (A.screen === 'pinball') return;
   if (e.code === 'Space' || e.code === 'Enter') micro()?.input('release', 200, A.H * 0.55);
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && A.screen === 'run' && !A.paused) togglePause();
-  if (document.hidden && A.screen === 'pinball' && !A.paused && !A.pbDone) {
-    A.paused = true;
-    renderUI();
-  }
+
 });
 
 // ---- run ------------------------------------------------------------------------
@@ -399,10 +379,6 @@ function togglePause() {
 function update(dt) {
   A.t += dt;
   if (A.screen === 'pinball') {
-    if (A.pb && !A.paused && !A.pbDone) {
-      A.pb.update(dt);
-      if (A.pb.game.state.over) pinballOver();
-    }
     A.fx.update(dt);
     return;
   }
@@ -461,7 +437,7 @@ function draw() {
   const [ox, oy] = A.fx.offset();
   c.save();
   c.translate(ox, oy);
-  if (A.screen === 'pinball' && A.pb) A.pb.draw(c, A.H, A.t);
+  if (A.screen === 'pinball') stageBg(['#2a1559', '#0a6d93']);
   else if (A.screen === 'home') drawHome();
   else if (A.screen === 'run') drawRun();
   else drawOverBg();
@@ -898,62 +874,84 @@ function easeOutBack(x) {
 
 // ---- Eul' Flipper ---------------------------------------------------------------------
 
-function startPinball() {
+let flipperModule = null;
+
+/** Opens Eul' Flipper: the 3D table loads on demand (three.js stays out of the main game). */
+async function startPinball() {
   unlock();
   sfx.click();
-  A.pb = createPinballScreen({
-    t,
-    lang: locale(),
-    sfx,
-    hero: A.meta.hero,
-    hat: A.meta.hat,
-    quote: (id) => t(`quote_${id}`),
-    tease: () => t('m.tease'),
-    auto: params.has('pbauto'),
-  });
+  disposeFlipper();
   A.screen = 'pinball';
   A.paused = false;
   A.pbDone = false;
   A.pbResult = null;
-  startGroove(112, 0.55);
+  stopGroove();
   renderUI();
+  try {
+    flipperModule = flipperModule || (await import('../flipper/index.js'));
+    if (A.screen !== 'pinball') return;
+    const root = document.createElement('div');
+    root.className = 'm-flipper-root';
+    phone.insertBefore(root, ui);
+    A.pbRoot = root;
+    A.pb = await flipperModule.startFlipper({
+      root,
+      lang: locale(),
+      t,
+      hero: A.meta.hero,
+      hat: A.meta.hat,
+      sound: !isMuted(),
+      auto: params.has('pbauto'),
+      onGameOver: ({ score }) => pinballOver(score),
+      onExit: leavePinball,
+    });
+    renderUI();
+  } catch (err) {
+    reportError(err);
+    leavePinball();
+  }
 }
 
-function pinballOver() {
-  A.pbDone = true;
-  const score = A.pb.game.state.score;
-  const res = applyPinball(A.meta, { score, hero: A.meta.hero });
-  A.meta = res.meta;
-  persist();
-  askPersist();
-  A.pbResult = { ...res, score };
-  if (res.newBest && score > 0) {
-    sfx.best();
-    A.fx.burst(200, A.H * 0.3, { kind: 'petal', n: 30, speed: 320 });
+function disposeFlipper() {
+  try {
+    A.pb?.dispose?.();
+  } catch (err) {
+    reportError(err);
   }
-  setGroove(84, 0.2);
+  A.pb = null;
+  A.pbRoot?.remove();
+  A.pbRoot = null;
+}
+
+function pinballOver(score = 0) {
+  if (A.pbDone) return;
+  A.pbDone = true;
+  let res = { meta: A.meta, rank: 0, newBest: false };
+  try {
+    res = applyPinball(A.meta, { score, hero: A.meta.hero });
+    A.meta = res.meta;
+    persist();
+    askPersist();
+  } catch (err) {
+    reportError(err);
+  }
+  A.pbResult = { ...res, score };
+  if (res.newBest && score > 0) sfx.best();
   renderUI();
 }
 
 function leavePinball() {
+  disposeFlipper();
   A.screen = 'home';
-  A.pb = null;
   A.paused = false;
+  A.pbDone = false;
   startGroove(88, 0.25);
   renderUI();
 }
 
 function renderPinballUI() {
-  const quit = el('button', 'm-icon m-pb-quit', ui, '✕');
-  quit.onclick = leavePinball;
-  if (A.paused && !A.pbDone) {
-    const sheet = el('div', 'm-modal', ui);
-    el('h2', '', sheet, t('m.paused'));
-    const resume = el('button', 'm-btn m-play', sheet, t('m.resume'));
-    resume.onclick = () => {
-      A.paused = false;
-      renderUI();
-    };
+  if (!A.pb && !A.pbDone) {
+    el('div', 'm-chip m-loading', ui, t('pb.loading'));
     return;
   }
   if (!A.pbDone) return;
@@ -989,6 +987,12 @@ function topBar() {
   el('div', 'm-chip', bar, `${t('m.best')} <b>${A.meta.best}</b>`);
   const spacer = el('div', 'm-grow', bar);
   void spacer;
+  const install = installKind();
+  if (install && A.screen === 'home') {
+    const ib = el('button', 'm-icon m-install', bar, '📲');
+    ib.title = t('m.install');
+    ib.onclick = () => installGame(install);
+  }
   const snd = el('button', 'm-icon', bar, isMuted() ? '🔇' : '🔊');
   snd.onclick = () => {
     setMuted(!isMuted());
@@ -1002,10 +1006,47 @@ function topBar() {
   };
 }
 
+/** How the game can be added to the home screen here: 'prompt' (Android), 'ios' (Safari steps) or null. */
+function installKind() {
+  try {
+    const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+    if (standalone || localStorage.getItem('pandadventures.installed') === '1') return null;
+  } catch {
+    // Old browser: go on.
+  }
+  if (window.__installPrompt) return 'prompt';
+  const ua = navigator.userAgent || '';
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return ios ? 'ios' : null;
+}
+
+async function installGame(kind) {
+  sfx.click();
+  if (kind === 'prompt' && window.__installPrompt) {
+    const offer = window.__installPrompt;
+    window.__installPrompt = null;
+    try {
+      await offer.prompt();
+      const choice = await offer.userChoice;
+      if (choice?.outcome === 'accepted') localStorage.setItem('pandadventures.installed', '1');
+    } catch {
+      // Dismissed or refused.
+    }
+    renderUI();
+    return;
+  }
+  const panel = sheet(`📲 ${t('m.install')}`);
+  el('p', 'm-install-steps', panel, t('m.install_ios'));
+  el('p', 'm-hint', panel, t('m.install_offline'));
+}
+window.addEventListener('pandadventures:installable', () => {
+  if (A.screen === 'home' && !document.querySelector('.m-sheet')) renderUI();
+});
+
 function renderHome() {
   topBar();
   const title = el('div', 'm-title', ui);
-  el('h1', '', title, 'Panda<span>dventures</span>');
+  el('h1', '', title, 'Pand<span>Aventures</span>');
   el('p', '', title, t('m.tagline'));
   const play = el('button', 'm-btn m-play', ui, t('m.play'));
   play.onclick = startRun;

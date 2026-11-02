@@ -35,6 +35,19 @@
         "--strictPort"
       ],
       "port": 8071
+    },
+    {
+      "name": "pandadventures-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "web/node_modules/vite/bin/vite.js",
+        "preview",
+        "web",
+        "--port",
+        "8073",
+        "--strictPort"
+      ],
+      "port": 8073
     }
   ]
 }

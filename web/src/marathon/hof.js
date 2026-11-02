@@ -13,7 +13,7 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 export const REPOSITORY = 'jardinpublic/panda-game';
 export const BOARD_URL = `https://raw.githubusercontent.com/${REPOSITORY}/main/hall-of-fame/hall-of-fame.json`;
-export const ISSUE_PREFIX = '[Pandadventures]';
+export const ISSUE_PREFIX = '[PandAventures]';
 export const PAYLOAD_VERSION = 1;
 /** Minimum time between two accepted sends of the same player. */
 export const SEND_PAUSE_MS = 2 * 60 * 1000;

@@ -38,7 +38,7 @@ export function makeShareCard(run) {
   for (let i = 0; i < 7; i++) art.hibiscus(c, 30 + i * 58, 70 + (i % 2) * 210, 9 + (i % 3) * 3, i, 'rgba(255,255,255,0.18)');
 
   // Title.
-  art.text(c, 'Pandadventures', W / 2, 46, { size: 40, color: '#fff', stroke: PAL.hibiscus });
+  art.text(c, 'PandAventures', W / 2, 46, { size: 40, color: '#fff', stroke: PAL.hibiscus });
 
   // The score.
   art.text(c, String(run.score), W / 2, 112, { size: 72, color: '#fff7c2', stroke: 'rgba(120,20,60,0.55)' });

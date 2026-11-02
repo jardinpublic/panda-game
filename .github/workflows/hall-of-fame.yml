@@ -1,5 +1,5 @@
 # The gang's Hall of Fame. The game opens a pre-filled issue titled
-# "[Pandadventures] <score> pts"; this workflow checks the score with the game's
+# "[PandAventures] <score> pts"; this workflow checks the score with the game's
 # own rules, updates hall-of-fame/hall-of-fame.json on main, replies and closes
 # the issue. The game reads the board from raw.githubusercontent.com.
 # The issue text is untrusted: it only ever reaches tools/hof/accept.mjs
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   accept:
-    if: startsWith(github.event.issue.title, '[Pandadventures]')
+    if: startsWith(github.event.issue.title, '[PandAventures]') || startsWith(github.event.issue.title, '[Pandadventures]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -111,3 +111,10 @@ button { font-family: var(--font); cursor: pointer; border: 0; }
 
 .m-flipper { margin-top: 12px; font-size: 17px; padding: 9px 22px; }
 .m-pb-quit { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; width: 36px; height: 36px; font-size: 14px; }
+
+/* Eul' Flipper: the 3D table fills the phone under the overlay (cards stay on top). */
+.m-flipper-root { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+.m-ui { z-index: 2; }
+.m-loading { margin: auto; font-size: 18px; }
+
+.m-install-steps { font-size: 17px; line-height: 1.4; margin: 14px 4px; }
