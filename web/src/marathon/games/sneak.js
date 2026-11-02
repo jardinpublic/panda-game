@@ -34,7 +34,7 @@ export default {
   howto: { en: "Hold to tiptoe to the door. Let go when Romain turns around.", fr: "Maintiens pour avancer sur la pointe des pieds. Lâche quand Romain se retourne." },
   winLine: { en: "Out without a sound!", fr: "Sorti sans un bruit !" },
   rival: ["romain", "victor"],
-  rivalLine: { en: "Gone again?! Every single day!", fr: "Il est encore parti ?! Tous les jours !" },
+  rivalLine: { en: "Well yes, you've got to work… and he's gone again?!", fr: "Bah oui, faut bosser… et il est encore parti ?!" },
   loseLine: { en: "Hoho, I was just going to the coffee machine!", fr: "Hoho, j'allais juste à la machine à café !" },
   create(g) {
     const { W, H } = g;
