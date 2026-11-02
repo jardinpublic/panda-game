@@ -1152,7 +1152,51 @@ async function installGame(kind) {
 }
 window.addEventListener('pandadventures:installable', () => {
   if (A.screen === 'home' && !document.querySelector('.m-sheet')) renderUI();
+  setTimeout(offerInstall, 400);
 });
+
+/**
+ * Not installed yet: a popup at startup offers to put the game on the home
+ * screen (the browser's own prompt on Android and desktop Chrome, the Safari
+ * steps on iPhone). Once a day at most, never during a game or over another sheet.
+ */
+const INSTALL_ASKED = 'pandadventures.installAskedAt';
+let installOffered = false;
+function offerInstall() {
+  if (installOffered || VOLATILE || A.screen !== 'home' || document.querySelector('.m-sheet')) return;
+  const kind = installKind();
+  if (!kind) return;
+  try {
+    if (Date.now() - (Number(localStorage.getItem(INSTALL_ASKED)) || 0) < 20 * 3600e3) return;
+    localStorage.setItem(INSTALL_ASKED, String(Date.now()));
+  } catch {
+    // No storage: ask this time anyway.
+  }
+  installOffered = true;
+  const panel = sheet(`📲 ${t('m.install_title')}`);
+  panel.classList.add('m-install-offer');
+  el('p', 'm-install-lead', panel, t('m.install_lead'));
+  const list = el('ul', 'm-install-list', panel);
+  for (const k of ['install_b1', 'install_b2', 'install_b3']) el('li', '', list, t(`m.${k}`));
+  const close = () => {
+    ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
+    renderUI();
+  };
+  if (kind === 'ios') {
+    el('p', 'm-install-steps', panel, t('m.install_ios'));
+    const ok = el('button', 'm-btn m-play', panel, t('m.install_ok'));
+    ok.onclick = close;
+  } else {
+    const go = el('button', 'm-btn m-play', panel, `📲 ${t('m.install_now')}`);
+    go.onclick = () => {
+      close();
+      installGame('prompt');
+    };
+  }
+  const later = el('button', 'm-btn m-ghost m-later', panel, t('m.install_later'));
+  later.onclick = close;
+}
+setTimeout(offerInstall, 1200);
 
 function renderHome() {
   topBar();
