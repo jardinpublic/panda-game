@@ -3,7 +3,8 @@
 // and faster, 3 lives, boss every 10th), game over, shop and missions.
 //
 // Debug URLs: ?game=<id> plays only that micro-game, ?level=N starts at game N
-// (faster), ?boss forces bosses, ?coins=N gives coins. window.__m drives it in tests.
+// (faster), ?boss forces bosses, ?coins=N gives coins, ?pbauto makes Eul' Flipper play
+// itself. window.__m drives it in tests.
 
 import './marathon.css';
 import { GAMES, BOSSES } from './games/index.js';
@@ -13,10 +14,11 @@ import { createFx } from './fx.js';
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
-import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, buy, HEROES, HATS } from './meta.js';
+import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { BOARD_URL, buildPayload, issueUrl, ranking, emptyBoard } from './hof.js';
 import { makeShareCard } from './sharecard.js';
+import { createPinballScreen } from '../pinball/screen.js';
 import './texts.js';
 
 const params = new URLSearchParams(location.search);
@@ -121,12 +123,22 @@ canvas.addEventListener('pointerdown', (e) => {
     // Some browsers refuse capture for synthetic or stale pointers: play on.
   }
   const [x, y] = toLogical(e);
+  if (A.screen === 'pinball') {
+    if (!A.paused) A.pb?.pointer('down', e.pointerId, x, y);
+    e.preventDefault();
+    return;
+  }
   Object.assign(touch, { id: e.pointerId, x0: x, y0: y, t0: performance.now(), swiped: false });
   if (A.screen === 'run' && A.run && (A.run.phase === 'intro' || A.run.phase === 'result' || A.run.phase === 'outcome')) skipPhase();
   else micro()?.input('press', x, y);
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (A.screen === 'pinball') {
+    const [px, py] = toLogical(e);
+    A.pb?.pointer('move', e.pointerId, px, py);
+    return;
+  }
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   micro()?.input('move', x, y);
@@ -139,6 +151,10 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 const up = (e) => {
+  if (A.screen === 'pinball') {
+    A.pb?.pointer('up', e.pointerId);
+    return;
+  }
   if (touch.id !== e.pointerId) return;
   const [x, y] = toLogical(e);
   touch.id = null;
@@ -149,6 +165,13 @@ canvas.addEventListener('pointercancel', up);
 
 const KEY_SWIPE = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyQ: 'left', KeyZ: 'up' };
 window.addEventListener('keydown', (e) => {
+  if (A.screen === 'pinball') {
+    unlock();
+    if (e.code === 'Escape') leavePinball();
+    else if (!e.repeat) A.pb?.key(e.code, true);
+    e.preventDefault();
+    return;
+  }
   if (e.repeat) return;
   unlock();
   if (KEY_SWIPE[e.code]) micro()?.input('swipe', KEY_SWIPE[e.code]);
@@ -163,10 +186,18 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && A.screen === 'run') togglePause();
 });
 window.addEventListener('keyup', (e) => {
+  if (A.screen === 'pinball') {
+    A.pb?.key(e.code, false);
+    return;
+  }
   if (e.code === 'Space' || e.code === 'Enter') micro()?.input('release', 200, A.H * 0.55);
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && A.screen === 'run' && !A.paused) togglePause();
+  if (document.hidden && A.screen === 'pinball' && !A.paused && !A.pbDone) {
+    A.paused = true;
+    renderUI();
+  }
 });
 
 // ---- run ------------------------------------------------------------------------
@@ -360,6 +391,14 @@ function togglePause() {
 
 function update(dt) {
   A.t += dt;
+  if (A.screen === 'pinball') {
+    if (A.pb && !A.paused && !A.pbDone) {
+      A.pb.update(dt);
+      if (A.pb.game.state.over) pinballOver();
+    }
+    A.fx.update(dt);
+    return;
+  }
   if (A.screen === 'run' && !A.paused) {
     const r = A.run;
     r.phaseT += dt;
@@ -413,7 +452,8 @@ function draw() {
   const [ox, oy] = A.fx.offset();
   c.save();
   c.translate(ox, oy);
-  if (A.screen === 'home') drawHome();
+  if (A.screen === 'pinball' && A.pb) A.pb.draw(c, A.H, A.t);
+  else if (A.screen === 'home') drawHome();
   else if (A.screen === 'run') drawRun();
   else drawOverBg();
   c.restore();
@@ -847,10 +887,90 @@ function easeOutBack(x) {
 
 // ---- DOM screens ------------------------------------------------------------------
 
+// ---- Eul' Flipper ---------------------------------------------------------------------
+
+function startPinball() {
+  unlock();
+  sfx.click();
+  A.pb = createPinballScreen({
+    t,
+    lang: locale(),
+    sfx,
+    hero: A.meta.hero,
+    hat: A.meta.hat,
+    quote: (id) => t(`quote_${id}`),
+    tease: () => t('m.tease'),
+    auto: params.has('pbauto'),
+  });
+  A.screen = 'pinball';
+  A.paused = false;
+  A.pbDone = false;
+  A.pbResult = null;
+  startGroove(112, 0.55);
+  renderUI();
+}
+
+function pinballOver() {
+  A.pbDone = true;
+  const score = A.pb.game.state.score;
+  const res = applyPinball(A.meta, { score, hero: A.meta.hero });
+  A.meta = res.meta;
+  persist();
+  askPersist();
+  A.pbResult = { ...res, score };
+  if (res.newBest && score > 0) {
+    sfx.best();
+    A.fx.burst(200, A.H * 0.3, { kind: 'petal', n: 30, speed: 320 });
+  }
+  setGroove(84, 0.2);
+  renderUI();
+}
+
+function leavePinball() {
+  A.screen = 'home';
+  A.pb = null;
+  A.paused = false;
+  startGroove(88, 0.25);
+  renderUI();
+}
+
+function renderPinballUI() {
+  const quit = el('button', 'm-icon m-pb-quit', ui, '✕');
+  quit.onclick = leavePinball;
+  if (A.paused && !A.pbDone) {
+    const sheet = el('div', 'm-modal', ui);
+    el('h2', '', sheet, t('m.paused'));
+    const resume = el('button', 'm-btn m-play', sheet, t('m.resume'));
+    resume.onclick = () => {
+      A.paused = false;
+      renderUI();
+    };
+    return;
+  }
+  if (!A.pbDone) return;
+  const r = A.pbResult;
+  const card = el('div', 'm-card m-over', ui);
+  el('div', 'm-band', card);
+  el('h2', '', card, t('pb.over'));
+  el('div', 'm-score', card, r.score.toLocaleString(locale()));
+  if (r.newBest && r.score > 0) el('div', 'm-badge', card, `🏆 ${t('m.new_best')}`);
+  const stats = el('div', 'm-stats', card);
+  el('span', '', stats, `${t('pb.best')} ${A.meta.pinball.best.toLocaleString(locale())}`);
+  if (r.rank > 0) el('span', 'm-gold', stats, `🏆 ${t('pb.rank', { n: r.rank })}`);
+  const again = el('button', 'm-btn m-play', ui, t('m.replay'));
+  again.onclick = startPinball;
+  const row = el('div', 'm-row', ui);
+  const menu = el('button', 'm-btn m-ghost', row, t('m.menu'));
+  menu.onclick = leavePinball;
+  const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('pb.scores')}`);
+  top.onclick = () => openRecords('flipper');
+}
+
 function renderUI() {
   ui.textContent = '';
   if (A.screen === 'home') renderHome();
   else if (A.screen === 'run') renderRunUI();
+  else if (A.screen === 'pinball') renderPinballUI();
   else renderOver();
 }
 
@@ -880,6 +1000,9 @@ function renderHome() {
   el('p', '', title, t('m.tagline'));
   const play = el('button', 'm-btn m-play', ui, t('m.play'));
   play.onclick = startRun;
+  const best = A.meta.pinball.best;
+  const flip = el('button', 'm-btn m-ghost m-flipper', ui, `${t('pb.play')}${best ? ` · ${best.toLocaleString(locale())}` : ''}`);
+  flip.onclick = startPinball;
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
@@ -1044,7 +1167,7 @@ function openRecords(tab = 'mine') {
   sfx.click();
   const panel = sheet(`🏆 ${t('m.records')}`);
   const tabs = el('div', 'm-tabs', panel);
-  for (const id of ['mine', 'gang']) {
+  for (const id of ['mine', 'flipper', 'gang']) {
     const b = el('button', `m-tab${id === tab ? ' on' : ''}`, tabs, t(`m.tab_${id}`));
     b.onclick = () => {
       ui.querySelector('.m-sheet-back')?.remove();
@@ -1053,6 +1176,12 @@ function openRecords(tab = 'mine') {
     };
   }
   const date = (at) => (at ? new Date(at).toLocaleDateString(locale()) : '');
+  if (tab === 'flipper') {
+    const list = A.meta.pinball.scores;
+    if (!list.length) el('p', 'm-empty', panel, t('pb.none'));
+    list.forEach((x, i) => recordRow(panel, i + 1, x.hero, x.score.toLocaleString(locale()), date(x.at)));
+    return;
+  }
   if (tab === 'mine') {
     if (!A.meta.scores.length) el('p', 'm-empty', panel, t('m.no_records'));
     A.meta.scores.forEach((x, i) => recordRow(panel, i + 1, x.hero, String(x.score), `${t('m.reached', { n: x.level })} · ${date(x.at)}`));
@@ -1170,10 +1299,9 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-art.loadHeads(`${import.meta.env.BASE_URL}cast/`).then(() => {
-  renderUI();
-  requestAnimationFrame(frame);
-});
+// Draw at once: faces have a drawn fallback until their pictures arrive.
+requestAnimationFrame(frame);
+art.loadHeads(`${import.meta.env.BASE_URL}cast/`).then(() => renderUI());
 renderUI();
 
 // Test hook: drive the app without a visible tab (rAF does not run when hidden).

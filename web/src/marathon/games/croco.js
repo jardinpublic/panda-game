@@ -196,7 +196,7 @@ export default {
   howto: { en: "Georges has your sandal. Ignore the fake twitches and pull out when his eyes go red.", fr: "Georges a ta sapate. Ignore les fausses alertes et tire quand ses yeux deviennent rouges." },
   winLine: { en: "Sandal saved, fingers too!", fr: "Sapate sauvée, doigts aussi !" },
   rival: ["victor", "greg"],
-  rivalLine: { en: "Georges was hungry, you know…", fr: "Georges avait faim, tu sais…" },
+  rivalLine: { en: "Georges was hungry, you know…", fr: "Georges avait faim, te sais…" },
   loseLine: { en: "Hoho, my sandal!", fr: "Hoho, ma sapate !" },
   create(g) {
     const sp = g.speed;

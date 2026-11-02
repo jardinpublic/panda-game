@@ -170,7 +170,7 @@ export default {
   winLine: { en: "You're in!", fr: "T'es dedans !" },
   rival: ["victor", "babar"],
   rivalLine: { en: "Who let him in?!", fr: "Qui l'a laissé entrer ?!" },
-  loseLine: { en: "Hoho, do you know who I am?!", fr: "Hoho, tu sais qui je suis ?!" },
+  loseLine: { en: "Hoho, do you know who I am?!", fr: "Hoho, te sais qui je suis ?!" },
   create(g) {
     const W = g.W;
     const H = g.H;

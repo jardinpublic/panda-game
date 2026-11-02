@@ -1,6 +1,9 @@
 // Meta progression kept between runs: coins, best score, playable friends,
 // hats, missions. Pure functions on a plain object; storage is in save().
 
+// Saves are plain JSON; structuredClone needs iOS 15.4+ / Chrome 98+.
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
 export const HEROES = [
   { id: 'panda', price: 0 },
   { id: 'cous', price: 60 },
@@ -38,7 +41,7 @@ export const SAVE_VERSION = 1;
 export const TOP_SIZE = 10;
 
 export function emptyMeta() {
-  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], updated: 0 };
+  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, updated: 0 };
 }
 
 const num = (x, fallback = 0) => (Number.isFinite(x) && x >= 0 ? x : fallback);
@@ -60,6 +63,9 @@ export function normalizeMeta(raw) {
   m.missions = Array.isArray(raw.missions) ? raw.missions.filter((x) => x && typeof x.kind === 'string' && num(x.goal) > 0) : [];
   m.scores = topScores(Array.isArray(raw.scores) ? raw.scores : []);
   m.best = Math.max(m.best, m.scores[0]?.score || 0);
+  const pb = raw.pinball && typeof raw.pinball === 'object' ? raw.pinball : {};
+  m.pinball = { ...pb, best: num(pb.best), games: num(pb.games), scores: topScores(Array.isArray(pb.scores) ? pb.scores : []) };
+  m.pinball.best = Math.max(m.pinball.best, m.pinball.scores[0]?.score || 0);
   return m;
 }
 
@@ -92,13 +98,18 @@ export function mergeMeta(a, b) {
   m.runs = Math.max(older.runs, newer.runs);
   m.tier = Math.max(older.tier, newer.tier);
   m.scores = topScores([...older.scores, ...newer.scores]);
+  m.pinball = {
+    best: Math.max(older.pinball.best, newer.pinball.best),
+    games: Math.max(older.pinball.games, newer.pinball.games),
+    scores: topScores([...older.pinball.scores, ...newer.pinball.scores]),
+  };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);
   return m;
 }
 
 /** Fills the mission list up to three, deterministic from the tier and a picker. */
 export function refillMissions(meta, pickGame, random = Math.random) {
-  const next = structuredClone(meta);
+  const next = clone(meta);
   while (next.missions.length < 3) {
     const type = MISSION_TYPES[Math.floor(random() * MISSION_TYPES.length)];
     if (next.missions.some((m) => m.kind === type.kind)) continue;
@@ -114,7 +125,7 @@ export function refillMissions(meta, pickGame, random = Math.random) {
  * {meta, completed: [missions done this run], newBest}.
  */
 export function applyRun(meta, run) {
-  const next = structuredClone(meta);
+  const next = clone(meta);
   next.runs++;
   next.coins += run.coins;
   const newBest = run.score > next.best;
@@ -139,11 +150,23 @@ export function applyRun(meta, run) {
   return { meta: next, completed, newBest, rank };
 }
 
+/** Records a finished Eul' Flipper game. Returns {meta, rank, newBest}. */
+export function applyPinball(meta, { score, hero, at = Date.now() }) {
+  const next = normalizeMeta(clone(meta));
+  const newBest = score > next.pinball.best;
+  next.pinball.best = Math.max(next.pinball.best, score);
+  next.pinball.games++;
+  const entry = { score, hero, at };
+  next.pinball.scores = topScores([...next.pinball.scores, entry]);
+  const rank = next.pinball.scores.findIndex((x) => x.score === score && x.at === at) + 1;
+  return { meta: next, rank, newBest };
+}
+
 /** Buys a hero or hat. Returns the new meta, or null if not affordable or unknown. */
 export function buy(meta, id) {
   const item = [...HEROES, ...HATS].find((x) => x.id === id);
   if (!item || meta.owned.includes(id) || meta.coins < item.price) return null;
-  const next = structuredClone(meta);
+  const next = clone(meta);
   next.coins -= item.price;
   next.owned.push(id);
   return next;

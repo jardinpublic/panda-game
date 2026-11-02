@@ -139,7 +139,7 @@ export default {
       g.fx.flash('rgba(255,255,255,0.35)', 0.12);
       g.fx.burst(heroX + 30, s.y - 90, { kind: 'confetti', colors: ['#ffffff', '#f1ede4', '#fff7ea', '#cfe3f7'], n: 50, speed: 420 });
       g.fx.text(heroX + 20, s.y - 220, o.items.includes('colleague') ? g.tr({ en: 'CAUGHT!', fr: 'COINCÉ !' }) : 'BAM!', { size: 50, color: PAL.coral });
-      g.say(70, s.y - 170, g.tr({ en: 'Oh, while you\'re here…', fr: 'Ah, tant que tu es là…' }), 1.8);
+      g.say(70, s.y - 170, g.tr({ en: 'Oh, while you\'re here…', fr: 'Ah, tant que te es là…' }), 1.8);
       g.lose();
     }
 

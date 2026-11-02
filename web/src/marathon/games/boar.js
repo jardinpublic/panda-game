@@ -125,7 +125,7 @@ export default {
   winLine: { en: 'Olé! Not even a scratch!', fr: 'Olé ! Même pas une égratignure !' },
   rival: ["babar", "mamar"],
   rivalLine: { en: "Ah ben mon Romain… now my boar's sulking.", fr: "Ah ben mon Romain… mon sanglier boude." },
-  loseLine: { en: "Hoho, your boar's a tank!", fr: "Hoho, ton sanglier, c'est un tank !" },
+  loseLine: { en: "Hoho, your boar's a tank!", fr: "Hoho, ton sanglier, y’est un tank !" },
   create(g) {
     const babar = g.cast('babar', 'mamar');
     const groundY = g.H * 0.8;

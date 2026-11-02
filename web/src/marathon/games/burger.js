@@ -187,7 +187,7 @@ export default {
   survive: false,
   verb: { en: 'STACK IT!', fr: 'EMPILE !' },
   title: { en: "Greg's XXL burger", fr: 'Eul’ burger XXL de Greg' },
-  howto: { en: 'Tap to drop each layer onto the burger. Miss the stack and it falls off!', fr: 'Touche pour lâcher chaque étage sur eul’ burger. Si tu rates la pile, ça tombe !' },
+  howto: { en: 'Tap to drop each layer onto the burger. Miss the stack and it falls off!', fr: 'Touche pour lâcher chaque étage sur eul’ burger. Si te rates la pile, ça tombe !' },
   winLine: { en: "That's a SMALL in the US!", fr: 'Aux USA, ça c\'est une SMALL !' },
   rival: ["greg", "romain"],
   rivalLine: { en: "In the US, we'd make it bigger.", fr: "Aux States, on l'aurait fait plus gros." },

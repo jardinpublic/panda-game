@@ -126,7 +126,7 @@ export default {
         g.fx.shake(6);
         g.fx.text(faceX, big.y + 40, g.tr({ en: 'False alarm!', fr: 'Fausse alerte !' }), { size: 34, color: PAL.coral });
         const t0 = tiles[0];
-        g.say(t0.x + tw / 2, t0.y + 14, g.tr({ en: 'Why did you mute?', fr: 'Pourquoi tu coupes ?' }), 1.6);
+        g.say(t0.x + tw / 2, t0.y + 14, g.tr({ en: 'Why did you mute?', fr: 'Pourquoi te coupes ?' }), 1.6);
         g.lose();
       } else {
         g.sfx.splash();

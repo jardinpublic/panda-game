@@ -54,7 +54,7 @@ export default {
   howto: { en: "Hold to pour the rum. Let go between the two lines.", fr: "Maintiens pour verser eul’ rhum. Lâche entre les deux traits." },
   winLine: { en: "Perfect ti-punch!", fr: "Ti-punch parfait !" },
   rival: ["greg", "cous"],
-  rivalLine: { en: "I was hoping you'd spill it…", fr: "J'espérais que tu déborderais…" },
+  rivalLine: { en: "I was hoping you'd spill it…", fr: "J'espérais que te déborderais…" },
   loseLine: { en: "Hoho… still thirsty!", fr: "Hoho… j'ai encore soif !" },
   create(g) {
     const friend = g.friend();

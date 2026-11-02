@@ -2,6 +2,35 @@
 
 import { registerTexts } from '../core/strings.js';
 
+registerTexts('pb', {
+  en: {
+    title: "Eul' Flipper",
+    play: "🕹️ Eul' Flipper",
+    ball: 'Ball',
+    launch: 'Hold the RIGHT side to pull the plunger, let go to launch · LEFT moves the lit lane',
+    hint: 'Left / right side = flippers · swipe up = nudge',
+    bonus: 'End of ball bonus',
+    over: "Game over, Tatou!",
+    best: 'Flipper record',
+    scores: 'Flipper top 10',
+    none: 'No flipper games yet.',
+    rank: '#{n} of your flipper games',
+  },
+  fr: {
+    title: 'Eul’ Flipper',
+    play: '🕹️ Eul’ Flipper',
+    ball: 'Balle',
+    launch: 'Maintiens à DROITE pour tirer eul’ lanceur, lâche pour lancer · GAUCHE change eul’ couloir',
+    hint: 'Côté gauche / droit = flippers · glisse vers eul’ haut = secouer',
+    bonus: 'Bonus de fin de balle',
+    over: 'Fin d’la partie, eul’ Tatou !',
+    best: 'Record flipper',
+    scores: 'Top 10 flipper',
+    none: 'Pas encore de partie de flipper.',
+    rank: 'N°{n} de tes parties de flipper',
+  },
+});
+
 registerTexts('m', {
   en: {
     tagline: 'Micro-games with the gang. Faster. And faster.',
@@ -56,6 +85,7 @@ registerTexts('m', {
     lascars: "♪ I see lascars far away… y est me, y es te, y est l'Panda! ♪",
     records: 'Hall of Fame',
     tab_mine: 'Mine',
+    tab_flipper: 'Flipper',
     tab_gang: 'The gang',
     loading: 'Loading…',
     gang_empty: "Nobody on the board yet. Be the first!",
@@ -120,6 +150,7 @@ registerTexts('m', {
     lascars: "♪ J'vois des lascars au loin… y est me, y es te, y est l'Panda ! ♪",
     records: 'Panthéon',
     tab_mine: 'Les miennes',
+    tab_flipper: 'Flipper',
     tab_gang: 'La bande',
     loading: 'Chargement…',
     gang_empty: "Personne au Panthéon pour l'instant. Sois eul’ premier !",

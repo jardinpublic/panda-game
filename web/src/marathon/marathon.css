@@ -108,3 +108,6 @@ button { font-family: var(--font); cursor: pointer; border: 0; }
 .m-podium-1 .m-record-rank { color: #e8a317; font-size: 22px; }
 .m-podium-2 .m-record-rank { color: #9aa3b5; font-size: 20px; }
 .m-podium-3 .m-record-rank { color: #c27a4a; font-size: 20px; }
+
+.m-flipper { margin-top: 12px; font-size: 17px; padding: 9px 22px; }
+.m-pb-quit { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; width: 36px; height: 36px; font-size: 14px; }

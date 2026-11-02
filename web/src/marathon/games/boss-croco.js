@@ -231,7 +231,7 @@ export default {
   boss: true,
   verb: { en: 'DODGE & BONK!', fr: 'ESQUIVE ET TAPE !' },
   title: { en: "BOSS: Georges the Lézarde", fr: "BOSS : Georges la Lézarde" },
-  howto: { en: "Swipe to dodge his lunges, then tap his snout. Three bonks and he's done.", fr: "Glisse pour esquiver ses attaques, puis touche son museau. Trois coups et c'est fini." },
+  howto: { en: "Swipe to dodge his lunges, then tap his snout. Three bonks and he's done.", fr: "Glisse pour esquiver ses attaques, puis touche son museau. Trois coups et y’est fini." },
   winLine: { en: "Georges is KO!", fr: "Georges est KO !" },
   rival: ["victor", "greg"],
   rivalLine: { en: "My Georges… knocked out…", fr: "Mon Georges… KO…" },

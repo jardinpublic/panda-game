@@ -20,14 +20,16 @@ export function unlock() {
     comp.ratio.value = 4;
     const master = ac.createGain();
     master.gain.value = muted ? 0 : VOLUME;
-    master.connect(comp).connect(ac.destination);
+    master.connect(comp);
+    comp.connect(ac.destination);
     out = ac.createGain();
     out.connect(master);
     const verb = ac.createConvolver();
     verb.buffer = impulse(1.8);
     wet = ac.createGain();
     wet.gain.value = 0.22;
-    wet.connect(verb).connect(master);
+    wet.connect(verb);
+    verb.connect(master);
     out._master = master;
   }
   if (ac.state === 'suspended') ac.resume();
@@ -52,6 +54,11 @@ function impulse(seconds) {
   return buf;
 }
 
+/** a.connect(b).connect(c) without relying on connect() returning its target (old Safari). */
+function chain(...nodes) {
+  for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1]);
+}
+
 const now = () => (ac ? ac.currentTime : 0);
 const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
@@ -70,7 +77,7 @@ function partial(freq, t, gain, decay, { glide = 1, send = 1, type = 'sine' } = 
   if (send) {
     const s = ac.createGain();
     s.gain.value = send;
-    g.connect(s).connect(wet);
+    chain(g, s, wet);
   }
   o.start(t);
   o.stop(t + decay + 0.05);
@@ -109,7 +116,7 @@ function noise(t, length, vol, { type = 'highpass', freq = 6000, q = 0.7, sweepT
   f.Q.value = q;
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + length);
-  src.connect(f).connect(g).connect(out);
+  chain(src, f, g, out);
   src.start(t);
 }
 
@@ -141,7 +148,7 @@ function bass(note, t, length, vol = 0.32) {
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(vol, t + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, t + length);
-  o.connect(lp).connect(g).connect(out);
+  chain(o, lp, g, out);
   o.start(t);
   o.stop(t + length + 0.05);
 }
@@ -164,12 +171,12 @@ function ho(t, pitch = 150, vol = 0.22) {
     bp.Q.value = q;
     const lg = ac.createGain();
     lg.gain.value = level * 2.4;
-    o.connect(bp).connect(lg).connect(g);
+    chain(o, bp, lg, g);
   }
   g.connect(out);
   const s = ac.createGain();
   s.gain.value = 0.4;
-  g.connect(s).connect(wet);
+  chain(g, s, wet);
   o.start(t);
   o.stop(t + 0.3);
 }

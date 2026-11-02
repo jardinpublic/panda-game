@@ -124,7 +124,7 @@ export default {
   howto: { en: "Tap to fire when the lionfish crosses the line. Never shoot the turtle!", fr: "Touche pour tirer quand eul’ poisson-lion passe la ligne. Jamais la tortue !" },
   winLine: { en: "Lionfish for dinner!", fr: "Poisson-lion au dîner !" },
   rival: ["mamar", "babar"],
-  rivalLine: { en: "Lucky shot, that's all!", fr: "Coup de chance, c'est tout !" },
+  rivalLine: { en: "Lucky shot, that's all!", fr: "Coup de chance, y’est tout !" },
   loseLine: { en: "Hoho… the lionfish is laughing at me.", fr: "Hoho… eul’ poisson-lion se moque de me." },
   create(g) {
     const buddy = g.friend();

@@ -104,7 +104,7 @@ export default {
         g.fx.shake(14);
         g.fx.flash('rgba(239,45,107,0.3)', 0.2);
         g.fx.text(s.x, feetY - 190, g.tr({ en: 'CAUGHT!', fr: 'GRILLÉ !' }), { size: 40, color: PAL.hibiscus });
-        g.say(chairX, chairY - 150, g.tr({ en: 'Where are you going?!', fr: 'Tu vas où comme ça ?!' }), 1.6);
+        g.say(chairX, chairY - 150, g.tr({ en: 'Where are you going?!', fr: 'Te vas où comme ça ?!' }), 1.6);
         g.lose();
       } else {
         g.sfx.bad();

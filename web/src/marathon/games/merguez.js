@@ -25,7 +25,7 @@ export default {
   survive: false,
   verb: { en: 'FLIP WHEN GOLDEN!', fr: 'RETOURNE QUAND C\'EST DORÉ !' },
   title: { en: "Hoho the merguez!", fr: "Hoho les merguez !" },
-  howto: { en: "Tap each merguez when it turns golden. Too early it's raw, too late it burns.", fr: "Touche chaque merguez quand elle est dorée. Trop tôt c'est cru, trop tard c'est cramé." },
+  howto: { en: "Tap each merguez when it turns golden. Too early it's raw, too late it burns.", fr: "Touche chaque merguez quand elle est dorée. Trop tôt y’est cru, trop tard y’est cramé." },
   winLine: { en: "Golden merguez for everyone!", fr: "Merguez dorées pour tout eul’ monde !" },
   rival: ["mamar", "babar"],
   rivalLine: { en: "I wanted to see them burn!", fr: "Me je voulais les voir cramer !" },

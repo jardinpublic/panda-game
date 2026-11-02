@@ -8,6 +8,9 @@
 
 import { CAST_IDS } from './art.js';
 
+// Saves are plain JSON; structuredClone needs iOS 15.4+ / Chrome 98+.
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
 export const REPOSITORY = 'jardinpublic/panda-game';
 export const BOARD_URL = `https://raw.githubusercontent.com/${REPOSITORY}/main/hall-of-fame/hall-of-fame.json`;
 export const ISSUE_PREFIX = '[Pandadventures]';
@@ -101,7 +104,7 @@ export function emptyBoard() {
  * personal best), 'kept' (not better than their best) or 'too_soon'.
  */
 export function applyEntry(board, login, entry, now = Date.now()) {
-  const next = structuredClone(board || emptyBoard());
+  const next = clone(board || emptyBoard());
   next.players ||= {};
   const key = String(login).toLowerCase();
   const prev = next.players[key];
