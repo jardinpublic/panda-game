@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "updated": "2026-11-02T02:27:32.000Z",
+  "updated": "2026-11-02T07:04:46.000Z",
   "players": {
     "nvuillam": {
       "login": "nvuillam",
@@ -11,8 +11,8 @@
         "hero": "panda",
         "at": 1793586438013
       },
-      "sends": 2,
-      "lastSent": 1793586452000
+      "sends": 3,
+      "lastSent": 1793603086000
     }
   }
 }
