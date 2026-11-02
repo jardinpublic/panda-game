@@ -42,6 +42,8 @@ import {
 const CAR_COLORS = ['#d6332b', '#2f6fd1', '#f2f2f0', '#2a2c30', '#9aa3ad', '#e8b923', '#2f8a6e', '#7a2f3f', '#f08a24', '#3c4f7a', '#c9c2b0'];
 const VAN_COLORS = ['#f2f2f0', '#f6c000', '#d9d9d6', '#3a6ea5'];
 const FOG = '#efdcc2';
+/** Things that drive or ride along the road (they steer when they change lane). */
+const MOVERS = new Set(['car', 'gogol', 'azzouz', 'pietro', 'babar']);
 /** The code-built car for each Kenney model, if the models could not load. */
 const FALLBACK = { sedan: 'sedan', 'sedan-sports': 'sedan', 'hatchback-sports': 'hatch', suv: 'sedan', taxi: 'sedan', van: 'van', delivery: 'van', truck: 'van', 'garbage-truck': 'bus', tractor: 'van' };
 
@@ -523,6 +525,9 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
   let swingT = 0;
   let swingSide = 1;
   let leanNow = 0;
+  let yawNow = 0;
+  let sideNow = 0;
+  let camH = null;
   let prevX = st.x;
 
   function place(obj, s, x, flip = false, y = 0) {
@@ -541,13 +546,26 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
     /* Panda */
     const lift = st.air > 0 ? Math.sin((1 - st.air / T_.jumpTime) * Math.PI) * 0.6 : 0;
     const p = place(panda, st.s, st.x, false, lift);
-    const sideSpeed = (st.x - prevX) / Math.max(dt, 1e-4);
+    // Sideways speed (m/s, + = to the right), smoothed: the rules move Panda across at a steady rate
+    const sideSpeed = Math.max(-15, Math.min(15, (st.x - prevX) / Math.max(dt, 1e-4)));
     prevX = st.x;
+    sideNow += (sideSpeed - sideNow) * Math.min(1, dt * 10);
+    const v = Math.max(st.v, 0.1);
+    const steering = st.phase === 'ride' || st.phase === 'done';
+    // The 103 points where it is going: a lane change turns it, it does not slide sideways
+    // (rotation.y turns left when positive, hence the minus)
+    const wantYaw = steering ? -Math.atan2(sideNow, Math.max(5, v)) * 0.9 : 0;
+    yawNow += (wantYaw - yawNow) * Math.min(1, dt * 12);
+    panda.rotation.y += yawNow;
+    // It leans INTO the bend (the angle a real rider takes: atan(v² × curvature / g)) and into a lane
+    // change; rotation.z leans to the right when positive. Curvature is + for a bend to the right.
     const curve = route.curvature(st.s);
-    const wantLean = Math.max(-0.5, Math.min(0.5, -sideSpeed * 0.045 - curve * st.v * st.v * 0.012));
-    leanNow += (wantLean - leanNow) * Math.min(1, dt * 8);
+    const wantLean = steering ? Math.max(-0.6, Math.min(0.6, Math.atan((v * v * curve) / 9.8) + sideNow * 0.032)) : 0;
+    leanNow += (wantLean - leanNow) * Math.min(1, dt * 6);
     crashSpin += ((down ? 1.45 : 0) - crashSpin) * Math.min(1, dt * (down ? 10 : 4));
     lean.rotation.z = leanNow - crashSpin;
+    // Panda hangs off a little more than the bike
+    rider.rotation.z = leanNow * 0.25;
     lean.rotation.y = down ? Math.sin(clock * 3) * 0.3 * crashSpin : 0;
     pitch.rotation.x = st.air > 0 ? -Math.sin((1 - st.air / T_.jumpTime) * Math.PI) * 0.5 : st.boost > 0 && riding ? -0.08 : 0;
     bike.position.y = riding ? Math.sin(clock * 34) * 0.006 * Math.min(1, st.v / 6) : 0;
@@ -598,7 +616,16 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
         o.userData.spin.rotation.z += dt * 12;
         continue;
       }
-      place(o, e.s, e.x, e.kind === 'car' && e.oncoming);
+      const flip = e.kind === 'car' && e.oncoming;
+      place(o, e.s, e.x, flip);
+      // Vehicles and riders turn when they change lane (they do not slide sideways)
+      if (MOVERS.has(e.kind)) {
+        const u = o.userData;
+        const side = u.px === undefined ? 0 : (e.x - u.px) / Math.max(dt, 1e-4);
+        u.px = e.x;
+        u.side = (u.side || 0) + (Math.max(-12, Math.min(12, side)) - (u.side || 0)) * Math.min(1, dt * 8);
+        o.rotation.y += (flip ? 1 : -1) * Math.atan2(u.side, Math.max(4, Math.abs(e.v || 0))) * 0.85;
+      }
       if (e.kind === 'parked') o.rotation.y += e.side * 0.04;
       if (o.userData.spin) {
         o.userData.spin.rotation.y = clock * 3 + e.id;
@@ -665,8 +692,14 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
     shake = Math.max(0, shake - dt * 2.2);
     fovKick = Math.max(0, fovKick - dt * 6);
     const speedK = Math.max(0, Math.min(1, (st.v - 12) / 9));
-    const ahead = route.at(st.s + 2);
-    camDir.lerp(new THREE.Vector3(ahead.dx, 0, ahead.dz), 1 - Math.exp(-dt * 5)).normalize();
+    // The camera turns smoothly with the road a little ahead (an angle, eased, so a bend is a swing, not a jerk)
+    const ahead = route.at(st.s + 3);
+    const wantH = ahead.heading + yawNow * 0.3;
+    if (camH === null) camH = wantH;
+    let dH = wantH - camH;
+    dH = Math.atan2(Math.sin(dH), Math.cos(dH));
+    camH += dH * (1 - Math.exp(-dt * 3.2));
+    camDir.set(Math.sin(camH), 0, Math.cos(camH));
     let wantPos;
     let wantLook;
     if (st.phase === 'pedal') {
@@ -693,9 +726,11 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
       const rz = camDir.x;
       const side = -st.x * 0.22;
       wantPos = new THREE.Vector3(p.x - camDir.x * back + rx * side, high + lift * 0.4, p.z - camDir.z * back + rz * side);
-      // Look down the road itself (round the bend), not just straight ahead
+      // Look ahead of Panda, partly round the bend
       const la = route.at(st.s + 9, st.x * 0.8);
-      wantLook = new THREE.Vector3(la.x, 0.5, la.z);
+      const sx = p.x + camDir.x * 9 - rx * st.x * 0.1;
+      const sz = p.z + camDir.z * 9 - rz * st.x * 0.1;
+      wantLook = new THREE.Vector3(sx + (la.x - sx) * 0.35, 0.5, sz + (la.z - sz) * 0.35);
     }
     if (!camReady) {
       camPos.copy(wantPos);
@@ -709,7 +744,8 @@ export function createView({ canvas, rules, tier = 1, castUrl = (id) => `./cast/
     if (shake > 0) camera.position.add(new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake * 0.6, (Math.random() - 0.5) * shake));
     camera.up.set(0, 1, 0);
     camera.lookAt(camLook);
-    camera.rotateZ(leanNow * 0.18);
+    // The horizon tilts a little with the bike
+    camera.rotateZ(-leanNow * 0.14);
     const fov = baseFov + speedK * 7 + (st.boost > 0 || st.slip ? 7 : 0) + fovKick * 6;
     if (Math.abs(camera.fov - fov) > 0.05) {
       camera.fov += (fov - camera.fov) * Math.min(1, dt * 4);

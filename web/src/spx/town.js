@@ -634,22 +634,30 @@ export function buildTown({ scene, route, sec, texts, tier, keep, castTexture, s
   }
 
   // Street plaques at the start of each street, the park and lake signs, the café
+  // Big enamel plaques on posts, turned a little toward the road so the rider can read them coming
   const signPost = (text, color, s, lateral) => {
     const grp = new THREE.Group();
-    const board = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.4, 0.66)), lambert({ map: tex(T.plaqueCanvas(text, color)), side: THREE.DoubleSide }));
-    board.position.y = 2.6;
+    const board = new THREE.Mesh(keep(new THREE.PlaneGeometry(3.6, 1.0)), lambert({ map: tex(T.plaqueCanvas(text, color)), side: THREE.DoubleSide }));
+    board.position.y = 3.0;
     board.castShadow = true;
     grp.add(board);
-    const post = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6)), lambert({ color: '#4a4f55' }));
-    post.position.y = 1.3;
+    const post = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.06, 0.06, 3.0, 6)), lambert({ color: '#4a4f55' }));
+    post.position.y = 1.5;
     grp.add(post);
     const p = route.at(s, lateral);
     grp.position.set(p.x, 0.12, p.z);
-    grp.rotation.y = p.heading + Math.PI;
+    grp.rotation.y = p.heading + Math.PI - Math.sign(lateral) * 0.45;
     scene.add(grp);
   };
-  for (const street of route.sections) if (!street.ring && street.index > 0) signPost(street.name.toUpperCase(), '#1f4fa0', street.s0 + 12, 4.9);
-  signPost('PARC DU PETIT BOIS', '#2f6b3a', 8, -4.9);
+  for (const street of route.sections) {
+    if (street.ring || street.index === 0) continue;
+    const name = street.name.toUpperCase();
+    signPost(name, '#1f4fa0', street.s0 + 14, 5.0);
+    // Long streets: again further on, on the other side
+    const len = street.s1 - street.s0;
+    for (let k = 1; k * 110 < len - 40; k++) signPost(name, '#1f4fa0', street.s0 + 14 + k * 110, k % 2 ? -5.0 : 5.0);
+  }
+  signPost('PARC DU PETIT BOIS', '#2f6b3a', 8, -5.0);
   if (ring) signPost('LAC DU PLESSIS', '#2f6b3a', ring.s0 - 3, 4.9);
 
   // Road signs: no entry at the roundabout (Panda goes in anyway), give way

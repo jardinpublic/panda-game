@@ -49,13 +49,16 @@ const CSS = `
 .sx-turbo.is-on { opacity: 1; }
 .sx-close { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(20, 16, 40, 0.55); color: #fff; font-size: 24px; line-height: 38px; pointer-events: auto; }
 .sx-map { position: absolute; right: 10px; top: calc(max(10px, env(safe-area-inset-top)) + 92px); width: 92px; height: 92px; border-radius: 16px; background: rgba(20, 16, 40, 0.45); }
-.sx-street { position: absolute; left: 12px; top: calc(max(10px, env(safe-area-inset-top)) + 50px); background: #1f4fa0; border: 3px solid #e9efe6; outline: 3px solid #2d7a4b; border-radius: 10px; padding: 4px 14px; font-weight: 700; font-size: 16px; letter-spacing: 0.5px; white-space: nowrap; max-width: calc(100% - 136px); overflow: hidden; text-overflow: ellipsis; transition: opacity .4s, transform .4s; }
-.sx-street.is-off { opacity: 0; transform: translateY(-12px); }
-.sx-toasts { position: absolute; left: 0; right: 0; top: calc(max(10px, env(safe-area-inset-top)) + 210px); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sx-street { position: absolute; left: 10px; top: calc(max(10px, env(safe-area-inset-top)) + 50px); transform: translateX(0) scale(1); transform-origin: left top; background: #1f4fa0; border: 3px solid #f4f7f2; outline: 3px solid #2d7a4b; border-radius: 10px; padding: 3px 10px; font-weight: 700; font-size: 14px; letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap; max-width: calc(100% - 128px); overflow: hidden; text-overflow: ellipsis; box-shadow: 0 4px 10px rgba(0,0,0,.3); transition: left .55s cubic-bezier(.4,1.2,.5,1), top .55s cubic-bezier(.4,1.2,.5,1), transform .55s cubic-bezier(.4,1.2,.5,1), font-size .55s, padding .55s, opacity .3s; }
+.sx-street.is-big { transition: none; left: 50%; top: 30%; transform: translateX(-50%) scale(1); font-size: clamp(20px, 6.6vw, 30px); padding: 8px 20px; width: max-content; max-width: calc(100% - 20px); white-space: normal; text-align: center; line-height: 1.15; }
+.sx-street.is-big.is-new { animation: sx-plaque .5s cubic-bezier(.3,1.7,.5,1); }
+.sx-street.is-off { opacity: 0; }
+@keyframes sx-plaque { 0% { transform: translateX(-50%) scale(.3) rotate(-6deg); } 100% { transform: translateX(-50%) scale(1); } }
+.sx-toasts { position: absolute; left: 0; right: 0; top: 49%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .sx-toast { background: rgba(20, 16, 40, 0.6); border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 15px; animation: sx-up 1.6s ease-out forwards; }
-.sx-pop { position: absolute; left: 0; right: 0; top: 37%; text-align: center; font-size: clamp(30px, 10vw, 54px); font-weight: 800; color: #ffd23f; -webkit-text-stroke: 2px #4a2a00; text-shadow: 0 4px 0 #ef2d6b; transform: scale(0.6); opacity: 0; transition: transform .25s cubic-bezier(.3,1.6,.5,1), opacity .25s; padding: 0 12px; line-height: 1.05; }
+.sx-pop { position: absolute; left: 0; right: 0; top: 40%; text-align: center; font-size: clamp(30px, 10vw, 54px); font-weight: 800; color: #ffd23f; -webkit-text-stroke: 2px #4a2a00; text-shadow: 0 4px 0 #ef2d6b; transform: scale(0.6); opacity: 0; transition: transform .25s cubic-bezier(.3,1.6,.5,1), opacity .25s; padding: 0 12px; line-height: 1.05; }
 .sx-pop.is-on { transform: scale(1); opacity: 1; }
-.sx-shout { position: absolute; left: 0; right: 0; top: 44%; text-align: center; font-weight: 800; color: #fff; -webkit-text-stroke: 2px #6b2a8e; font-size: clamp(18px, 6.4vw, 40px); padding: 0 6px; white-space: nowrap; letter-spacing: -0.5px; }
+.sx-shout { position: absolute; left: 0; right: 0; top: 55%; text-align: center; font-weight: 800; color: #fff; -webkit-text-stroke: 2px #6b2a8e; font-size: clamp(18px, 6.4vw, 40px); padding: 0 6px; white-space: nowrap; letter-spacing: -0.5px; }
 .sx-chat { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px); display: flex; gap: 8px; align-items: flex-end; animation: sx-in .25s ease-out; }
 .sx-chat img { width: 54px; height: 66px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
 .sx-chat p { margin: 0; background: #fffdf7; color: #2b2340; border-radius: 16px 16px 16px 4px; padding: 7px 12px; font-size: 16px; line-height: 1.25; box-shadow: 0 4px 14px rgba(20,10,40,.25); max-width: 78%; }
@@ -243,10 +246,13 @@ export async function startSpx(options) {
         multText.classList.add('is-up');
       }
       if (name === 'street') {
+        // Big in the middle when Panda turns into a street, then it stays small in the corner
         street.textContent = data.name;
-        street.classList.remove('is-off');
+        street.classList.remove('is-off', 'is-new');
+        void street.offsetWidth;
+        street.classList.add('is-big', 'is-new');
         clearTimeout(streetTimer);
-        streetTimer = later(() => street.classList.add('is-off'), 2600);
+        streetTimer = later(() => street.classList.remove('is-big', 'is-new'), 3000);
       }
       if (name === 'siren') {
         sirenOn = !!data.on;
