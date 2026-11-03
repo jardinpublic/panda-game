@@ -312,7 +312,7 @@ export const TEXTS = {
     pbFieldTerminal: "Eul' barbecue",
     pbFieldValidate: "Apéro 11h30",
     pbAdminName: "Un marmot",
-    pbRaidAdmin: "Oh, la jolie p'tite voiture… on dessine dessus ?",
+    pbRaidAdmin: "Oh, la jolie p'tite bagnole… on dessine dessus ?",
     dmdQuickDeploy: "Apéro x2",
     pbMatchWon: "Match ! Une bille de plus",
     dmdReplay: "Replay",

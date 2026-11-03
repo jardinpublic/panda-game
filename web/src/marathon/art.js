@@ -32,6 +32,9 @@ export const PAL = {
 };
 
 export const CAST_IDS = ['panda', 'cous', 'mamar', 'babar', 'victor', 'romain', 'eugenie', 'violaine', 'aline', 'greg'];
+/** People from the stories who are not in the gang: drawn like them, never playable, never
+ * random friends or cameos. They appear only in their own mini-games (car205, rudy-escape, rudy-food). */
+export const EXTRA_IDS = ['rudy', 'jose', 'lamoule'];
 
 /** Shirt, trousers and build per friend. Panda wears madras, Cous a hawaiian shirt. */
 export const OUTFITS = {
@@ -45,6 +48,10 @@ export const OUTFITS = {
   aline: { shirt: '#2f8c96', pattern: 'plain', legs: '#2c3240', skin: '#f5ccb2', small: 0.95 },
   eugenie: { shirt: '#26232e', pattern: 'plain', legs: '#c83a44', skin: '#f8d3bd', small: 0.94, skirt: true },
   violaine: { shirt: '#e8664e', pattern: 'plain', legs: '#3a5280', skin: '#ecb994', small: 0.95 },
+  // Rudy lives in the woods: khaki parka. José: skinny, white tank top, very hairy. Lamoule: tall.
+  rudy: { shirt: '#7d8a4e', pattern: 'hoodie', legs: '#4a4238', skin: '#efc0a0', tall: 1.14, wide: 1.3, afro: '#5e4532' },
+  jose: { shirt: '#f1f0ea', pattern: 'hairy', legs: '#2c3a5a', skin: '#d6a27a', wide: 0.8, bareArms: true, hairy: '#1c1512' },
+  lamoule: { shirt: '#3d6b4f', pattern: 'plain', legs: '#2b2f3a', skin: '#f4cdb4', tall: 1.16 },
 };
 
 // ---- images ---------------------------------------------------------------------
@@ -54,7 +61,7 @@ const heads = {};
 /** Loads every head picture (cast/<id>.svg). Resolves when all are decoded or failed. */
 export function loadHeads(base = 'cast/') {
   if (typeof Image === 'undefined') return Promise.resolve();
-  return Promise.all(CAST_IDS.map((id) => new Promise((resolve) => {
+  return Promise.all([...CAST_IDS, ...EXTRA_IDS].map((id) => new Promise((resolve) => {
     const img = new Image();
     img.onload = () => { heads[id] = img; resolve(); };
     img.onerror = () => resolve();
@@ -220,6 +227,7 @@ export function head(c, id, x, y, h, { rot = 0, flip = false, squash = 1, hat = 
   c.translate(x, y);
   c.rotate(rot);
   c.scale(flip ? -1 : 1, squash);
+  if (OUTFITS[id]?.afro) afro(c, h, OUTFITS[id].afro);
   if (img) {
     c.drawImage(img, -w / 2, -h / 2, w, h);
   } else {
@@ -229,6 +237,33 @@ export function head(c, id, x, y, h, { rot = 0, flip = false, squash = 1, hat = 
   // Anchor: the top of the hair on the cartoon heads (tools/art/cartoon_heads.py).
   if (hat && hat !== 'none') drawHat(c, hat, 0, -h * 0.33, w * 0.62);
   c.restore();
+}
+
+/** Rudy's giant afro, drawn behind his head picture: a cloud of curls far wider than the head. */
+function afro(c, h, col) {
+  const cy = -h * 0.17;
+  const rx = h * 0.55;
+  const ry = h * 0.45;
+  ellipse(c, 0, cy, rx, ry, col);
+  for (let i = 0; i < 30; i++) {
+    const a = (i / 30) * Math.PI * 2;
+    if (Math.sin(a) > 0.55) continue; // not under the chin
+    const r = h * (0.1 + (i % 3) * 0.02);
+    circle(c, Math.cos(a) * rx * 0.94, cy + Math.sin(a) * ry * 0.94, r, col);
+  }
+  // Curls: little light spirals all over the mass
+  c.strokeStyle = 'rgba(255,225,190,0.35)';
+  c.lineWidth = Math.max(1, h * 0.012);
+  for (let i = 0; i < 24; i++) {
+    const a = i * 2.39996;
+    const d = Math.sqrt((i + 0.5) / 24);
+    const x = Math.cos(a) * rx * d;
+    const y = cy + Math.sin(a) * ry * d;
+    if (Math.abs(x) < h * 0.3 && y > -h * 0.3) continue; // keep the face clear
+    c.beginPath();
+    c.arc(x, y, h * 0.035, 0, Math.PI * 1.5);
+    c.stroke();
+  }
 }
 
 /** Hats sit on top of the head: x, y is the top of the hair, w the head width. */
@@ -433,11 +468,28 @@ export function person(c, id, x, y, s, pose = 'idle', t = 0, { flip = false, hat
     const sy = top + k * 0.04;
     const ex = sx + side * Math.sin(a) * k * 0.2;
     const ey = sy + Math.cos(a) * k * 0.2;
-    c.strokeStyle = o.pattern === 'madras' ? '#f0a92b' : o.shirt;
+    c.strokeStyle = o.bareArms ? o.skin : o.pattern === 'madras' ? '#f0a92b' : o.shirt;
     c.beginPath();
     c.moveTo(sx, sy);
     c.lineTo(ex, ey);
     c.stroke();
+    if (o.hairy) {
+      // Hairy arms: little dark strokes along the arm
+      c.save();
+      c.strokeStyle = o.hairy;
+      c.lineWidth = Math.max(1, k * 0.007);
+      for (let i = 1; i < 8; i++) {
+        const px = sx + (ex - sx) * (i / 8) + (i % 2 ? 1 : -1) * k * 0.012;
+        const py = sy + (ey - sy) * (i / 8);
+        c.beginPath();
+        c.moveTo(px - k * 0.008, py - k * 0.006);
+        c.lineTo(px + k * 0.006, py + k * 0.007);
+        c.stroke();
+      }
+      c.restore();
+      c.strokeStyle = o.shirt;
+      c.lineWidth = k * 0.075;
+    }
     circle(c, ex, ey, k * 0.04, o.skin);
   }
   // head
@@ -473,6 +525,23 @@ function shirtPattern(c, o, x, y, w, h) {
     c.lineTo(-w * 0.08, y + h * 0.75);
     c.closePath();
     c.fill();
+  } else if (o.pattern === 'hairy') {
+    // Tank top: bare shoulders, and chest hair sticking out of the neckline
+    c.fillStyle = o.skin;
+    c.beginPath();
+    c.arc(0, y, w * 0.3, 0, Math.PI);
+    c.fill();
+    c.fillRect(x, y, w * 0.14, h * 0.3);
+    c.fillRect(x + w * 0.86, y, w * 0.14, h * 0.3);
+    c.strokeStyle = o.hairy;
+    c.lineWidth = 1.4;
+    for (let i = 0; i < 9; i++) {
+      const px = -w * 0.22 + (i * w * 0.44) / 8;
+      c.beginPath();
+      c.moveTo(px, y + 2);
+      c.quadraticCurveTo(px + 3, y + w * 0.12, px - 1, y + w * 0.22 - Math.abs(px) * 0.3);
+      c.stroke();
+    }
   } else if (o.pattern === 'hoodie') {
     c.fillStyle = 'rgba(255,255,255,0.15)';
     rrect(c, -w * 0.3, y + h * 0.55, w * 0.6, h * 0.3, 6);

@@ -319,6 +319,30 @@ def hair(p, line, layer):
         out.append(path(smooth(pts), col, edge, 4))
         out.append(path(f"M {CX - w * 0.6},{top + 16} Q {CX},{top - 6} {CX + w * 0.7},{top + 26}", "none", shine, 5, 'opacity="0.7"'))
         return "".join(out)
+    if style == "afro":
+        # A huge round mass of curls, wider than the head, behind it and over the forehead.
+        import math
+        big = hs.get("size", 1.0)
+        if layer == "back":
+            out.append(f'<ellipse cx="{CX}" cy="{top + 70}" rx="{(w + 60) * big}" ry="{136 * big}" fill="{col}" stroke="{edge}" stroke-width="4"/>')
+            for i in range(26):
+                a = i / 26 * math.pi * 2
+                x = CX + math.cos(a) * (w + 56) * big
+                y = top + 74 + math.sin(a) * 132 * big
+                if y > h["ear_y"] + 40:
+                    continue
+                out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{22 * big:.1f}" fill="{col}" stroke="{edge}" stroke-width="3.5"/>')
+            return "".join(out)
+        # Curls falling on the forehead, and little spirals all over
+        for i in range(9):
+            x = CX - w * 1.05 + (2 * w * 1.05) * i / 8
+            y = top + 34 + math.sin(i * 1.7) * 8 + (14 if i in (0, 8) else 0)
+            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="22" fill="{col}" stroke="{edge}" stroke-width="3.5"/>')
+        for i in range(16):
+            x = CX + math.cos(i * 2.39) * (w + 30) * big * (0.35 + (i % 4) * 0.2)
+            y = top - 10 + math.sin(i * 2.39) * 50 * big * (0.35 + (i % 4) * 0.2)
+            out.append(path(f"M {x - 7:.1f},{y:.1f} q 7,-10 13,-1 q 3,8 -6,8", "none", shine, 3, 'opacity="0.75"'))
+        return "".join(out)
     if layer == "back":
         return ""
     if style == "messy":
@@ -504,6 +528,31 @@ CAST = [
 ]
 
 
+# People from the stories who are not in the gang (never playable): same style.
+EXTRAS = [
+    # Rudy: a huge curly afro, sleepy eyes, mouth half open, light stubble.
+    friend("rudy", "#efc0a0", head={"w": 112, "chin": 380, "jaw": 84, "chin_w": 36},
+           hair={"style": "afro", "color": "#5e4532", "size": 1.0},
+           eyes={"y": 228, "dx": 46, "kind": "lidded", "iris": "#6b5a3a", "size": 0.9},
+           brows={"color": "#3e2a1e", "inner": 2, "sw": 9},
+           nose={"len": 66, "w": 20}, mouth={"kind": "open_smile", "w": 30, "dy": 20},
+           beard={"kind": "stubble", "color": "#6b4a36", "density": 0.9}),
+    # José: skinny, olive skin, short black hair, thick brows, a black beard and moustache, very hairy.
+    friend("jose", "#d6a27a", head={"w": 100, "chin": 392, "jaw": 70, "chin_w": 28, "cheek_y": 262},
+           hair={"style": "short", "color": "#1c1512"},
+           eyes={"y": 224, "dx": 42, "kind": "open", "iris": "#3a2416", "size": 0.9},
+           brows={"color": "#120d0b", "inner": -4, "sw": 13, "w": 24, "arch": 4},
+           nose={"len": 72, "w": 20}, mouth={"kind": "smirk", "w": 30, "dy": 24},
+           beard={"kind": "short", "color": "#1c1512", "drop": 20, "rise": -26, "mw": 34, "hole": 16}, moustache="#1c1512"),
+    # Lamoule: tall, short red hair, no beard, freckles.
+    friend("lamoule", "#f4cdb4", head={"w": 112, "chin": 386, "jaw": 86, "chin_w": 38},
+           hair={"style": "crop", "color": "#c9622b", "bay": 40},
+           eyes={"y": 222, "dx": 46, "kind": "open", "iris": "#5f8a8a", "size": 0.92},
+           brows={"color": "#b5541f", "inner": 2, "sw": 8},
+           nose={"len": 62, "w": 19}, mouth={"kind": "grin", "w": 38}, freckles=True),
+]
+
+
 def neck(p, line):
     shade = darker(p["skin"], 0.8)
     d = f"M {CX - 46},{330} L {CX - 50},{458} Q {CX},{470} {CX + 50},{458} L {CX + 46},{330} Z"
@@ -542,6 +591,23 @@ def render(p):
     parts.append(mouth(p, mouth_top, line))
     if p.get("beard") and p["beard"]["kind"] not in ("stubble", "short_stubble"):
         parts.append(beard(p, mouth_top, line, True))
+    if p.get("moustache"):
+        # A thick moustache over the top lip (with or without a beard).
+        col = p["moustache"]
+        mw = p["mouth"].get("w", 40) + 10
+        y = mouth_top
+        d = (f"M {CX},{y + 2} Q {CX - mw * 0.55},{y - 10} {CX - mw - 4},{y + 16} "
+             f"Q {CX - mw * 0.55},{y + 10} {CX},{y + 14} Q {CX + mw * 0.55},{y + 10} {CX + mw + 4},{y + 16} "
+             f"Q {CX + mw * 0.55},{y - 10} {CX},{y + 2} Z")
+        parts.append(path(d, col, darker(col, 0.7), 3))
+    if p.get("freckles"):
+        import random
+        rnd = random.Random(7)
+        for side in (-1, 1):
+            for _ in range(9):
+                x = CX + side * (p["eyes"]["dx"] + rnd.uniform(-14, 24))
+                y = p["eyes"]["y"] + rnd.uniform(34, 62)
+                parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{rnd.uniform(2.2, 3.6):.1f}" fill="#c8743f" opacity="0.6"/>')
     parts.append(hair(p, line, "front"))
     parts.append(glasses(p))
     if p.get("earring"):
@@ -558,6 +624,13 @@ def main():
     out_dir = os.path.join(root, "web", "public", "cast" if install else "cast-new")
     os.makedirs(out_dir, exist_ok=True)
     eyes_table = {}
+    if "--extras" in sys.argv:
+        # Only the people outside the gang (the gang's heads stay as they are)
+        for p in EXTRAS:
+            svg, _ = render(p)
+            with open(os.path.join(root, "web", "public", "cast", f"{p['id']}.svg"), "w", encoding="utf-8") as fh:
+                fh.write(svg)
+        return
     for p in CAST:
         svg, boxes = render(p)
         with open(os.path.join(out_dir, f"{p['id']}.svg"), "w", encoding="utf-8") as fh:
