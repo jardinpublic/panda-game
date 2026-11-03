@@ -43,7 +43,7 @@ alter table public.panda_scores drop constraint if exists hero_ok;
 alter table public.panda_scores add constraint hero_ok check (hero is null or hero in ('panda', 'cous', 'mamar', 'babar', 'victor', 'romain', 'eugenie', 'violaine', 'aline', 'greg'));
 alter table public.panda_scores drop constraint if exists score_ok;
 alter table public.panda_scores add constraint score_ok check (
-  score > 0 and score <= case game when 'marathon' then 100000 when 'flipper' then 50000000 else 200000 end
+  score > 0 and score <= case game when 'marathon' then 100000 when 'flipper' then 2000000000 else 200000 end
 );
 alter table public.panda_scores drop constraint if exists marathon_ok;
 alter table public.panda_scores add constraint marathon_ok check (

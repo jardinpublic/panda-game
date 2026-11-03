@@ -53,6 +53,20 @@ describe('online Hall of Fame', () => {
     expect(bestRun(meta, 'spx').score).toBe(39000);
   });
 
+  it('sends flipper records past 50 million (they were held on the phone before)', async () => {
+    let meta = player();
+    meta = applyPinball(meta, { score: 21209270, hero: 'panda', at: NOW - 5000 }).meta;
+    meta.online.sent.flipper = 21209270;
+    meta = applyPinball(meta, { score: 65623970, hero: 'panda', at: NOW - 1000 }).meta;
+    expect(toSend(meta, NOW)).toEqual(['flipper']);
+    const { fetch } = memoryBackend([], () => NOW);
+    const net = createOnline({ url: 'https://x.supabase.co', key: 'sb_publishable_x', fetch });
+    expect(await net.send(rowFor(meta, 'flipper'))).toBe('sent');
+    expect((await net.board('flipper'))[0].score).toBe(65623970);
+    // Still refused: more than the database's integer column can hold
+    expect(plausible({ ...rowFor(meta, 'flipper'), score: 2500000000 }, NOW)).toBe(false);
+  });
+
   it('refuses impossible scores before sending them', () => {
     const meta = player();
     const base = { player_id: meta.online.id, name: 'Cous', hero: 'panda', played_at: new Date(NOW - 1000).toISOString() };

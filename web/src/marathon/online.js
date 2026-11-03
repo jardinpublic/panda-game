@@ -13,7 +13,8 @@ import { maxScore } from './hof.js';
 
 export const GAMES = ['marathon', 'flipper', 'spx'];
 export const NAME_MAX = 20;
-const MAX = { marathon: 100000, flipper: 50000000, spx: 200000 };
+// Flipper scores go past 300 million (the last replay); 2 billion stays within the database's integer column
+const MAX = { marathon: 100000, flipper: 2000000000, spx: 200000 };
 const FIRST_DAY = Date.UTC(2026, 10, 1);
 
 /** A random id for this phone (never shown, never readable on the board). */
