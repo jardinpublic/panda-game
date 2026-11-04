@@ -217,7 +217,7 @@ function startRun() {
   unlock();
   sfx.click();
   const pool = DEBUG_GAME ? [DEBUG_GAME] : GAMES.map((d) => d.id);
-  const m = createMarathon({ pool });
+  const m = createMarathon({ pool, bosses: BOSSES.map((d) => d.id) });
   m.level = START_LEVEL;
   const heroLine = A.meta.hero === 'panda' ? t('m.lascars') : t(`quote_${A.meta.hero}`);
   A.run = { heroLine, m, phase: 'ready', phaseT: 0, micro: null, last: null, banner: null, cameo: nextCameo(), quote: '', lifeLostT: 9, lifeGainT: 9, seen: new Set(), shownScore: 0, gained: 0 };
@@ -240,7 +240,7 @@ function prepareIntro() {
     r.boss = !!def?.boss;
     r.m.next();
   } else if (r.boss) {
-    def = BOSSES[Math.floor(Math.random() * BOSSES.length)];
+    def = byId(r.m.nextBoss()); // every boss once before any comes back
   } else {
     def = byId(r.m.next());
   }

@@ -46,6 +46,17 @@ describe('marathon rules', () => {
     expect(run.isOver()).toBe(true);
   });
 
+  it('meets every boss once before any boss comes back', () => {
+    const bosses = ['babar', 'croco', 'romain'];
+    for (let seed = 1; seed <= 20; seed++) {
+      const run = createMarathon({ pool: ['a', 'b'], bosses, random: seq([0.13, 0.71, 0.42, 0.9, 0.05].map((x) => (x * seed) % 1)) });
+      const met = [];
+      for (let i = 0; i < bosses.length * 5; i++) met.push(run.nextBoss());
+      for (let d = 0; d < 5; d++) expect(new Set(met.slice(d * bosses.length, (d + 1) * bosses.length)).size).toBe(bosses.length);
+      for (let i = 1; i < met.length; i++) expect(met[i]).not.toBe(met[i - 1]);
+    }
+  });
+
   it('flags a boss every BOSS_EVERY games', () => {
     const run = createMarathon({ pool: ['a', 'b'] });
     const bosses = [];

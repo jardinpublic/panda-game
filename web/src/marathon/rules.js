@@ -21,7 +21,31 @@ export function shuffle(list, random = Math.random) {
   return out;
 }
 
-export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
+/**
+ * A shuffled deck: every id comes once, in random order, before any comes
+ * again. A new deck never starts with the id that ended the last one.
+ */
+export function createDeck(pool, random = Math.random) {
+  let deck = [];
+  let last = null;
+  return {
+    next() {
+      if (!deck.length) {
+        deck = shuffle(pool, random);
+        if (pool.length > 1 && deck[deck.length - 1] === last) {
+          const swap = Math.floor(random() * (deck.length - 1));
+          [deck[swap], deck[deck.length - 1]] = [deck[deck.length - 1], deck[swap]];
+        }
+      }
+      last = deck.pop();
+      return last;
+    },
+  };
+}
+
+export function createMarathon({ pool, bosses = [], random = Math.random, lives = LIVES }) {
+  const games = createDeck(pool, random);
+  const bossDeck = createDeck(bosses, random);
   const s = {
     level: 0, // micro-games played
     wins: 0,
@@ -30,7 +54,6 @@ export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
     bestStreak: 0,
     score: 0,
     coins: 0,
-    deck: [],
     stats: {}, // id -> {won, lost}
     current: null,
 
@@ -45,20 +68,14 @@ export function createMarathon({ pool, random = Math.random, lives = LIVES }) {
     isBoss() {
       return s.level > 0 && (s.level + 1) % BOSS_EVERY === 0;
     },
-    /**
-     * Picks the next micro-game from a shuffled deck: every game comes once,
-     * in random order, before any comes again. A new deck never starts with
-     * the game just played.
-     */
+    /** The next micro-game: every game comes once before any comes again. */
     next() {
-      if (!s.deck.length) {
-        s.deck = shuffle(pool, random);
-        if (pool.length > 1 && s.deck[s.deck.length - 1] === s.current) {
-          const swap = Math.floor(random() * (s.deck.length - 1));
-          [s.deck[swap], s.deck[s.deck.length - 1]] = [s.deck[s.deck.length - 1], s.deck[swap]];
-        }
-      }
-      s.current = s.deck.pop();
+      s.current = games.next();
+      return s.current;
+    },
+    /** The next boss: every boss comes once before any comes again. */
+    nextBoss() {
+      s.current = bossDeck.next();
       return s.current;
     },
     /** Records the outcome of the current micro-game. Returns {gained, lostLife}. */
