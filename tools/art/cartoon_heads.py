@@ -377,6 +377,10 @@ def hair(p, line, layer):
             out.append(path(f"M {CX + side * (w - 2)},{top + 70} L {CX + side * (w + 2)},{h['ear_y'] - 28}", "none", darker(p["skin"], 0.75), 10, 'opacity="0.55"'))
         d = smooth(mirror([(0, top - 26), (w * 0.7, top - 18), (w + 6, top + 40), (w + 8, top + 78), (0, top + 70)]))
         out.append(path(d, cap, darker(cap, 0.5), 4))
+        if hs.get("text"):
+            # Letters on the front of the crown (system font: the SVG is drawn as an image).
+            out.append(f'<text x="{CX}" y="{top + 52}" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" '
+                       f'font-weight="900" font-size="44" letter-spacing="2" fill="{hs.get("text_color", "#ffffff")}">{hs["text"]}</text>')
         out.append(path(f"M {CX - w - 6},{top + 74} Q {CX},{top + 60} {CX + w + 6},{top + 74} L {CX + w + 70},{top + 86} Q {CX + w + 40},{top + 104} {CX + w - 10},{top + 92} Q {CX},{top + 84} {CX - w - 6},{top + 92} Z", cap, darker(cap, 0.5), 4))
         out.append(f'<circle cx="{CX}" cy="{top - 22}" r="6" fill="{lighter(cap, 0.3)}"/>')
         out.append(path(f"M {CX - w * 0.5},{top - 4} Q {CX},{top - 20} {CX + w * 0.5},{top - 2}", "none", lighter(cap, 0.25), 4, 'opacity="0.8"'))
@@ -483,11 +487,11 @@ CAST = [
            nose={"len": 62, "w": 19}, mouth={"kind": "grin", "w": 40, "dy": 22},
            beard={"kind": "full", "color": "#9c5a34", "drop": 46, "rise": 6}),
     friend("babar", "#efc4a2", head={"w": 122, "jaw": 92, "chin_w": 40},
-           hair={"style": "cap", "color": "#3a3330", "cap": "#1d1d24"},
+           hair={"style": "cap", "color": "#3a3330", "cap": "#1d1d24", "text": "ZUP"},
            eyes={"y": 222, "dx": 48, "kind": "grumpy", "iris": "#5a6b7c"},
-           brows={"color": "#3e322c", "inner": -10, "outer": 4, "arch": 2, "sw": 10},
+           brows={"color": "#3e322c", "inner": -4, "outer": 3, "arch": 2, "sw": 10},
            glasses={"kind": "rect", "color": "#2b2b35", "w": 31, "h": 22, "sw": 6},
-           nose={"len": 58, "w": 20}, mouth={"kind": "pout", "w": 30},
+           nose={"len": 58, "w": 20}, mouth={"kind": "smile", "w": 26, "dy": 20},
            beard={"kind": "stubble", "color": "#4a3c34", "density": 1.2}),
     friend("victor", "#dca27c", head={"w": 114, "jaw": 84},
            hair={"style": "curly", "color": "#5b3d28"},
