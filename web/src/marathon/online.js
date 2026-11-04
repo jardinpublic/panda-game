@@ -175,9 +175,15 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
       const b = best.get(r.player_id);
       if (!b || r.score > b.score || (r.score === b.score && r.played_at < b.played_at)) best.set(r.player_id, r);
     }
-    return [...best.values()]
-      .map(({ player_id, created_at, ...r }) => ({ ...r, name: names.get(player_id), hero: faces.get(player_id) }))
-      .sort((a, b) => b.score - a.score || Date.parse(a.played_at) - Date.parse(b.played_at));
+    // Then one line per name (a friend with several phones shows once, with their best)
+    const byName = new Map();
+    const order = (a, b) => b.score - a.score || Date.parse(a.played_at) - Date.parse(b.played_at);
+    for (const { player_id, created_at, ...r } of [...best.values()].sort(order)) {
+      const name = names.get(player_id);
+      const key = name.trim().toLowerCase();
+      if (!byName.has(key)) byName.set(key, { ...r, name, hero: faces.get(player_id) ?? r.hero });
+    }
+    return [...byName.values()].sort(order);
   }
   async function fetch(url, init = {}) {
     const u = new URL(url);

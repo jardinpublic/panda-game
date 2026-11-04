@@ -109,8 +109,16 @@ button { font-family: var(--font); cursor: pointer; border: 0; }
 .m-podium-2 .m-record-rank { color: #9aa3b5; font-size: 20px; }
 .m-podium-3 .m-record-rank { color: #c27a4a; font-size: 20px; }
 
-.m-flipper { margin-top: 12px; font-size: 17px; padding: 9px 22px; }
-.m-spx { margin-top: 8px; }
+/* Home: the other games (Eul' Flipper, 103 RCX) as two big cards under JOUER */
+.m-games { width: 100%; max-width: 380px; display: flex; gap: 10px; margin-top: 14px; }
+.m-game { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px 9px; border-radius: 22px; color: #fff; border: 1px solid rgba(255, 255, 255, 0.45); text-shadow: 0 1px 4px rgba(20, 10, 40, 0.35); box-shadow: 0 10px 24px rgba(20, 10, 40, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.35); transition: transform 0.1s; animation: m-float 3.2s ease-in-out infinite; }
+.m-game:active { transform: scale(0.95); }
+.m-game-pb { background: linear-gradient(145deg, #7b3fe4 0%, #c83ad6 55%, #ff5fa2 100%); }
+.m-game-spx { background: linear-gradient(145deg, #12a4c9 0%, #2f6fe0 55%, #ffb23e 130%); animation-delay: -1.6s; }
+.m-game-icon { font-size: 32px; line-height: 1.1; filter: drop-shadow(0 3px 4px rgba(20, 10, 40, 0.3)); }
+.m-game-name { font-size: 19px; font-weight: 700; white-space: nowrap; }
+.m-game-best { font-size: 14px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: rgba(20, 10, 40, 0.25); white-space: nowrap; }
+@keyframes m-float { 50% { transform: translateY(-3px); } }
 .m-pb-quit { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; width: 36px; height: 36px; font-size: 14px; }
 
 /* Eul' Flipper: the 3D table fills the phone under the overlay (cards stay on top). */

@@ -1232,12 +1232,10 @@ function renderHome() {
   el('p', '', title, t('m.tagline'));
   const play = el('button', 'm-btn m-play', ui, t('m.play'));
   play.onclick = startRun;
-  const best = A.meta.pinball.best;
-  const flip = el('button', 'm-btn m-ghost m-flipper', ui, `${t('pb.play')}${best ? ` · ${best.toLocaleString(locale())}` : ''}`);
-  flip.onclick = startPinball;
-  const spxBest = A.meta.spx.best;
-  const spx = el('button', 'm-btn m-ghost m-flipper m-spx', ui, `${t('spx.play')}${spxBest ? ` · ${spxBest.toLocaleString(locale())}` : ''}`);
-  spx.onclick = startSpxRide;
+  // The two other games, as big cards side by side
+  const games = el('div', 'm-games', ui);
+  sideGame(games, 'm-game-pb', t('pb.play'), A.meta.pinball.best, startPinball);
+  sideGame(games, 'm-game-spx', t('spx.play'), A.meta.spx.best, startSpxRide);
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
@@ -1245,6 +1243,17 @@ function renderHome() {
   records.onclick = () => openRecords();
   const shop = el('button', 'm-btn m-ghost', row, `🛍️ ${t('m.shop')}`);
   shop.onclick = () => openShop('heroes');
+}
+
+/** A home card for another game: its icon, its name and the player's record (or "try it"). */
+function sideGame(parent, cls, label, best, start) {
+  const [icon, ...name] = label.split(' ');
+  const card = el('button', `m-game ${cls}`, parent);
+  el('span', 'm-game-icon', card, icon);
+  el('span', 'm-game-name', card, name.join(' '));
+  el('span', 'm-game-best', card, best ? `🏆 ${best.toLocaleString(locale())}` : t('m.try'));
+  card.onclick = start;
+  return card;
 }
 
 function renderRunUI() {

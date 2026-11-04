@@ -100,6 +100,25 @@ describe('online Hall of Fame', () => {
     expect(board[0].player_id).toBeUndefined();
   });
 
+  it('shows a friend once per game when they play on several phones, with their best', async () => {
+    const at = new Date(NOW - 60000).toISOString();
+    const seed = [
+      { player_id: 'phone', name: 'Violon', game: 'marathon', score: 230, level: 12, streak: 6, hero: 'violaine', played_at: at },
+      { player_id: 'app', name: 'Violon', game: 'marathon', score: 370, level: 20, streak: 8, hero: 'violaine', played_at: at },
+      { player_id: 'tablet', name: 'violon', game: 'marathon', score: 170, level: 10, streak: 4, hero: 'violaine', played_at: at },
+      { player_id: 'other', name: 'Babar', game: 'marathon', score: 300, level: 18, streak: 2, hero: 'babar', played_at: at },
+    ];
+    const backend = memoryBackend(seed, () => NOW);
+    const net = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: backend.fetch });
+    const board = await net.board('marathon');
+    expect(board.map((r) => [r.name, r.score])).toEqual([
+      ['Violon', 370],
+      ['Babar', 300],
+    ]);
+    // Still recorded per phone
+    expect(new Set(backend.rows.map((r) => r.player_id)).size).toBe(4);
+  });
+
   it('shows the face each player picked, and their latest one', async () => {
     let t = NOW;
     const backend = memoryBackend([], () => t);

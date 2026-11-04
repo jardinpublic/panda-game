@@ -112,7 +112,8 @@ revoke all on public.panda_scores from anon, authenticated;
 grant insert (player_id, name, game, score, level, streak, hero, ride_time, home, played_at)
   on public.panda_scores to anon, authenticated;
 
--- The board: each player's best per game (since their records reset), with the name and face (hero) they use now
+-- The board: each name's best per game (since the records reset), with the name and face (hero) the player uses now.
+-- Scores are still recorded per device (player id); only the board merges them by name.
 create or replace view public.panda_board as
 with best as (
   select distinct on (game, player_id)
@@ -125,8 +126,15 @@ with best as (
   from public.panda_scores
   order by player_id, created_at desc
 )
-select b.game, n.name, b.score, b.level, b.streak, coalesce(n.hero, b.hero) as hero, b.ride_time, b.home, b.played_at
-from best b join names n using (player_id);
+), per_player as (
+  select b.game, n.name, b.score, b.level, b.streak, coalesce(n.hero, b.hero) as hero, b.ride_time, b.home, b.played_at
+  from best b join names n using (player_id)
+)
+-- One line per name: a friend who plays on several phones or browsers (each one
+-- has its own player id) shows once, with their best score
+select distinct on (game, lower(btrim(name))) game, name, score, level, streak, hero, ride_time, home, played_at
+from per_player
+order by game, lower(btrim(name)), score desc, played_at asc;
 
 revoke all on public.panda_board from anon, authenticated;
 grant select on public.panda_board to anon, authenticated;
