@@ -9,10 +9,10 @@ import { CAST_IDS } from '../src/marathon/art.js';
 const REACTION = 0.22;
 // Their bots wait for the last safe moment on purpose, so a delayed copy is
 // always late; a person gets plenty of warning (sneak: a 0.45 s "Hmm?" tell,
-// tipunch: the glass slides ~1 s before the zone, boss-babar: 1 s tells,
+// tipunch: the glass slides ~1 s before the zone,
 // coma: a steady beat, the head lifts and the step glows for the whole 0.62 s
 // pull before each bonk).
-const LAST_MOMENT_BOTS = ['sneak', 'tipunch', 'boss-babar', 'coma'];
+const LAST_MOMENT_BOTS = ['sneak', 'tipunch', 'coma'];
 const noSound = new Proxy({}, { get: () => () => {} });
 
 function seeded(seed) {

@@ -35,7 +35,8 @@ export default {
     const heroY = Math.min(g.H * 0.86, g.H - 70);
     const mouthY = topY - 92;
     const hitY = heroY - 120;
-    const TELL = { spit: 0.5 * K, dash: 0.62 * K, double: 0.62 * K };
+    // Tells long enough to see them coming (the fight used to be the hardest boss by far).
+    const TELL = { spit: 0.68 * K, dash: 0.8 * K, double: 0.8 * K };
     const FLY = { spit: 0.5 * K, dash: 0.42 * K, double: 0.55 * K };
     const BACK = 0.45 * K;
     const banner = 1.3 * K;
@@ -49,9 +50,9 @@ export default {
     for (let i = 0; i < 40; i++) {
       const p = free / g.duration;
       let kind = 'spit';
-      if (p >= 0.62) kind = prev !== 'double' && g.random() < 0.6 ? 'double' : prev === 'dash' ? 'spit' : 'dash';
+      if (p >= 0.62) kind = prev !== 'double' && g.random() < 0.45 ? 'double' : prev === 'dash' ? 'spit' : 'dash';
       else if (p >= 0.32) kind = prev !== 'dash' && g.random() < 0.55 ? 'dash' : 'spit';
-      const gapNeeded = (kind === 'double' || prev === 'double' ? 0.85 : 0.55) * K;
+      const gapNeeded = (kind === 'double' || prev === 'double' ? 1.1 : 0.75) * K;
       let start = free;
       let arrive = start + TELL[kind] + FLY[kind];
       if (arrive < last + gapNeeded) {
@@ -128,7 +129,8 @@ export default {
           if (e.state === 'wait' && s.t >= e.start) {
             e.state = 'tell';
             e.lanes = [s.lane];
-            if (e.kind === 'double') e.lanes.push((s.lane + 1 + Math.floor(g.random() * 2)) % 3);
+            // Double spit: the safe lane is always next to the hero, one swipe away.
+            if (e.kind === 'double') e.lanes.push(s.lane === 0 ? 2 : s.lane === 2 ? 0 : g.random() < 0.5 ? 0 : 2);
             if (e.kind === 'dash') g.sfx.tick(true);
             else g.sfx.tick();
           }
@@ -284,7 +286,7 @@ export default {
         for (let l = 0; l < 3; l++) if (better(l, best)) best = l;
         if (best === s.lane) return null;
         const step = best > s.lane ? 1 : -1;
-        if (next[s.lane + step] - s.t < 0.05) return null;
+        if (next[s.lane + step] - s.t < 0.35) return null; // never walk through a lane about to be hit
         return { swipe: step > 0 ? 'right' : 'left' };
       },
     };
