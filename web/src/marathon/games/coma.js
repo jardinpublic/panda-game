@@ -1,16 +1,16 @@
 // The morning of the BAC, in the tunnel under Montceau-les-Mines station: the
-// hero is sleeping off a big night at the bottom of the stairs. Jojo Gueugneau
+// hero is sleeping off a big night at the bottom of the stairs. Jojo
 // drags them up to the platforms by the feet, and their head bonks on every
 // step. Tap right on each BONK: three good ones and the hero wakes up in time.
 
-import { person, ellipse, circle, rrect, vgrad, text, PAL } from '../art.js';
+import { person, head, ellipse, circle, rrect, vgrad, text, PAL } from '../art.js';
 
 const STEPS = 7; // pulls from the bottom to the top of the stairs
 const WAKE = 3; // good taps to wake up
 const HERO = 185; // hero size
 const JOJO = 215; // Jojo's size
 
-/** Jojo Gueugneau: tracksuit, and the face of a very dim, very happy dog. */
+/** Jojo in his tracksuit, with his cartoon head (cast/jojo.svg). */
 function jojo(c, x, y, s, t, lean = 0, surprised = false) {
   const k = s;
   c.save();
@@ -50,41 +50,9 @@ function jojo(c, x, y, s, t, lean = 0, surprised = false) {
     c.stroke();
     circle(c, -k * 0.21 + side * k * 0.03, -k * 0.23, k * 0.035, '#f1c19f');
   }
-  // Head: a dim, happy dog. Long floppy ears, a patch on one eye, big muzzle, tongue out
-  const hy = -k * 0.62;
-  const wob = Math.sin(t * 9) * 0.1;
-  circle(c, 0, hy, k * 0.15, '#f1c19f');
-  ellipse(c, k * 0.06, hy - k * 0.035, k * 0.06, k * 0.055, '#a8703f');
-  for (const side of [-1, 1]) {
-    c.save();
-    c.translate(side * k * 0.12, hy - k * 0.08);
-    c.rotate(side * (0.15 + wob));
-    ellipse(c, side * k * 0.02, k * 0.12, k * 0.06, k * 0.15, '#7a4a26');
-    ellipse(c, side * k * 0.02, k * 0.13, k * 0.035, k * 0.11, '#94603a');
-    c.restore();
-  }
-  // Tuft of hair
-  for (let i = -1; i <= 1; i++) ellipse(c, i * k * 0.03, hy - k * 0.14, k * 0.025, k * 0.05, '#6b4423', i * 0.4);
-  // Big eyes looking at each other
-  const eye = surprised ? 0.05 : 0.042;
-  for (const side of [-1, 1]) {
-    circle(c, side * k * 0.055, hy - k * 0.035, k * eye, '#ffffff');
-    circle(c, side * k * 0.055 - side * k * 0.016, hy - k * 0.03, k * 0.018, '#2a1a10');
-  }
-  // Muzzle, dog nose, buck teeth, tongue hanging out
-  ellipse(c, 0, hy + k * 0.065, k * 0.085, k * 0.06, '#f8dcc4');
-  ellipse(c, 0, hy + k * 0.03, k * 0.035, k * 0.024, '#3a2418');
-  c.strokeStyle = '#3a2418';
-  c.lineWidth = k * 0.008;
-  c.beginPath();
-  c.moveTo(0, hy + k * 0.05);
-  c.lineTo(0, hy + k * 0.075);
-  c.stroke();
-  c.fillStyle = '#ffffff';
-  c.fillRect(-k * 0.02, hy + k * 0.08, k * 0.018, k * 0.03);
-  c.fillRect(k * 0.003, hy + k * 0.08, k * 0.018, k * 0.03);
-  if (!surprised) ellipse(c, k * 0.035, hy + k * 0.13 + Math.sin(t * 7) * k * 0.008, k * 0.026, k * 0.045, '#e86a7a', 0.2);
-  else circle(c, 0, hy + k * 0.115, k * 0.025, '#6b2a2a');
+  // Head: his cartoon face (younger, very light stubble), bobbing as he pulls.
+  const hy = -k * 0.63;
+  head(c, 'jojo', 0, hy, k * (surprised ? 0.43 : 0.41), { rot: Math.sin(t * 9) * 0.04 });
   c.restore();
 }
 
@@ -125,8 +93,8 @@ export default {
   verb: { en: 'WAKE UP!', fr: 'RÉVEILLE-TE !' },
   title: { en: 'Coma before the BAC', fr: 'Coma avant eul’ BAC' },
   howto: {
-    en: 'Jojo Gueugneau drags Panda up the station stairs. Tap right when the head BONKS a step: three good ones and he wakes up for the BAC!',
-    fr: 'Jojo Gueugneau traîne Panda dans l’escalier d’la gare. Touche pile quand sa tête cogne eune marche : trois fois et y s’réveille pour eul’ BAC !',
+    en: 'Jojo drags Panda up the station stairs. Tap right when the head BONKS a step: three good ones and he wakes up for the BAC!',
+    fr: 'Jojo traîne Panda dans l’escalier d’la gare. Touche pile quand sa tête cogne eune marche : trois fois et y s’réveille pour eul’ BAC !',
   },
   winLine: { en: 'Awake and off to the BAC!', fr: 'Réveillé, en route pour eul’ BAC !' },
   rival: ['mamar', 'babar'],
@@ -295,7 +263,7 @@ export default {
           else text(c, 'z', h.x - 40 + Math.sin(s.t * 3) * 4, h.y - 20 - ((s.t * 18) % 20), { size: 18, color: 'rgba(255,255,255,0.75)', shadow: false });
         }
         jojo(c, pose.jojo.x, pose.jojo.y, JOJO, s.t, lean, s.woke);
-        text(c, 'Jojo Gueugneau', pose.jojo.x, pose.jojo.y - JOJO * 0.88, { size: 13, color: PAL.cream, weight: 600 });
+        text(c, 'Jojo', pose.jojo.x, pose.jojo.y - JOJO * 0.88, { size: 13, color: PAL.cream, weight: 600 });
         if (s.woke) {
           // Up on their feet, a step below Jojo, arms in the air
           const x = pose.jojo.x - 105;

@@ -33,8 +33,8 @@ export const PAL = {
 
 export const CAST_IDS = ['panda', 'cous', 'mamar', 'babar', 'victor', 'romain', 'eugenie', 'violaine', 'aline', 'greg'];
 /** People from the stories who are not in the gang: drawn like them, never playable, never
- * random friends or cameos. They appear only in their own mini-games (car205, rudy-escape, rudy-food). */
-export const EXTRA_IDS = ['rudy', 'jose', 'lamoule'];
+ * random friends or cameos. They appear only in their own mini-games (car205, rudy-escape, rudy-food, coma). */
+export const EXTRA_IDS = ['rudy', 'jose', 'lamoule', 'jojo'];
 
 /** Shirt, trousers and build per friend. Panda wears madras, Cous a hawaiian shirt. */
 export const OUTFITS = {
@@ -52,6 +52,7 @@ export const OUTFITS = {
   rudy: { shirt: '#7d8a4e', pattern: 'hoodie', legs: '#4a4238', skin: '#efc0a0', tall: 1.14, wide: 1.3, afro: '#5e4532' },
   jose: { shirt: '#f1f0ea', pattern: 'hairy', legs: '#2c3a5a', skin: '#d6a27a', wide: 0.8, bareArms: true, hairy: '#1c1512' },
   lamoule: { shirt: '#3d6b4f', pattern: 'plain', legs: '#2b2f3a', skin: '#f4cdb4', tall: 1.16 },
+  jojo: { shirt: '#3c4fc0', pattern: 'plain', legs: '#2b3a8f', skin: '#e8b48f', wide: 0.85 },
 };
 
 // ---- images ---------------------------------------------------------------------

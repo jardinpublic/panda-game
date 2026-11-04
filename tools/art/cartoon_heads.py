@@ -554,6 +554,13 @@ EXTRAS = [
            eyes={"y": 222, "dx": 46, "kind": "open", "iris": "#5f8a8a", "size": 0.92},
            brows={"color": "#b5541f", "inner": 2, "sw": 8},
            nose={"len": 62, "w": 19}, mouth={"kind": "grin", "w": 38}, freckles=True),
+    # Jojo, younger: narrow face, short brown crop, crinkly smiling eyes, a big grin, very light stubble.
+    friend("jojo", "#e8b48f", head={"w": 104, "chin": 390, "jaw": 76, "chin_w": 32, "cheek_y": 262},
+           hair={"style": "crop", "color": "#5b3d2a", "bay": 58},
+           eyes={"y": 226, "dx": 44, "kind": "smiley", "iris": "#6b4a2a", "size": 0.9},
+           brows={"color": "#4a3122", "inner": 2, "sw": 9},
+           nose={"len": 76, "w": 18}, mouth={"kind": "grin", "w": 40, "dy": 22},
+           beard={"kind": "stubble", "color": "#4a3122", "density": 0.8}, ears=1.25),
 ]
 
 
