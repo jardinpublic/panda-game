@@ -257,3 +257,70 @@ export function peugeot205(c, x, y, L, { flip = false, t = 0, spin = false, ligh
   wheel(c, L * 0.31, -L * 0.03, L * 0.085, t, spin);
   c.restore();
 }
+
+/**
+ * A police patrol car, side view: white with a blue band, "POLICE" on the
+ * door, a light bar on the roof (blue flashes when `flash`) and a spotlight
+ * by the driver's window. Returns the spotlight's position.
+ */
+export function policeCar(c, x, y, L, { flip = false, t = 0, spin = false, flash = false } = {}) {
+  c.save();
+  c.translate(x, y);
+  if (flip) c.scale(-1, 1);
+  ellipse(c, 0, 2, L * 0.52, L * 0.05, 'rgba(20,10,40,0.25)');
+  // cabin glass
+  c.fillStyle = '#2b3448';
+  c.beginPath();
+  c.moveTo(-L * 0.3, -L * 0.25);
+  c.lineTo(-L * 0.2, -L * 0.42);
+  c.lineTo(L * 0.14, -L * 0.42);
+  c.lineTo(L * 0.27, -L * 0.25);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = '#f4f5f2';
+  c.lineWidth = L * 0.02;
+  c.beginPath();
+  c.moveTo(-L * 0.03, -L * 0.42);
+  c.lineTo(-L * 0.03, -L * 0.25);
+  c.stroke();
+  // body
+  shadowed(c, () => {
+    rrect(c, -L * 0.5, -L * 0.27, L, L * 0.2, L * 0.06);
+    c.fillStyle = vgrad(c, -L * 0.27, -L * 0.07, ['#ffffff', '#dfe3ea']);
+    c.fill();
+  }, 10, 3);
+  c.fillStyle = '#2550b8';
+  c.fillRect(-L * 0.48, -L * 0.19, L * 0.96, L * 0.05);
+  c.fillStyle = '#ffffff';
+  c.font = `800 ${L * 0.055}px Fredoka, sans-serif`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('POLICE', -L * 0.02, -L * 0.165);
+  // lights: headlight at the front, tail light at the back
+  rrect(c, L * 0.44, -L * 0.24, L * 0.05, L * 0.04, 3);
+  c.fillStyle = '#fff6c8';
+  c.fill();
+  rrect(c, -L * 0.5, -L * 0.24, L * 0.04, L * 0.05, 3);
+  c.fillStyle = '#e8413c';
+  c.fill();
+  // light bar
+  const on = flash && Math.sin(t * 18) > 0;
+  rrect(c, -L * 0.12, -L * 0.47, L * 0.2, L * 0.05, 4);
+  c.fillStyle = '#d9dde6';
+  c.fill();
+  circle(c, -L * 0.07, -L * 0.45, L * 0.025, on ? '#4f8cff' : '#2b4f9a');
+  circle(c, L * 0.03, -L * 0.45, L * 0.025, !on && flash ? '#4f8cff' : '#2b4f9a');
+  if (flash) {
+    const gl = c.createRadialGradient(on ? -L * 0.07 : L * 0.03, -L * 0.45, 0, on ? -L * 0.07 : L * 0.03, -L * 0.45, L * 0.3);
+    gl.addColorStop(0, 'rgba(80,140,255,0.55)');
+    gl.addColorStop(1, 'rgba(80,140,255,0)');
+    c.fillStyle = gl;
+    c.fillRect(-L * 0.4, -L * 0.8, L * 0.8, L * 0.7);
+  }
+  // spotlight by the driver's window
+  circle(c, L * 0.22, -L * 0.3, L * 0.025, '#fff6c8');
+  wheel(c, -L * 0.3, -L * 0.06, L * 0.08, t, spin);
+  wheel(c, L * 0.3, -L * 0.06, L * 0.08, t, spin);
+  c.restore();
+  return { x: x + (flip ? -1 : 1) * L * 0.22, y: y - L * 0.3 };
+}
