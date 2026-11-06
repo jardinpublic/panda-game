@@ -17,6 +17,8 @@ import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } fr
 import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, applyMerguez, dropOldRecords, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { installMode } from './install.js';
+import { WEAPON_OF as GM_WEAPON_OF } from '../merguez/rules.js';
+import { WEAPON_NAMES as GM_WEAPON_NAMES } from '../merguez/names.js';
 import { GAMES as BOARD_GAMES, NAME_MAX, createOnline, memoryBackend, toSend, rowFor, bestRun, cleanName, newPlayerId } from './online.js';
 import { makeShareCard } from './sharecard.js';
 import './texts.js';
@@ -457,7 +459,20 @@ function drawHome() {
   ];
   const order = spots.map((s, i) => ({ s, id: others[i] })).filter((x) => x.id).sort((a, b) => a.s[1] - b.s[1]);
   for (const { s, id } of order) art.person(c, id, s[0], H * s[1], s[2], s[3], A.t + s[0], { flip: s[0] > 200 });
-  art.person(c, A.meta.hero, 200, H * 0.76, 230, 'idle', A.t, { hat: A.meta.hat });
+  art.person(c, A.meta.hero, 200, homeHeroFeet(), 230, 'idle', A.t, { hat: A.meta.hat });
+}
+
+/**
+ * Where the home hero stands: the chin just above the JOUER button, whatever
+ * the screen height (the button is placed by the page, the hero by the canvas).
+ */
+function homeHeroFeet() {
+  const low = A.H * 0.76;
+  const btn = ui.querySelector('.m-play');
+  const box = canvas.getBoundingClientRect();
+  if (!btn || !box.width) return low;
+  const top = (btn.getBoundingClientRect().top - box.top) * (400 / box.width);
+  return Math.min(low, top + 230 * 0.4 - 4); // the chin is 0.4 × size above the feet
 }
 
 /** Colourful animated backdrop: a gradient, slow sun rays, a madras ribbon, petals. */
@@ -1098,6 +1113,52 @@ function renderSpxUI() {
 
 // ---- Golden Merguez ---------------------------------------------------------------------
 
+/** Before a Golden Merguez run: pick a hero you own (each comes with their own weapon). */
+function openMerguezPicker() {
+  sfx.click();
+  const panel = sheet(`🌭 ${t('gm.pick')}`);
+  const note = el('div', 'm-gm-note', panel);
+  note.hidden = true;
+  const grid = el('div', 'm-grid', panel);
+  const fr = locale() === 'fr';
+  for (const item of HEROES) {
+    const owned = A.meta.owned.includes(item.id);
+    const on = A.meta.hero === item.id;
+    const cell = el('button', `m-item${on ? ' on' : ''}${owned ? '' : ' locked'}`, grid);
+    const preview = el('canvas', 'm-preview', cell);
+    preview.width = 160;
+    preview.height = 170;
+    const pc = preview.getContext('2d');
+    pc.scale(2, 2);
+    art.head(pc, item.id, 40, 48, 70);
+    el('div', 'm-item-name', cell, cap(item.id));
+    const weapon = GM_WEAPON_NAMES[GM_WEAPON_OF[item.id]];
+    el('div', 'm-item-price', cell, owned ? (weapon ? weapon[fr ? 'fr' : 'en'] : '') : `🔒 <i class="m-coin"></i>${item.price}`);
+    cell.onclick = () => {
+      if (!owned) {
+        // Not bought yet: say where to get them
+        sfx.bad();
+        cell.classList.remove('shake');
+        void cell.offsetWidth;
+        cell.classList.add('shake');
+        note.replaceChildren();
+        el('p', '', note, t('gm.locked', { name: cap(item.id), price: item.price }));
+        const go = el('button', 'm-btn m-ghost', note, `🛍️ ${t('m.shop')}`);
+        go.onclick = () => {
+          ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
+          openShop('heroes');
+        };
+        note.hidden = false;
+        return;
+      }
+      A.meta.hero = item.id;
+      persist();
+      ui.querySelectorAll('.m-sheet, .m-sheet-back').forEach((n) => n.remove());
+      startMerguez();
+    };
+  }
+}
+
 let merguezModule = null;
 
 /** Opens Golden Merguez: the gang's food fight across Montceau (3D, loaded on demand). */
@@ -1190,7 +1251,7 @@ function renderMerguezUI() {
   el('span', '', stats, `${t('gm.best')} ${A.meta.merguez.best.toLocaleString(locale())}`);
   if (r.rank > 0) el('span', 'm-gold', stats, `🏆 ${t('gm.rank', { n: r.rank })}`);
   const again = el('button', 'm-btn m-play', ui, t('m.replay'));
-  again.onclick = startMerguez;
+  again.onclick = openMerguezPicker;
   const row = el('div', 'm-row', ui);
   const menu = el('button', 'm-btn m-ghost', row, t('m.menu'));
   menu.onclick = leaveMerguez;
@@ -1346,7 +1407,7 @@ function renderHome() {
   const games = el('div', 'm-games', ui);
   sideGame(games, 'm-game-pb', t('pb.play'), A.meta.pinball.best, startPinball);
   sideGame(games, 'm-game-spx', t('spx.play'), A.meta.spx.best, startSpxRide);
-  sideGame(games, 'm-game-gm', t('gm.play'), A.meta.merguez.best, startMerguez);
+  sideGame(games, 'm-game-gm', t('gm.play'), A.meta.merguez.best, openMerguezPicker);
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
