@@ -16,6 +16,7 @@ from any of them: no spy, no levels, no music, no look.
   cover throws at them anyway, and it lands if they come out in time.
 - That is the only gesture. The hero is exposed only while throwing: the skill
   is to tap at the right moment.
+- One hit knocks an opponent out; only the bosses take several.
 - Opponents hide behind their own cover, then peek out: a "!" and a glow (the
   tell, 0.7 s), they throw, they duck again. A throw lands on the hero only if
   the hero is out of cover when it arrives.

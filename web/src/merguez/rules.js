@@ -142,7 +142,8 @@ export const LEVELS = [
   },
 ];
 
-export const HP = { gang: 6, people: 4, boss: 40 };
+// One hit is enough for everyone but the bosses.
+export const HP = { gang: 1, people: 1, boss: 40 };
 const BOSS_HP_PER_LEVEL = 10; // each boss is tougher than the last (Rudy: 80)
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -231,7 +232,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
         hp: HP[kind] + (kind === 'boss' ? r.level * BOSS_HP_PER_LEVEL : 0),
         max: HP[kind] + (kind === 'boss' ? r.level * BOSS_HP_PER_LEVEL : 0),
         state: 'hide', // hide | tell | throw | ko
-        t: (0.5 + random() * 1.2 + i * 0.5) / diff(),
+        t: (0.5 + random() * 1.8) / diff(), // who throws first is random
         peek: 0, // 0 hidden .. 1 out
         hurt: 0,
         said: 0,
@@ -398,7 +399,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
       if (f.t > 0) continue;
       if (f.state === 'hide') {
         if (telling >= MAX_TELLS || r.phase !== 'fight') {
-          f.t = 0.3;
+          f.t = 0.15 + random() * 0.45; // random wait, so no one always goes first
           continue;
         }
         f.state = 'tell';

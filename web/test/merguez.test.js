@@ -177,6 +177,31 @@ describe('Golden Merguez rules', () => {
     expect(level.bonus).toBe(level.timeBonus + level.heartBonus);
   });
 
+  it('opponents throw in a random order, not always the first one first', () => {
+    const firsts = new Set();
+    for (let seed = 1; seed <= 12; seed++) {
+      const r = createRules({ hero: 'panda', random: seeded(seed) });
+      for (let i = 0; i < 600; i++) {
+        r.step(1 / 60);
+        const ev = r.events.splice(0).find((e) => e.type === 'tell');
+        if (ev) {
+          firsts.add(r.foes.findIndex((f) => f.id === ev.foe));
+          break;
+        }
+      }
+    }
+    expect(firsts.size).toBeGreaterThan(1);
+  });
+
+  it('knocks out an ordinary opponent in one hit, not a boss', () => {
+    const { events } = play({ hero: 'victor', seed: 2 }, botInput);
+    const byFoe = new Map();
+    for (const e of events.filter((x) => x.type === 'hit')) byFoe.set(e.foe, (byFoe.get(e.foe) || 0) + 1);
+    const kos = events.filter((e) => e.type === 'ko');
+    for (const k of kos.filter((e) => !e.boss)) expect(byFoe.get(k.foe)).toBe(1);
+    expect(byFoe.get(kos.find((e) => e.boss).foe)).toBeGreaterThan(1);
+  });
+
   it('gives a heart back between levels', () => {
     const r = createRules({ hero: 'panda', random: seeded(1) });
     r.hearts = 2;
