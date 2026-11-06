@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRules, botInput, WEAPONS, WEAPON_OF, LEVELS, HEARTS } from '../src/merguez/rules.js';
+import { createRules, botInput, WEAPONS, WEAPON_OF, LEVELS, HEARTS, PEOPLE } from '../src/merguez/rules.js';
 import { CAST_IDS, EXTRA_IDS } from '../src/marathon/art.js';
 
 function seeded(seed) {
@@ -24,16 +24,16 @@ function play(opts, input, seconds = 240) {
 
 describe('Golden Merguez rules', () => {
   it('gives every friend, boss and person a weapon that exists', () => {
-    for (const id of [...CAST_IDS, ...EXTRA_IDS, 'gogol', 'pineur', 'gardien']) {
+    for (const id of [...CAST_IDS, ...EXTRA_IDS, ...PEOPLE]) {
       expect(WEAPONS[WEAPON_OF[id]], id).toBeTruthy();
     }
   });
 
-  it('a good player clears the Jardin Public with every hero', () => {
+  it('a good player finishes the five levels with every hero', () => {
     for (const hero of CAST_IDS) {
       let wins = 0;
       for (let seed = 1; seed <= 4; seed++) {
-        const { r } = play({ hero, seed }, botInput);
+        const { r } = play({ hero, seed }, botInput, 600);
         if (r.finished && r.hearts > 0) wins++;
       }
       expect(wins, hero).toBeGreaterThanOrEqual(3);
@@ -84,8 +84,79 @@ describe('Golden Merguez rules', () => {
     expect(events.some((e) => e.type === 'say' && e.who === 'mamar' && e.text === 'proie')).toBe(true);
   });
 
-  it('has a first level with a boss at the end', () => {
-    const st = LEVELS[0].stations;
-    expect(st[st.length - 1].boss).toBe(true);
+  it('has five levels, each ending with its boss: Lamoule, Romain, José, Babar, Rudy', () => {
+    const bosses = LEVELS.map((L) => {
+      const last = L.stations[L.stations.length - 1];
+      expect(last.boss).toBe(true);
+      return last.foes[0].who;
+    });
+    expect(bosses).toEqual(['lamoule', 'romain', 'jose', 'babar', 'rudy']);
+    const { events } = play({ hero: 'panda', seed: 1 }, botInput, 600);
+    expect(events.filter((e) => e.type === 'boss').map((e) => e.who)).toEqual(bosses);
+    expect(events.filter((e) => e.type === 'levelStart').map((e) => e.index)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('replaces Romain and Babar as bosses when you play them', () => {
+    for (const hero of ['romain', 'babar']) {
+      const { events } = play({ hero, seed: 2 }, botInput, 600);
+      const bosses = events.filter((e) => e.type === 'boss').map((e) => e.who);
+      expect(bosses).not.toContain(hero);
+      expect(bosses.length).toBe(5);
+    }
+  });
+
+  it('lets you slide along the cover while ducked, safely', () => {
+    const { r } = play({ hero: 'panda' }, (x) => {
+      x.setStand(false);
+      x.setMove(Math.sin(x.time * 2) > 0 ? 1 : -1);
+    }, 30);
+    expect(r.hearts).toBe(HEARTS);
+    expect(Math.abs(r.ox)).toBeGreaterThan(0.1);
+  });
+
+  it('a throw misses if you slide aside in time, even standing', () => {
+    const { events } = play({ hero: 'panda', seed: 4 }, (x) => {
+      x.setStand(true);
+      x.setFire(false);
+      // Slide to the other side as soon as something is on its way.
+      const s = x.incoming.find((i) => i.t >= 0);
+      if (s) x.setMove(s.tx > x.pos.x ? -1 : 1);
+      else x.setMove(0);
+    }, 20);
+    const dodged = events.filter((e) => e.type === 'block').length;
+    const hurt = events.filter((e) => e.type === 'hurt').length;
+    expect(dodged).toBeGreaterThan(0);
+    expect(hurt).toBeLessThan(dodged);
+  });
+
+  it('only throws when you press the throw button', () => {
+    const { r } = play({ hero: 'panda' }, (x) => {
+      x.setStand(true);
+      x.setFire(false);
+    }, 3);
+    expect(r.throws).toBe(0);
+  });
+
+  it('throws once per tap', () => {
+    const r = createRules({ hero: 'panda', random: seeded(1) });
+    r.setStand(true);
+    for (let i = 0; i < 30; i++) r.step(1 / 60);
+    r.tapFire();
+    for (let i = 0; i < 120; i++) r.step(1 / 60);
+    expect(r.throws).toBe(1);
+    r.tapFire();
+    r.step(1 / 60);
+    expect(r.throws).toBe(2);
+  });
+
+  it('gives a heart back between levels', () => {
+    const r = createRules({ hero: 'panda', random: seeded(1) });
+    r.hearts = 2;
+    for (let t = 0; t < 300 && r.level === 0; t += 1 / 60) {
+      botInput(r);
+      r.step(1 / 60);
+    }
+    expect(r.level).toBe(1);
+    expect(r.hearts).toBe(3);
   });
 });

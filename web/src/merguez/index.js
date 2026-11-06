@@ -9,9 +9,10 @@
  * Touch: hold anywhere to pop out of cover and throw, drag to aim, let go to
  * duck back (and reload). Keyboard: Space holds out, arrows aim, Escape quits.
  */
-import { createRules, botInput, HEARTS, LEVELS } from './rules.js';
+import { createRules, botInput, HEARTS, LEVELS, PEOPLE } from './rules.js';
 export { WEAPON_OF } from './rules.js';
 import { createView } from './view.js';
+import { weaponCanvas } from './sprites.js';
 import { loadHeads } from '../marathon/art.js';
 import { sfx } from '../marathon/sound.js';
 import { paintFace } from '../spx/faces.js';
@@ -31,21 +32,30 @@ const CSS = `
 .gm-cross::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #fff; }
 .gm-cross.is-on { border-color: #ff3b3b; transform: scale(.8); }
 .gm-cross.is-hid { opacity: .35; }
-.gm-ammo { position: absolute; left: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 6px); background: rgba(20,16,40,.55); border-radius: 14px; padding: 6px 10px; font-weight: 700; font-size: 14px; }
+.gm-ammo { position: absolute; left: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 92px); background: rgba(20,16,40,.55); border-radius: 14px; padding: 6px 10px; font-weight: 700; font-size: 14px; }
+.gm-ctrl { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 4px); display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
+.gm-b { pointer-events: auto; touch-action: none; border: 3px solid rgba(255,255,255,.85); color: #fff; font: 800 14px Fredoka, system-ui, sans-serif; display: grid; place-items: center; text-shadow: 0 1px 3px rgba(0,0,0,.4); box-shadow: 0 6px 16px rgba(20,10,40,.35); -webkit-tap-highlight-color: transparent; }
+.gm-b:active, .gm-b.is-on { transform: scale(.94); filter: brightness(1.15); }
+.gm-move { width: 62px; height: 62px; border-radius: 50%; background: rgba(20,16,40,.5); font-size: 26px; }
+.gm-stand { width: 84px; height: 62px; border-radius: 20px; background: linear-gradient(160deg, #3fb37a, #1f7a52); line-height: 1.05; text-align: center; padding: 2px; }
+.gm-stand.is-up { background: linear-gradient(160deg, #ffb03a, #e8641f); }
+.gm-fire { margin-left: auto; width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6f9a, #ef2d6b); }
+.gm-fire canvas { width: 66px; height: 66px; pointer-events: none; }
+.gm-fire.is-off { filter: grayscale(.8) brightness(.8); }
 .gm-ammo i { display: inline-block; width: 9px; height: 16px; margin-right: 3px; border-radius: 3px; background: #ffd23f; vertical-align: middle; }
 .gm-ammo i.off { background: rgba(255,255,255,.25); }
 .gm-boss { position: absolute; left: 50%; transform: translateX(-50%); top: calc(max(10px, env(safe-area-inset-top)) + 46px); background: rgba(20, 16, 40, 0.6); border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 14px; white-space: nowrap; }
 .gm-boss span { display: inline-block; width: 110px; height: 9px; border-radius: 5px; background: rgba(255,255,255,.25); vertical-align: middle; margin-left: 6px; overflow: hidden; }
 .gm-boss span i { display: block; height: 100%; background: #ff3b3b; transition: width .2s; }
-.gm-pop { position: absolute; left: 0; right: 0; top: 34%; text-align: center; font-size: clamp(28px, 9vw, 48px); font-weight: 800; color: #ffd23f; -webkit-text-stroke: 2px #4a2a00; text-shadow: 0 4px 0 #ef2d6b; transform: scale(.6); opacity: 0; transition: transform .25s cubic-bezier(.3,1.6,.5,1), opacity .25s; padding: 0 12px; line-height: 1.05; }
+.gm-pop { position: absolute; left: 0; right: 0; top: 34%; text-align: center; font-size: clamp(28px, 9vw, 48px); font-weight: 800; color: #ffd23f; -webkit-text-stroke: 2px #4a2a00; text-shadow: 0 4px 0 #ef2d6b; transform: scale(.6); opacity: 0; transition: transform .25s cubic-bezier(.3,1.6,.5,1), opacity .25s; padding: 0 12px; line-height: 1.05; white-space: pre-line; }
 .gm-pop.is-on { transform: scale(1); opacity: 1; }
 .gm-toasts { position: absolute; left: 0; right: 0; top: 58%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .gm-toast { background: rgba(20, 16, 40, 0.6); border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 15px; animation: gm-fade 1.5s ease-out forwards; }
-.gm-chat { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px); display: flex; gap: 8px; align-items: flex-end; animation: gm-in .25s ease-out; }
+.gm-chat { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 132px); display: flex; gap: 8px; align-items: flex-end; animation: gm-in .25s ease-out; }
 .gm-chat img { width: 54px; height: 66px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
 .gm-chat p { margin: 0; background: #fffdf7; color: #2b2340; border-radius: 16px 16px 16px 4px; padding: 7px 12px; font-size: 16px; line-height: 1.25; box-shadow: 0 4px 14px rgba(20,10,40,.25); max-width: 78%; }
 .gm-chat b { display: block; font-size: 12px; color: #ef2d6b; }
-.gm-tip { position: absolute; left: 14px; right: 14px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 52px); text-align: center; font-weight: 700; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
+.gm-tip { position: absolute; left: 14px; right: 14px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 108px); text-align: center; font-weight: 700; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
 .gm-hurt { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
 .gm-hurt.is-on { animation: gm-splat 1.1s ease-out; }
 .gm-hurt i { position: absolute; border-radius: 50%; }
@@ -65,15 +75,21 @@ const CSS = `
 
 const T = {
   fr: {
-    quit: 'Quitter', hold: 'Reste appuyé pour sortir et lancer, glisse pour viser. Lâche pour t’planquer !', go: 'C’est parti !',
+    quit: 'Quitter', hold: 'Glisse pour viser. ◀ ▶ pour t’décaler, DEBOUT pour sortir d’ta planque, et tape eul’ gros bouton pour lancer !', go: 'C’est parti !',
+    soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
-    end: 'À suivre…', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
+    end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
+    romain: 'Un gardon dans ta poire !', jose: 'Sardines à volonté !', babar: 'Héhéhé… ça va cracher !', rudy: 'Bienvenue dans mon CRAPA !',
+    mamar: 'Je suis une proie facile… mais pas ce soir !', greg: 'Aux States, on fait des côtes plus grosses !',
     level: 'Niveau {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Arme : {w}',
   },
   en: {
-    quit: 'Quit', hold: 'Hold to pop out and throw, drag to aim. Let go to take cover!', go: 'Go!',
+    quit: 'Quit', hold: 'Drag to aim. ◀ ▶ to slide along your cover, STAND to pop out, and tap the big button to throw!', go: 'Go!',
+    soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
     advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared! +{bonus}',
-    end: 'To be continued…', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
+    end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
+    romain: 'A roach fish in your face!', jose: 'All-you-can-eat sardines!', babar: 'Hehehe… here comes the spit!', rudy: 'Welcome to my CRAPA!',
+    mamar: 'I’m easy prey… but not tonight!', greg: 'In the States, we grill bigger ribs!',
     level: 'Level {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Weapon: {w}',
   },
 };
@@ -81,6 +97,7 @@ const T = {
 export const NAMES = {
   panda: 'Panda', cous: 'Cous', mamar: 'Mamar', babar: 'Babar', victor: 'Victor', romain: 'Romain', eugenie: 'Eugénie', violaine: 'Violaine',
   aline: 'Aline', greg: 'Greg', jojo: 'Jojo', rudy: 'Rudy', jose: 'José', lamoule: 'Lamoule', gogol: 'Pépé Gogol', pineur: 'Pépé Pineur', gardien: 'Eul’ gardien',
+  controleur: 'Eul’ contrôleur', videur: 'Eul’ videur', proprio: 'Eul’ proprio', flic: 'Eul’ flic', chasseur: 'Eul’ chasseur',
 };
 
 export const WEAPON_NAMES = {
@@ -90,6 +107,7 @@ export const WEAPON_NAMES = {
   archet: { fr: 'Archet de violon', en: 'Violin bow' }, rose: { fr: 'Roses', en: 'Roses' }, cote: { fr: 'Côte de bœuf XXXXL', en: 'XXXXL rib steak' },
   mouchoir: { fr: 'Mouchoirs', en: 'Tissues' }, poissonchat: { fr: 'Poisson-chat', en: 'Catfish' }, sardine: { fr: 'Sardines', en: 'Sardines' },
   poulet: { fr: 'Poulet', en: 'Chicken' }, boule: { fr: 'Boules de pétanque', en: 'Pétanque balls' }, pomme: { fr: 'Pommes de pin', en: 'Pine cones' },
+  pv: { fr: 'PV', en: 'Fines' }, glacon: { fr: 'Glaçons', en: 'Ice cubes' }, pantoufle: { fr: 'Pantoufles', en: 'Slippers' },
 };
 
 function el(tag, className, parent, text) {
@@ -104,6 +122,9 @@ export function castUrl(id) {
   const base = (import.meta.env && import.meta.env.BASE_URL) || './';
   return base + 'cast/' + id + '.svg';
 }
+
+/** Levels open in this version (the others are still being built). */
+export const PLAYABLE = 1;
 
 export async function startMerguez(options) {
   const { root } = options;
@@ -146,6 +167,12 @@ export async function startMerguez(options) {
   const mult = el('div', 'gm-mult', hud);
   const cross = el('div', 'gm-cross', hud);
   const ammo = el('div', 'gm-ammo', hud);
+  const ctrl = el('div', 'gm-ctrl', shell);
+  const left = el('button', 'gm-b gm-move', ctrl, '◀');
+  const right = el('button', 'gm-b gm-move', ctrl, '▶');
+  const standBtn = el('button', 'gm-b gm-stand', ctrl);
+  const fireBtn = el('button', 'gm-b gm-fire', ctrl);
+  for (const b of [left, right, standBtn, fireBtn]) b.type = 'button';
   const bossBox = el('div', 'gm-boss', hud);
   bossBox.hidden = true;
   const pop = el('div', 'gm-pop', hud);
@@ -158,8 +185,10 @@ export async function startMerguez(options) {
   close.type = 'button';
   close.setAttribute('aria-label', tx('quit'));
 
-  const rules = createRules({ hero: options.hero || 'panda', random: options.random || Math.random });
+  const rules = createRules({ hero: options.hero || 'panda', random: options.random || Math.random, levels: LEVELS.slice(0, options.levels || PLAYABLE) });
   const view = createView({ canvas, rules });
+  fireBtn.appendChild(weaponCanvas(rules.weapon, 132));
+  fireBtn.setAttribute('aria-label', WEAPON_NAMES[rules.weapon][lang]);
   const auto = !!options.auto;
 
   // Level card
@@ -194,7 +223,7 @@ export async function startMerguez(options) {
   function sayLine(who, text) {
     chat.replaceChildren();
     const img = el('img', '', chat);
-    img.src = NAMES[who] && !['gogol', 'pineur', 'gardien'].includes(who) ? castUrl(who) : paintFace(who).toDataURL();
+    img.src = PEOPLE.includes(who) ? paintFace(who).toDataURL() : castUrl(who);
     img.alt = '';
     const p = el('p', '', chat);
     el('b', '', p, NAMES[who] || who);
@@ -252,16 +281,19 @@ export async function startMerguez(options) {
       bossBox.hidden = false;
       bossBox.replaceChildren(document.createTextNode(`${tx('boss')} ${NAMES[e.who] || e.who}`));
       el('i', '', el('span', '', bossBox));
-      if (e.who === 'lamoule') sayLine('lamoule', tx('lamoule'));
+      if (T[lang][e.who]) sayLine(e.who, tx(e.who));
     } else if (e.type === 'say' && e.text === 'proie') sayLine(e.who, tx('proie'));
-    else if (e.type === 'level') {
+    else if (e.type === 'levelStart') {
+      showPop(`${tx('level', { n: e.index + 1 })}\n${LEVELS[e.index].name[lang]}`, 2400);
+      sfx.speedup();
+    } else if (e.type === 'level') {
       sfx.good();
       showPop(tx('cleared', { level: LEVELS[e.index].name[lang], bonus: fmt(e.bonus) }), 2300);
     } else if (e.type === 'over') {
       over = true;
       if (e.won) {
         sfx.best();
-        showPop(tx('end'), 2000);
+        showPop(rules.levels.length < LEVELS.length ? tx('soon') : tx('end'), 2000);
       } else {
         sfx.over();
         showPop(tx('over'), 2000);
@@ -290,6 +322,10 @@ export async function startMerguez(options) {
     ammo.replaceChildren(document.createTextNode(`${WEAPON_NAMES[rules.weapon][lang]} `));
     for (let i = 0; i < max; i++) el('i', i < clip ? '' : 'off', ammo);
     cross.classList.toggle('is-hid', rules.rise < 0.5);
+    const label = rules.stand ? tx('down') : tx('up');
+    if (standBtn.textContent !== label) standBtn.textContent = label;
+    standBtn.classList.toggle('is-up', rules.stand);
+    fireBtn.classList.toggle('is-off', !rules.stand || rules.ammo <= 0);
     const onFoe = rules.foes.some((f) => (f.state === 'tell' || f.state === 'throw') && Math.hypot(rules.dirTo(f).yaw - rules.yaw, rules.dirTo(f).pitch - rules.pitch) < 0.09);
     cross.classList.toggle('is-on', onFoe && rules.rise >= 1);
     const b = rules.boss();
@@ -301,14 +337,22 @@ export async function startMerguez(options) {
   const ammoMax = rules.ammo;
 
   /* ---------- Input ---------- */
+  // Keeps the finger's moves on this element; some browsers refuse it, and that is fine.
+  const capture = (node, id) => {
+    try {
+      node.setPointerCapture?.(id);
+    } catch {
+      /* nothing to do */
+    }
+  };
+  // Drag anywhere (but on the buttons) to aim.
   let pointer = null;
   const SENS = 0.0045;
   on(touch, 'pointerdown', (ev) => {
     if (over) return;
     start();
     pointer = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
-    touch.setPointerCapture?.(ev.pointerId);
-    rules.setOut(true);
+    capture(touch, ev.pointerId);
   });
   on(touch, 'pointermove', (ev) => {
     if (!pointer || ev.pointerId !== pointer.id) return;
@@ -321,23 +365,74 @@ export async function startMerguez(options) {
   const up = (ev) => {
     if (!pointer || ev.pointerId !== pointer.id) return;
     pointer = null;
-    rules.setOut(false);
   };
   on(touch, 'pointerup', up);
   on(touch, 'pointercancel', up);
+  /** A button held down: `down` when pressed, `upFn` when let go (or the finger slides off). */
+  function hold(btn, downFn, upFn) {
+    on(btn, 'pointerdown', (ev) => {
+      ev.preventDefault();
+      if (over) return;
+      start();
+      capture(btn, ev.pointerId);
+      btn.classList.add('is-on');
+      downFn();
+    });
+    const release = () => {
+      btn.classList.remove('is-on');
+      upFn();
+    };
+    on(btn, 'pointerup', release);
+    on(btn, 'pointercancel', release);
+    on(btn, 'contextmenu', (ev) => ev.preventDefault());
+  }
+  let moveL = false;
+  let moveR = false;
+  const applyMove = () => rules.setMove((moveR ? 1 : 0) - (moveL ? 1 : 0));
+  hold(left, () => ((moveL = true), applyMove()), () => ((moveL = false), applyMove()));
+  hold(right, () => ((moveR = true), applyMove()), () => ((moveR = false), applyMove()));
+  hold(standBtn, () => {
+    rules.setStand(!rules.stand);
+    sfx.click();
+  }, () => {});
+  // One tap, one throw.
+  hold(fireBtn, () => {
+    if (!rules.stand) showTip(tx('standFirst'), 1200);
+    rules.tapFire();
+  }, () => {});
+
+  // Keyboard: arrows aim, A/Q and D slide, S or C stands/ducks, Space throws.
   const keys = new Set();
   on(window, 'keydown', (ev) => {
     if (ev.key === 'Escape') return onExit();
+    if (ev.repeat) return;
     keys.add(ev.key);
-    if (ev.key === ' ') {
+    const k = ev.key.toLowerCase();
+    if (k === ' ') {
       start();
-      rules.setOut(true);
+      rules.tapFire();
       ev.preventDefault();
+    } else if (k === 's' || k === 'c') {
+      start();
+      rules.setStand(!rules.stand);
+    } else if (k === 'a' || k === 'q') {
+      moveL = true;
+      applyMove();
+    } else if (k === 'd') {
+      moveR = true;
+      applyMove();
     }
   });
   on(window, 'keyup', (ev) => {
     keys.delete(ev.key);
-    if (ev.key === ' ') rules.setOut(false);
+    const k = ev.key.toLowerCase();
+    if (k === 'a' || k === 'q') {
+      moveL = false;
+      applyMove();
+    } else if (k === 'd') {
+      moveR = false;
+      applyMove();
+    }
   });
   on(close, 'click', () => onExit());
   on(window, 'resize', () => view.resize());

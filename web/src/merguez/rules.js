@@ -25,6 +25,9 @@ const HEAD_H = 1.55;
 const BODY_R = 0.32;
 const HEAD_R = 0.16;
 const MAX_TELLS = 2; // opponents winding up at the same time
+const SIDE = 1.2; // how far the hero can slide left or right along the cover (m)
+const MOVE_SPEED = 2.4; // m/s, sliding sideways
+const DODGE = 0.6; // a throw misses a hero who moved this far since it was thrown (m)
 const COMBO_STEP = 3;
 const MAX_MULT = 5;
 
@@ -47,16 +50,23 @@ export const WEAPONS = {
   poulet: { dmg: 4, rate: 1, clip: 4, speed: 20 },
   boule: { dmg: 2, rate: 1, clip: 3, speed: 16 },
   pomme: { dmg: 1, rate: 2, clip: 6, speed: 18 },
+  pv: { dmg: 1, rate: 2, clip: 6, speed: 18 },
+  glacon: { dmg: 1, rate: 3, clip: 8, speed: 22 },
+  pantoufle: { dmg: 2, rate: 1.5, clip: 4, speed: 18 },
 };
 
 export const WEAPON_OF = {
   panda: 'merguez', babar: 'mollard', cous: 'shot', mamar: 'andouille', victor: 'crotte', romain: 'gardon',
   eugenie: 'rouleau', violaine: 'archet', aline: 'rose', greg: 'cote', jojo: 'mouchoir',
   rudy: 'poissonchat', jose: 'sardine', lamoule: 'poulet', gogol: 'boule', pineur: 'boule', gardien: 'pomme',
+  controleur: 'pv', videur: 'glacon', proprio: 'pantoufle', flic: 'pv', chasseur: 'pomme',
 };
 
 /** People from the levels who are not in the gang (faces painted by 103 RCX's faces.js). */
-export const PEOPLE = ['gogol', 'pineur', 'gardien'];
+export const PEOPLE = ['gogol', 'pineur', 'gardien', 'controleur', 'videur', 'proprio', 'flic', 'chasseur'];
+
+/** How far someone steps out of a cover to peek (past the end of a car, a stall, a tent). */
+const REACH = { car205: 2.5, car: 2.5, kiosk: 1.8, tent: 1.9, dj: 1.7, gate: 1.5 };
 
 /** Who stands in for a boss the hero is playing (never fight yourself). */
 const STAND_IN = { babar: 'mamar', romain: 'greg' };
@@ -79,9 +89,58 @@ export const LEVELS = [
       { x: 0, z: -68, cover: 'bench', boss: true, foes: [{ who: 'lamoule', x: 0.4, z: -77, cover: 'car205', side: 1, boss: true }] },
     ],
   },
+  {
+    id: 'gare',
+    name: { fr: 'La gare de Montceau', en: 'Montceau station' },
+    par: 120,
+    stations: [
+      { x: 0, z: 0, cover: 'cart', foes: [{ who: 'gang', x: -2.4, z: -8, cover: 'pillar', side: 1 }, { who: 'controleur', x: 2.6, z: -9, cover: 'machine', side: -1 }] },
+      { x: 0, z: -16, cover: 'bench', foes: [{ who: 'gang', x: -2.8, z: -24, cover: 'cart', side: 1 }, { who: 'gang', x: 2.2, z: -25, cover: 'pillar', side: -1 }] },
+      { x: 0, z: -32, cover: 'machine', foes: [{ who: 'controleur', x: -2.2, z: -40, cover: 'bench', side: 1 }, { who: 'gang', x: 2.8, z: -41, cover: 'machine', side: -1 }, { who: 'gang', x: 0.2, z: -43, cover: 'pillar', side: 1 }] },
+      { x: 0, z: -50, cover: 'bench', foes: [{ who: 'gang', x: -3, z: -58, cover: 'cart', side: 1 }, { who: 'controleur', x: 2.6, z: -59, cover: 'bench', side: -1 }, { who: 'gang', x: 0.4, z: -61, cover: 'machine', side: 1 }] },
+      { x: 0, z: -68, cover: 'cart', boss: true, foes: [{ who: 'romain', x: 0.4, z: -77, cover: 'kiosk', side: 1, boss: true }] },
+    ],
+  },
+  {
+    id: 'moliere',
+    name: { fr: 'Le Molière', en: 'Le Molière club' },
+    par: 120,
+    stations: [
+      { x: 0, z: 0, cover: 'table', foes: [{ who: 'gang', x: -2.4, z: -8, cover: 'speaker', side: 1 }, { who: 'videur', x: 2.4, z: -9, cover: 'table', side: -1 }] },
+      { x: 0, z: -16, cover: 'sofa', foes: [{ who: 'gang', x: -2.6, z: -24, cover: 'table', side: 1 }, { who: 'gang', x: 2.6, z: -23, cover: 'sofa', side: -1 }] },
+      { x: 0, z: -32, cover: 'table', foes: [{ who: 'videur', x: -2.4, z: -40, cover: 'speaker', side: 1 }, { who: 'gang', x: 2.4, z: -41, cover: 'table', side: -1 }, { who: 'gang', x: 0, z: -43, cover: 'bar', side: 1 }] },
+      { x: 0, z: -50, cover: 'sofa', foes: [{ who: 'gang', x: -2.8, z: -58, cover: 'sofa', side: 1 }, { who: 'videur', x: 2.6, z: -59, cover: 'speaker', side: -1 }, { who: 'gang', x: 0.2, z: -61, cover: 'table', side: 1 }] },
+      { x: 0, z: -68, cover: 'table', boss: true, foes: [{ who: 'jose', x: 0.3, z: -77, cover: 'dj', side: 1, boss: true }] },
+    ],
+  },
+  {
+    id: 'rue',
+    name: { fr: 'La rue du garage d’Cous', en: 'Cous’s garage street' },
+    par: 120,
+    stations: [
+      { x: 0, z: 0, cover: 'bin', foes: [{ who: 'gang', x: -2.6, z: -8, cover: 'car', side: 1 }, { who: 'proprio', x: 2.4, z: -9, cover: 'hedge', side: -1 }] },
+      { x: 0, z: -16, cover: 'hedge', foes: [{ who: 'gang', x: -2.4, z: -24, cover: 'bin', side: 1 }, { who: 'flic', x: 2.6, z: -25, cover: 'car', side: -1 }] },
+      { x: 0, z: -32, cover: 'bin', foes: [{ who: 'gang', x: -2.8, z: -40, cover: 'hedge', side: 1 }, { who: 'proprio', x: 2.4, z: -41, cover: 'bin', side: -1 }, { who: 'gang', x: 0.2, z: -43, cover: 'car', side: 1 }] },
+      { x: 0, z: -50, cover: 'hedge', foes: [{ who: 'flic', x: -2.6, z: -58, cover: 'car', side: 1 }, { who: 'gang', x: 2.6, z: -59, cover: 'hedge', side: -1 }, { who: 'flic', x: 0.3, z: -61, cover: 'bin', side: 1 }] },
+      { x: 0, z: -68, cover: 'bin', boss: true, foes: [{ who: 'babar', x: 0.3, z: -77, cover: 'gate', side: 1, boss: true }] },
+    ],
+  },
+  {
+    id: 'crapa',
+    name: { fr: 'Les bois du CRAPA', en: 'The CRAPA woods' },
+    par: 140,
+    stations: [
+      { x: 0, z: 0, cover: 'log', foes: [{ who: 'gang', x: -2.4, z: -8, cover: 'tree', side: 1 }, { who: 'chasseur', x: 2.6, z: -9, cover: 'rock', side: -1 }] },
+      { x: 0, z: -16, cover: 'rock', foes: [{ who: 'gang', x: -2.6, z: -24, cover: 'rock', side: 1 }, { who: 'gang', x: 2.4, z: -25, cover: 'tree', side: -1 }] },
+      { x: 0, z: -32, cover: 'log', foes: [{ who: 'chasseur', x: -2.4, z: -40, cover: 'tree', side: 1 }, { who: 'gang', x: 2.6, z: -41, cover: 'rock', side: -1 }, { who: 'gang', x: 0, z: -43, cover: 'tree', side: 1 }] },
+      { x: 0, z: -50, cover: 'rock', foes: [{ who: 'gang', x: -2.8, z: -58, cover: 'log', side: 1 }, { who: 'chasseur', x: 2.6, z: -59, cover: 'tree', side: -1 }, { who: 'gang', x: 0.3, z: -61, cover: 'rock', side: 1 }] },
+      { x: 0, z: -68, cover: 'log', boss: true, foes: [{ who: 'rudy', x: 0.3, z: -77, cover: 'tent', side: 1, boss: true }] },
+    ],
+  },
 ];
 
 export const HP = { gang: 6, people: 4, boss: 40 };
+const BOSS_HP_PER_LEVEL = 10; // each boss is tougher than the last (Rudy: 80)
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const angDist = (y1, p1, y2, p2) => Math.hypot(y1 - y2, p1 - p2);
@@ -89,7 +148,8 @@ const angDist = (y1, p1, y2, p2) => Math.hypot(y1 - y2, p1 - p2);
 export function createRules({ hero = 'panda', random = Math.random, level = 0, levels = LEVELS } = {}) {
   const weapon = WEAPON_OF[hero] || 'merguez';
   const W = WEAPONS[weapon];
-  const pool = shuffle(CAST_IDS.filter((id) => id !== hero), random);
+  // The gang members met as opponents (Jojo too, with his tissues), never the hero.
+  const pool = shuffle([...CAST_IDS.filter((id) => id !== hero), 'jojo'], random);
   let poolAt = 0;
 
   const r = {
@@ -108,7 +168,11 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     station: 0,
     phase: 'fight', // fight | move | levelDone | over
     phaseT: 0,
-    out: false, // the player wants to be out
+    stand: false, // the player wants to stand up (out of cover)
+    fire: false, // throws over and over (the test bot)
+    tap: 0, // a tap on the throw button waiting to be thrown (seconds left)
+    move: 0, // -1 sliding left, 1 right, 0 still
+    ox: 0, // sideways offset along the cover (m)
     rise: 0, // 0 in cover .. 1 fully out
     yaw: 0,
     pitch: 0,
@@ -158,9 +222,9 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
         z: f.z,
         cover: f.cover,
         side: f.side || 1,
-        reach: f.cover === 'car205' ? 2.5 : 0.75, // how far they step out to peek (past the end of a car)
-        hp: HP[kind],
-        max: HP[kind],
+        reach: REACH[f.cover] || 0.75,
+        hp: HP[kind] + (kind === 'boss' ? r.level * BOSS_HP_PER_LEVEL : 0),
+        max: HP[kind] + (kind === 'boss' ? r.level * BOSS_HP_PER_LEVEL : 0),
         state: 'hide', // hide | tell | throw | ko
         t: (0.5 + random() * 1.2 + i * 0.5) / diff(),
         peek: 0, // 0 hidden .. 1 out
@@ -182,16 +246,32 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   /** Direction from the eye to a foe's body or head. */
   r.dirTo = (f, h = BODY_H) => {
     const p = r.foePos(f);
-    const dx = p.x - r.pos.x;
+    const dx = p.x - r.pos.x - r.ox;
     const dz = p.z - r.pos.z;
     const dist = Math.hypot(dx, dz);
     return { yaw: Math.atan2(dx, -dz), pitch: Math.atan2(h - r.eye(), dist), dist };
   };
   const visible = (f) => f.state === 'tell' || f.state === 'throw';
 
+  /** Stand up and throw at once (the test bot plays like this). */
   r.setOut = (v) => {
-    r.out = !!v;
+    r.stand = !!v;
+    r.fire = !!v;
   };
+  r.setStand = (v) => {
+    r.stand = !!v;
+  };
+  r.setFire = (v) => {
+    r.fire = !!v;
+  };
+  /** One tap, one throw (kept a moment if the weapon is not ready yet). */
+  r.tapFire = () => {
+    r.tap = 0.3;
+  };
+  r.setMove = (dir) => {
+    r.move = Math.sign(dir || 0);
+  };
+  r.heroX = () => r.pos.x + r.ox;
   r.aimBy = (dy, dp) => {
     r.yaw = clamp(r.yaw + dy, -0.75, 0.75);
     r.pitch = clamp(r.pitch + dp, -0.35, 0.35);
@@ -282,7 +362,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     const spec = WEAPONS[f.weapon] || WEAPONS.boule;
     const d = r.dirTo(f).dist;
     const n = f.kind === 'boss' && f.hp < f.max / 2 ? 2 : 1;
-    for (let i = 0; i < n; i++) r.incoming.push({ foe: f.id, who: f.who, kind: f.weapon, t: -i * 0.28, T: d / ENEMY_SPEED, dist: d, side: n > 1 ? (i ? 1 : -1) : 0 });
+    for (let i = 0; i < n; i++) r.incoming.push({ foe: f.id, who: f.who, kind: f.weapon, t: -i * 0.28, T: d / ENEMY_SPEED, dist: d, side: n > 1 ? (i ? 1 : -1) : 0, tx: r.heroX() });
     void spec;
     r.events.push({ type: 'throw', who: f.who, weapon: f.weapon, foe: f.id });
   }
@@ -329,7 +409,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   function stepIncoming(dt) {
     for (const s of r.incoming) s.t += dt;
     for (const s of r.incoming.filter((x) => x.t >= x.T)) {
-      if (r.exposed() && r.phase === 'fight') {
+      // Standing where it was aimed: hit. Ducked, or slid aside in time: it misses.
+      if (r.exposed() && r.phase === 'fight' && Math.abs(r.heroX() - s.tx) < DODGE) {
         r.hearts--;
         r.combo = 0;
         r.events.push({ type: 'hurt', who: s.who, kind: s.kind, hearts: r.hearts });
@@ -351,7 +432,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.levelTime += dt;
     r.phaseT += dt;
     // Pop out / duck
-    const target = r.out && r.phase === 'fight' ? 1 : 0;
+    const target = r.stand && r.phase === 'fight' ? 1 : 0;
+    if (r.phase === 'fight') r.ox = clamp(r.ox + r.move * MOVE_SPEED * dt, -SIDE, SIDE);
     r.rise += Math.sign(target - r.rise) * Math.min(Math.abs(target - r.rise), dt / OUT_TIME);
     // Reload in cover
     if (r.rise < 0.5 && r.ammo < W.clip) {
@@ -364,8 +446,14 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     } else if (r.rise >= 0.5) r.reload = 0;
     // Throwing
     r.cool = Math.max(0, r.cool - dt);
-    if (r.phase === 'fight' && r.rise >= 1 && r.ammo > 0 && r.cool <= 0) throwOne();
-    if (r.phase === 'fight' && r.rise >= 1 && r.ammo <= 0 && r.cool <= 0) {
+    r.tap = Math.max(0, r.tap - dt);
+    const wants = r.fire || r.tap > 0;
+    if (r.phase === 'fight' && r.rise >= 1 && wants && r.ammo > 0 && r.cool <= 0) {
+      throwOne();
+      r.tap = 0;
+    }
+    if (r.phase === 'fight' && r.rise >= 1 && wants && r.ammo <= 0 && r.cool <= 0) {
+      r.tap = 0;
       r.cool = 0.8;
       r.events.push({ type: 'empty' });
     }
@@ -412,12 +500,17 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
       r.phaseT = 0;
       r.yaw = 0;
       r.pitch = 0;
+      r.ox = 0;
       startStation();
     } else if (r.phase === 'levelDone' && r.phaseT >= 2.5) {
       if (r.level + 1 < levels.length) {
         r.level++;
         r.station = 0;
         r.levelTime = 0;
+        r.hearts = Math.min(HEARTS, r.hearts + 1); // a heart back between levels
+        r.pos = { x: 0, z: 0 };
+        r.ox = 0;
+        r.events.push({ type: 'levelStart', index: r.level });
         r.phase = 'fight';
         r.phaseT = 0;
         startStation();

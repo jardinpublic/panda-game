@@ -18,6 +18,11 @@ const PEOPLE_LOOK = {
   gogol: { coat: '#5b6f8f', legs: '#3a3a44' },
   pineur: { coat: '#7b6a52', legs: '#4a4238' },
   gardien: { coat: '#3f6b46', legs: '#2c3b30' },
+  controleur: { coat: '#2a3a6b', legs: '#22283a' },
+  videur: { coat: '#18161e', legs: '#22283a' },
+  proprio: { coat: '#9b3d4f', legs: '#e9c7a8' },
+  flic: { coat: '#1f2b4d', legs: '#1a2236' },
+  chasseur: { coat: '#f07a1e', legs: '#3a3a2a' },
 };
 
 function peopleBody(c, who, pose, t) {
@@ -314,6 +319,32 @@ export function drawWeapon(c, kind, s) {
         c.stroke();
       }
       circle(c, -s * 0.1, -s * 0.12, s * 0.07, 'rgba(255,255,255,0.7)');
+      break;
+    case 'pv':
+      c.rotate(-0.2);
+      rrect(c, -s * 0.3, -s * 0.22, s * 0.6, s * 0.44, s * 0.04);
+      c.fillStyle = '#f4a3c4';
+      c.fill();
+      c.fillStyle = 'rgba(80,30,60,0.6)';
+      for (let i = 0; i < 4; i++) c.fillRect(-s * 0.22, -s * 0.12 + i * s * 0.08, s * (i === 0 ? 0.3 : 0.42), s * 0.025);
+      c.font = `800 ${Math.round(s * 0.14)}px Fredoka, sans-serif`;
+      c.textAlign = 'center';
+      c.fillStyle = '#7a1e46';
+      c.fillText('PV', s * 0.18, s * 0.16);
+      break;
+    case 'glacon':
+      c.rotate(0.3);
+      rrect(c, -s * 0.2, -s * 0.2, s * 0.4, s * 0.4, s * 0.06);
+      c.fillStyle = 'rgba(190,230,255,0.85)';
+      c.fill();
+      rrect(c, -s * 0.12, -s * 0.14, s * 0.12, s * 0.18, s * 0.03);
+      c.fillStyle = 'rgba(255,255,255,0.9)';
+      c.fill();
+      break;
+    case 'pantoufle':
+      ellipse(c, 0, 0, s * 0.38, s * 0.16, '#8a3b5c');
+      ellipse(c, s * 0.12, -s * 0.02, s * 0.2, s * 0.12, '#b0507a');
+      for (let i = 0; i < 5; i++) circle(c, s * (0.02 + i * 0.06), -s * 0.12, s * 0.035, '#f4ecdf');
       break;
     case 'pomme':
     default:

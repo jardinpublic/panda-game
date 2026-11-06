@@ -19,6 +19,12 @@ export const FACES = {
   pietro: { skin: '#e3ad84', hair: '#1d1a19', style: 'slick', stubble: '#3a2e28', brows: 'angry', browColor: '#1d1a19', mouth: 'snarl', nose: 'big', chain: true },
   // The Jardin Public's park keeper (Golden Merguez): green cap, grey moustache, stern.
   gardien: { skin: '#eec09f', hair: '#8a8580', style: 'short', hat: 'kepi', hatColor: '#2e5a34', moustache: '#9a948c', brows: 'stern', mouth: 'flat', nose: 'round', wrinkles: true },
+  // Golden Merguez people: the ticket inspector, the bouncer, the owner in his dressing gown, a cop, a hunter.
+  controleur: { skin: '#efc4a2', hair: '#5a4636', style: 'short', hat: 'kepi', hatColor: '#2a3a6b', glasses: 'round', brows: 'stern', mouth: 'flat', nose: 'round' },
+  videur: { skin: '#c99572', hair: '#1d1a19', style: 'short', stubble: '#2a2420', brows: 'angry', browColor: '#1d1a19', mouth: 'snarl', nose: 'big', chain: true },
+  proprio: { skin: '#efc6a4', hair: '#b9b4ad', style: 'sides', moustache: '#9a9590', brows: 'angry', browColor: '#9a9590', mouth: 'snarl', nose: 'big', wrinkles: true },
+  flic: { skin: '#f0c4a3', hair: '#4b3a2e', style: 'short', hat: 'kepi', hatColor: '#1f2b4d', moustache: '#4b3a2e', brows: 'stern', mouth: 'flat', nose: 'round' },
+  chasseur: { skin: '#e9b48f', hair: '#7a5a3c', style: 'short', hat: 'beanie', hatColor: '#f07a1e', beard: '#7f6248', mouth: 'grin', nose: 'red', eyes: 'squint' },
   azzouz: { skin: '#d9a07a', hair: '#231d1a', style: 'short', hat: 'capback', hatColor: '#2f7fd1', stubble: '#5a4436', mouth: 'cheeky', nose: 'round', brows: 'up' },
 };
 

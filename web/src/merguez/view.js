@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import { characterCanvas, weaponCanvas, CHAR_W, CHAR_H } from './sprites.js';
+import { ENV, buildDecor, buildCover } from './decor.js';
 
 const CHAR_SIZE = 1.9; // metres, a character's billboard height
 const SINK = 1.08; // how far a hiding character crouches
@@ -30,25 +31,19 @@ export function createView({ canvas, rules }) {
   camera.rotation.order = 'YXZ';
   scene.add(camera);
 
-  // Sky and light: a warm late afternoon.
+  // Light and sky: changed for each level (see decor.js ENV).
+  const hemi = new THREE.HemisphereLight('#fff4e0', '#4c7a3a', 1.6);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight('#fff1d6', 1.6);
+  sun.position.set(-20, 30, 10);
+  scene.add(sun);
   const skyCv = document.createElement('canvas');
   skyCv.width = 4;
   skyCv.height = 256;
-  const sg = skyCv.getContext('2d');
-  const grad = sg.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#5aa9e6');
-  grad.addColorStop(0.6, '#a9d6f2');
-  grad.addColorStop(1, '#ffe0b8');
-  sg.fillStyle = grad;
-  sg.fillRect(0, 0, 4, 256);
   const skyTex = new THREE.CanvasTexture(skyCv);
   skyTex.colorSpace = THREE.SRGBColorSpace;
   scene.background = skyTex;
   scene.fog = new THREE.Fog('#cfe6f2', 40, 130);
-  scene.add(new THREE.HemisphereLight('#fff4e0', '#4c7a3a', 1.6));
-  const sun = new THREE.DirectionalLight('#fff1d6', 1.6);
-  sun.position.set(-20, 30, 10);
-  scene.add(sun);
 
   const disposables = [];
   const mats = new Map();
@@ -60,121 +55,62 @@ export function createView({ canvas, rules }) {
     }
     return mats.get(color);
   };
-  function mesh(geo, color, x, y, z, parent = scene) {
-    disposables.push(geo);
-    const m = new THREE.Mesh(geo, mat(color));
-    m.position.set(x, y, z);
-    parent.add(m);
-    return m;
-  }
-  const box = (w, h, d, color, x, y, z, parent) => mesh(new THREE.BoxGeometry(w, h, d), color, x, y + h / 2, z, parent);
 
-  /* ---------- The Jardin Public ---------- */
-  const ground = mesh(new THREE.PlaneGeometry(90, 160), '#69a84f', 0, 0, -45);
-  ground.rotation.x = -Math.PI / 2;
-  const path = mesh(new THREE.PlaneGeometry(4.2, 120), '#dcc79c', 0, 0.01, -40);
-  path.rotation.x = -Math.PI / 2;
-  const cross = mesh(new THREE.PlaneGeometry(40, 3), '#dcc79c', 0, 0.012, -38);
-  cross.rotation.x = -Math.PI / 2;
-  const bowl = mesh(new THREE.PlaneGeometry(12, 7), '#e4d2a6', 0.5, 0.013, -62.5); // the pétanque ground
-  bowl.rotation.x = -Math.PI / 2;
-
-  function tree(x, z, s = 1, crown = '#3f8a3a') {
-    mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.4 * s, 7), '#7a5536', x, 1.2 * s, z);
-    mesh(new THREE.IcosahedronGeometry(1.5 * s, 0), crown, x, 3.1 * s, z);
-    mesh(new THREE.IcosahedronGeometry(1.0 * s, 0), crown, x + 0.6 * s, 2.6 * s, z + 0.4 * s);
-  }
-  const rnd = seeded(7);
-  for (let i = 0; i < 46; i++) {
-    const side = i % 2 ? 1 : -1;
-    const x = side * (7 + rnd() * 18);
-    const z = 6 - rnd() * 104;
-    tree(x, z, 0.8 + rnd() * 0.6, ['#3f8a3a', '#4f9a3e', '#367a36'][i % 3]);
-  }
-  // Railings and the houses of Montceau behind them.
-  for (const side of [-1, 1]) box(0.08, 1.1, 120, '#2f4a35', side * 26, 0, -40);
-  const house = ['#e9d6b8', '#d8c7b0', '#efe1c4', '#cfa98a', '#e3cfae'];
-  for (let i = 0; i < 9; i++) {
-    const h = 7 + (i % 3) * 2;
-    box(9, h, 6, house[i % house.length], -36 + i * 9, 0, -112);
-    box(9.4, 1.2, 6.4, '#8a4c38', -36 + i * 9, h, -112);
-  }
-  for (let i = 0; i < 6; i++) {
-    for (const side of [-1, 1]) {
-      const h = 6 + ((i + (side > 0 ? 1 : 0)) % 3) * 2;
-      box(6, h, 9, house[(i + 2) % house.length], side * 34, 0, -10 - i * 16);
+  /* ---------- The level: its decor and covers, rebuilt at each new level ---------- */
+  let world = null;
+  let worldStuff = [];
+  let shownLevel = -1;
+  const kit = {
+    group: null,
+    night: false,
+    track: (x) => worldStuff.push(x),
+    mesh(geo, color, x, y, z, parent = kit.group) {
+      worldStuff.push(geo);
+      const m = new THREE.Mesh(geo, mat(color));
+      m.position.set(x, y, z);
+      parent.add(m);
+      return m;
+    },
+    box: (w, h, d, color, x, y, z, parent) => kit.mesh(new THREE.BoxGeometry(w, h, d), color, x, y + h / 2, z, parent),
+  };
+  function loadLevel(index) {
+    if (world) {
+      scene.remove(world);
+      for (const d of worldStuff) d.dispose?.();
     }
-  }
-  // Lamp posts along the path.
-  for (let z = -6; z > -90; z -= 14) {
-    for (const side of [-1, 1]) {
-      mesh(new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6), '#2b2f36', side * 2.8, 1.6, z);
-      mesh(new THREE.SphereGeometry(0.22, 8, 6), '#fff2c4', side * 2.8, 3.3, z);
+    worldStuff = [];
+    world = new THREE.Group();
+    scene.add(world);
+    kit.group = world;
+    const L = rules.levels[index];
+    const env = ENV[L.id] || ENV.jardin;
+    kit.night = ['moliere', 'rue', 'crapa'].includes(L.id);
+    const g = skyCv.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, env.sky[0]);
+    grad.addColorStop(0.6, env.sky[1]);
+    grad.addColorStop(1, env.sky[2]);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 4, 256);
+    skyTex.needsUpdate = true;
+    scene.fog.color.set(env.fog[0]);
+    scene.fog.near = env.fog[1];
+    scene.fog.far = env.fog[2];
+    hemi.color.set(env.hemi[0]);
+    hemi.groundColor.set(env.hemi[1]);
+    hemi.intensity = env.hemi[2];
+    sun.color.set(env.sun[0]);
+    sun.intensity = env.sun[1];
+    buildDecor(L.id, kit);
+    const bigCover = { car205: 1.15, car: 1.15, kiosk: 1.0, tent: 1.6, dj: 0.9 };
+    for (const st of L.stations) {
+      // The hero's own cover, wide enough to slide along it (rules: SIDE = 1.2 m each way).
+      buildCover(kit, st.cover, st.x, st.z - 1.25, -1).scale.x = 1.6;
+      for (const f of st.foes) buildCover(kit, f.cover, f.x, f.z + (bigCover[f.cover] || 0.65), 1);
     }
+    shownLevel = index;
   }
-
-  /** Builds a cover in front of (x, z) (between it and the hero): what people hide behind. */
-  function cover(type, x, z, facing = 1) {
-    const g = new THREE.Group();
-    g.position.set(x, 0, z);
-    scene.add(g);
-    if (type === 'bench') {
-      box(1.9, 0.08, 0.5, '#9a6a3c', 0, 0.45, 0, g);
-      box(1.9, 0.55, 0.08, '#9a6a3c', 0, 0.55, 0.22 * facing, g);
-      box(1.9, 0.12, 0.08, '#7f552e', 0, 0.95, 0.22 * facing, g);
-      for (const k of [-0.8, 0.8]) box(0.08, 0.45, 0.46, '#2b2f36', k, 0, 0, g);
-    } else if (type === 'hedge') {
-      box(2, 0.9, 0.8, '#3f7f3a', 0, 0, 0, g);
-      for (const k of [-0.6, 0, 0.6]) mesh(new THREE.IcosahedronGeometry(0.3, 0), '#4a8f42', k, 0.92, 0, g);
-    } else if (type === 'tree') {
-      mesh(new THREE.CylinderGeometry(0.3, 0.38, 2.6, 8), '#7a5536', 0, 1.3, 0, g);
-      mesh(new THREE.IcosahedronGeometry(1.7, 0), '#3f8a3a', 0, 3.2, 0, g);
-      for (const k of [-0.55, 0.55]) mesh(new THREE.IcosahedronGeometry(0.62, 0), '#4a8f42', k, 0.5, 0.1, g);
-    } else if (type === 'bin') {
-      box(1.5, 1.05, 0.8, '#2f6e3c', 0, 0, 0, g);
-      box(1.6, 0.1, 0.9, '#275c32', 0, 1.05, 0, g);
-    } else if (type === 'wall') {
-      box(1.9, 0.98, 0.4, '#b9ad98', 0, 0, 0, g);
-      box(2, 0.08, 0.5, '#a39784', 0, 0.98, 0, g);
-    } else if (type === 'kiosque') {
-      box(1.8, 1.02, 0.15, '#f3efe6', 0, 0, 0, g);
-      for (const k of [-0.85, 0, 0.85]) box(0.12, 1.12, 0.18, '#e2dccf', k, 0, 0, g);
-    } else if (type === 'fountain') {
-      box(2, 1.0, 0.5, '#c9c2b4', 0, 0, 0, g);
-    } else if (type === 'car205') {
-      // José's old Peugeot 205, side on: faded red, a grey primer door.
-      box(3.7, 0.8, 1.6, '#c4453a', 0, 0.28, 0, g);
-      box(2.1, 0.62, 1.42, '#c4453a', -0.2, 1.08, 0, g);
-      box(2.0, 0.5, 1.46, '#2b3448', -0.2, 1.12, 0, g);
-      box(0.95, 0.72, 0.04, '#9a9a9a', -0.55, 0.32, 0.81, g);
-      for (const k of [-1.2, 1.2]) {
-        const w = mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.25, 12), '#1e1e24', k, 0.34, 0.82, g);
-        w.rotation.x = Math.PI / 2;
-      }
-    }
-    return g;
-  }
-
-  // The big pieces of the level, then a cover for every opponent and every hero's station.
-  mesh(new THREE.CylinderGeometry(2.6, 2.8, 0.8, 16), '#c9c2b4', 1.2, 0.4, -30); // fountain basin
-  mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.1, 16), '#7cc4df', 1.2, 0.78, -30);
-  mesh(new THREE.CylinderGeometry(0.25, 0.35, 2, 8), '#c9c2b4', 1.2, 1.4, -30);
-  mesh(new THREE.CylinderGeometry(0.9, 0.3, 0.3, 12), '#c9c2b4', 1.2, 2.4, -30);
-  const kio = new THREE.Group();
-  kio.position.set(-2, 0, -47.5);
-  scene.add(kio);
-  mesh(new THREE.CylinderGeometry(3.4, 3.4, 0.7, 8), '#e9e3d6', 0, 0.35, 0, kio);
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.8, 6), '#2f5a3a', Math.cos(a) * 3, 2.1, Math.sin(a) * 3, kio);
-  }
-  mesh(new THREE.ConeGeometry(3.9, 1.6, 8), '#3a7a4a', 0, 4.3, 0, kio);
-  for (const level of rules.levels) {
-    for (const st of level.stations) {
-      cover(st.cover, st.x, st.z - 1.25, -1);
-      for (const f of st.foes) cover(f.cover, f.x, f.z + (f.cover === 'car205' ? 1.15 : 0.65), 1);
-    }
-  }
+  loadLevel(rules.level);
 
   /* ---------- Billboards ---------- */
   const textures = new Map();
@@ -280,7 +216,7 @@ export function createView({ canvas, rules }) {
   const ease = (k) => k * k * (3 - 2 * k);
   let t = 0;
   function eyePos() {
-    let x = rules.pos.x;
+    let x = rules.heroX();
     let z = rules.pos.z;
     let bob = 0;
     const next = rules.nextStation();
@@ -296,6 +232,7 @@ export function createView({ canvas, rules }) {
 
   function render(dt) {
     t += dt;
+    if (rules.level !== shownLevel) loadLevel(rules.level);
     const eye = eyePos();
     camera.position.copy(eye);
     const yaw = rules.phase === 'move' ? 0 : rules.yaw;
@@ -368,7 +305,7 @@ export function createView({ canvas, rules }) {
       }
       sp.visible = s.t >= 0;
       const k = Math.max(0, Math.min(1, s.t / s.T));
-      const to = new THREE.Vector3(rules.pos.x + s.side * 0.3, 1.35, rules.pos.z - 0.35);
+      const to = new THREE.Vector3(s.tx + s.side * 0.3, 1.35, rules.pos.z - 0.35);
       sp.position.lerpVectors(sp.userData.from, to, k);
       sp.position.y += Math.sin(k * Math.PI) * 1.1;
       sp.material.rotation = t * sp.userData.spin;
@@ -425,7 +362,7 @@ export function createView({ canvas, rules }) {
     event,
     resize,
     dispose() {
-      for (const d of disposables) d.dispose?.();
+      for (const d of [...disposables, ...worldStuff]) d.dispose?.();
       renderer.dispose();
     },
   };
