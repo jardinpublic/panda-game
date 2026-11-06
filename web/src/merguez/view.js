@@ -511,7 +511,7 @@ export function createView({ canvas, rules }) {
       v.set(x, y, z).project(camera);
       return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height, front: v.z < 1 };
     };
-    const reach = Math.max(40, rect.width * 0.09);
+    const reach = Math.max(42, rect.width * 0.105);
     for (const b of rules.bonuses) {
       const p = rules.bonusPos(b);
       const s = toScreen(p.x, p.y, p.z);

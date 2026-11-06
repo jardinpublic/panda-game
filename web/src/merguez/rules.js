@@ -17,9 +17,9 @@ export const EYE_OUT = 1.45; // eye height out of cover
 export const EYE_IN = 1.15; // crouched behind cover (high enough to see over it)
 const OUT_TIME = 0.09; // popping out / ducking back (quick: a fast tap beats a slow opponent)
 const RELOAD = 0.75; // seconds in cover to refill
-const TELL = 0.55; // an opponent's wind-up before throwing (bosses: BOSS_TELL)
-const THROW = 0.28; // stays out after throwing
-const ENEMY_SPEED = 15.5; // m/s of an opponent's throw
+const TELL = 0.62; // an opponent's wind-up before throwing (bosses: BOSS_TELL)
+const THROW = 0.31; // stays out after throwing
+const ENEMY_SPEED = 14.8; // m/s of an opponent's throw
 const BODY_H = 1.0;
 const HEAD_H = 1.55;
 const BODY_R = 0.32;
@@ -441,8 +441,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     }
     const f = r.foes.find((x) => x.id === s.target);
     // Still out, or not yet fully back behind the cover: it lands.
-    // Only lands on someone still out (not on their way back behind their cover).
-    if (f && f.state !== 'ko' && visible(f) && f.peek > 0.5) return hitFoe(f, s.dmg, s.head, '', s.kind);
+    // Lands on someone still out, or only just starting to duck back.
+    if (f && f.state !== 'ko' && (visible(f) || f.peek > 0.6)) return hitFoe(f, s.dmg, s.head, '', s.kind);
     if (f && f.state !== 'ko' && s.pierce) return hitFoe(f, Math.max(1, Math.floor(s.dmg / 2)), false, 'pierce', s.kind);
     if (s.bounce) {
       const other = r.foes.find((x) => x.state !== 'ko' && visible(x));
