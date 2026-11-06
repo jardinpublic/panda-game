@@ -144,7 +144,10 @@ export const LEVELS = [
 
 // One hit is enough for everyone but the bosses.
 export const HP = { gang: 1, people: 1, boss: 40 };
-const BOSS_HP_PER_LEVEL = 10; // each boss is tougher than the last (Rudy: 80)
+const BOSS_HP_PER_LEVEL = 8; // each boss is tougher than the last (Rudy: 72)
+const BOSS_TELL = 0.8; // a boss's wind-up (a bit longer than it was: they were too hard)
+const BOSS_SPEED = 12; // m/s of a boss's throw (opponents: ENEMY_SPEED)
+const BOSS_DOUBLE_GAP = 0.4; // seconds between a hurt boss's two throws
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const angDist = (y1, p1, y2, p2) => Math.hypot(y1 - y2, p1 - p2);
@@ -380,7 +383,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     const spec = WEAPONS[f.weapon] || WEAPONS.boule;
     const d = r.dirTo(f).dist;
     const n = f.kind === 'boss' && f.hp < f.max / 2 ? 2 : 1;
-    for (let i = 0; i < n; i++) r.incoming.push({ foe: f.id, who: f.who, kind: f.weapon, t: -i * 0.28, T: d / ENEMY_SPEED, dist: d, side: n > 1 ? (i ? 1 : -1) : 0, tx: r.heroX() });
+    for (let i = 0; i < n; i++) r.incoming.push({ foe: f.id, who: f.who, kind: f.weapon, t: -i * (f.kind === 'boss' ? BOSS_DOUBLE_GAP : 0.28), T: d / (f.kind === 'boss' ? BOSS_SPEED : ENEMY_SPEED), dist: d, side: n > 1 ? (i ? 1 : -1) : 0, tx: r.heroX() });
     void spec;
     r.events.push({ type: 'throw', who: f.who, weapon: f.weapon, foe: f.id });
   }
@@ -405,7 +408,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
           continue;
         }
         f.state = 'tell';
-        f.t = f.kind === 'boss' ? 0.6 : TELL;
+        f.t = f.kind === 'boss' ? BOSS_TELL : TELL;
         r.events.push({ type: 'tell', foe: f.id, who: f.who });
         if (f.who === 'mamar' && f.said <= 0) {
           f.said = 4;
@@ -418,7 +421,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
       } else {
         f.state = 'hide';
         const boss = f.kind === 'boss';
-        f.t = ((boss ? 0.7 : 1.1) + random() * (boss ? 0.8 : 1.5)) / diff();
+        f.t = ((boss ? 0.95 : 1.1) + random() * (boss ? 0.9 : 1.5)) / diff();
         if (boss && random() < 0.5) f.side = -f.side; // the boss changes side of his car
       }
     }
