@@ -38,12 +38,12 @@ create table if not exists public.panda_scores (
 alter table public.panda_scores drop constraint if exists name_ok;
 alter table public.panda_scores add constraint name_ok check (char_length(btrim(name)) between 1 and 20);
 alter table public.panda_scores drop constraint if exists game_ok;
-alter table public.panda_scores add constraint game_ok check (game in ('marathon', 'flipper', 'spx'));
+alter table public.panda_scores add constraint game_ok check (game in ('marathon', 'flipper', 'spx', 'merguez'));
 alter table public.panda_scores drop constraint if exists hero_ok;
 alter table public.panda_scores add constraint hero_ok check (hero is null or hero in ('panda', 'cous', 'mamar', 'babar', 'victor', 'romain', 'eugenie', 'violaine', 'aline', 'greg'));
 alter table public.panda_scores drop constraint if exists score_ok;
 alter table public.panda_scores add constraint score_ok check (
-  score > 0 and score <= case game when 'marathon' then 100000 when 'flipper' then 2000000000 else 200000 end
+  score > 0 and score <= case game when 'marathon' then 100000 when 'flipper' then 2000000000 when 'merguez' then 2000000 else 200000 end
 );
 alter table public.panda_scores drop constraint if exists marathon_ok;
 alter table public.panda_scores add constraint marathon_ok check (
@@ -54,6 +54,9 @@ alter table public.panda_scores add constraint marathon_ok check (
 );
 alter table public.panda_scores drop constraint if exists spx_ok;
 alter table public.panda_scores add constraint spx_ok check (game <> 'spx' or home is not true or ride_time >= 80);
+-- Golden Merguez: the levels cleared, from 1 to 20
+alter table public.panda_scores drop constraint if exists merguez_ok;
+alter table public.panda_scores add constraint merguez_ok check (game <> 'merguez' or level between 1 and 20);
 alter table public.panda_scores drop constraint if exists date_ok;
 alter table public.panda_scores add constraint date_ok check (
   played_at >= timestamptz '2026-11-01' and played_at <= created_at + interval '10 minutes'

@@ -17,6 +17,8 @@ export const FACES = {
   smo: { skin: '#f0c19d', hair: '#3c3631', style: 'long', hat: 'hood', hatColor: '#6b7b4a', beard: '#3c3631', mouth: 'gap', nose: 'round', eyes: 'sleepy' },
   keufs: { skin: '#f0c4a3', hair: '#4b3a2e', style: 'short', hat: 'kepi', hatColor: '#1f2b4d', moustache: '#4b3a2e', brows: 'stern', mouth: 'flat', nose: 'round' },
   pietro: { skin: '#e3ad84', hair: '#1d1a19', style: 'slick', stubble: '#3a2e28', brows: 'angry', browColor: '#1d1a19', mouth: 'snarl', nose: 'big', chain: true },
+  // The Jardin Public's park keeper (Golden Merguez): green cap, grey moustache, stern.
+  gardien: { skin: '#eec09f', hair: '#8a8580', style: 'short', hat: 'kepi', hatColor: '#2e5a34', moustache: '#9a948c', brows: 'stern', mouth: 'flat', nose: 'round', wrinkles: true },
   azzouz: { skin: '#d9a07a', hair: '#231d1a', style: 'short', hat: 'capback', hatColor: '#2f7fd1', stubble: '#5a4436', mouth: 'cheeky', nose: 'round', brows: 'up' },
 };
 

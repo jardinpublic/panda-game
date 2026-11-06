@@ -41,12 +41,12 @@ export const SAVE_VERSION = 1;
 export const TOP_SIZE = 10;
 
 export function emptyMeta() {
-  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, spx: { best: 0, games: 0, homes: 0, scores: [] }, online: emptyOnline(), updated: 0 };
+  return { v: SAVE_VERSION, coins: 0, best: 0, hero: 'panda', hat: 'none', owned: ['panda', 'none'], missions: [], tier: 0, runs: 0, seen: [], scores: [], pinball: { best: 0, games: 0, scores: [] }, spx: { best: 0, games: 0, homes: 0, scores: [] }, merguez: { best: 0, games: 0, wins: 0, scores: [] }, online: emptyOnline(), updated: 0 };
 }
 
 /** The online Hall of Fame profile: a random id for this phone, the name typed once, what was sent. */
 export function emptyOnline() {
-  return { id: '', name: '', avatar: '', asked: false, since: 0, sent: { marathon: 0, flipper: 0, spx: 0 } };
+  return { id: '', name: '', avatar: '', asked: false, since: 0, sent: { marathon: 0, flipper: 0, spx: 0, merguez: 0 } };
 }
 
 function normalizeOnline(raw) {
@@ -59,7 +59,7 @@ function normalizeOnline(raw) {
     asked: !!o.asked,
     // Records reset on the board at this time (ms): older runs no longer count
     since: num(o.since),
-    sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx) },
+    sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx), merguez: num(sent.merguez) },
   };
 }
 
@@ -88,6 +88,9 @@ export function normalizeMeta(raw) {
   const sx = raw.spx && typeof raw.spx === 'object' ? raw.spx : {};
   m.spx = { ...sx, best: num(sx.best), games: num(sx.games), homes: num(sx.homes), scores: topScores(Array.isArray(sx.scores) ? sx.scores : []) };
   m.spx.best = Math.max(m.spx.best, m.spx.scores[0]?.score || 0);
+  const gm = raw.merguez && typeof raw.merguez === 'object' ? raw.merguez : {};
+  m.merguez = { ...gm, best: num(gm.best), games: num(gm.games), wins: num(gm.wins), scores: topScores(Array.isArray(gm.scores) ? gm.scores : []) };
+  m.merguez.best = Math.max(m.merguez.best, m.merguez.scores[0]?.score || 0);
   m.online = normalizeOnline(raw.online);
   return dropOldRecords(m);
 }
@@ -106,9 +109,11 @@ export function dropOldRecords(m) {
   m.pinball.best = m.pinball.scores[0]?.score || 0;
   m.spx.scores = keep(m.spx.scores);
   m.spx.best = m.spx.scores[0]?.score || 0;
+  m.merguez.scores = keep(m.merguez.scores);
+  m.merguez.best = m.merguez.scores[0]?.score || 0;
   // A "sent" mark above what is left is an old record's: the new best must go out
   // (merging with an older copy of the save brings those marks back, hence here)
-  const bests = { marathon: m.best, flipper: m.pinball.best, spx: m.spx.best };
+  const bests = { marathon: m.best, flipper: m.pinball.best, spx: m.spx.best, merguez: m.merguez.best };
   for (const game of Object.keys(bests)) if (m.online.sent[game] > bests[game]) m.online.sent[game] = 0;
   return m;
 }
@@ -155,6 +160,14 @@ export function mergeMeta(a, b) {
     homes: Math.max(os.homes, ns.homes),
     scores: topScores([...os.scores, ...ns.scores]),
   };
+  const og = older.merguez || emptyMeta().merguez;
+  const ng = newer.merguez || emptyMeta().merguez;
+  m.merguez = {
+    best: Math.max(og.best, ng.best),
+    games: Math.max(og.games, ng.games),
+    wins: Math.max(og.wins, ng.wins),
+    scores: topScores([...og.scores, ...ng.scores]),
+  };
   // Online profile: the newer one's name, the id the save already had, the most sent
   const oo = normalizeOnline(older.online);
   const no = normalizeOnline(newer.online);
@@ -164,7 +177,7 @@ export function mergeMeta(a, b) {
     avatar: no.avatar || oo.avatar,
     asked: oo.asked || no.asked,
     since: Math.max(oo.since, no.since),
-    sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx) },
+    sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx), merguez: Math.max(oo.sent.merguez, no.sent.merguez) },
   };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);
   return dropOldRecords(m);
@@ -235,6 +248,19 @@ export function applySpx(meta, { score, hero, time = 0, finished = false, at = D
   const entry = { score, hero, at, time: Math.round(time), finished: !!finished };
   next.spx.scores = topScores([...next.spx.scores, entry]);
   const rank = next.spx.scores.findIndex((x) => x.score === score && x.at === at) + 1;
+  return { meta: next, rank, newBest };
+}
+
+/** Records a Golden Merguez run. Returns {meta, rank, newBest}. */
+export function applyMerguez(meta, { score, hero, level = 0, finished = false, time = 0, at = Date.now() }) {
+  const next = normalizeMeta(clone(meta));
+  const newBest = score > next.merguez.best;
+  next.merguez.best = Math.max(next.merguez.best, score);
+  next.merguez.games++;
+  if (finished) next.merguez.wins++;
+  const entry = { score, hero, at, level, finished: !!finished, time: Math.round(time) };
+  next.merguez.scores = topScores([...next.merguez.scores, entry]);
+  const rank = next.merguez.scores.findIndex((x) => x.score === score && x.at === at) + 1;
   return { meta: next, rank, newBest };
 }
 

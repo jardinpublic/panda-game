@@ -11,10 +11,14 @@ import { ONLINE_URL, ONLINE_KEY } from './online-config.js';
 import { CAST_IDS } from './art.js';
 import { maxScore } from './hof.js';
 
-export const GAMES = ['marathon', 'flipper', 'spx'];
+export const GAMES = ['marathon', 'flipper', 'spx', 'merguez'];
 export const NAME_MAX = 20;
 // Flipper scores go past 300 million (the last replay); 2 billion stays within the database's integer column
-const MAX = { marathon: 100000, flipper: 2000000000, spx: 200000 };
+// Games the database does not accept yet (supabase.sql not applied): their records
+// stay on the phone and are sent once the game leaves this list (none is lost).
+export const NOT_ON_BOARD_YET = ['merguez'];
+
+const MAX = { marathon: 100000, flipper: 2000000000, spx: 200000, merguez: 2000000 };
 const FIRST_DAY = Date.UTC(2026, 10, 1);
 
 /** A random id for this phone (never shown, never readable on the board). */
@@ -37,7 +41,7 @@ export function cleanName(text) {
 
 /** The best run of a game in this save, or null. */
 export function bestRun(meta, game) {
-  const list = game === 'marathon' ? meta.scores : game === 'flipper' ? meta.pinball?.scores : meta.spx?.scores;
+  const list = game === 'marathon' ? meta.scores : game === 'flipper' ? meta.pinball?.scores : game === 'merguez' ? meta.merguez?.scores : meta.spx?.scores;
   return (list && list[0]) || null;
 }
 
@@ -63,6 +67,12 @@ export function rowFor(meta, game) {
     row.ride_time = Math.round(run.time || 0);
     row.home = !!run.finished;
   }
+  if (game === 'merguez') {
+    // Levels cleared (at least 1 shown), play time, and whether the whole mission is done
+    row.level = Math.max(1, Math.round(run.level || 0));
+    row.ride_time = Math.round(run.time || 0);
+    row.home = !!run.finished;
+  }
   return row;
 }
 
@@ -81,6 +91,7 @@ export function plausible(row, now = Date.now()) {
     if (score % 10 !== 0 || score < streak * 10 || score > maxScore(level)) return false;
   }
   if (row.game === 'spx' && row.home && !(row.ride_time >= 80)) return false;
+  if (row.game === 'merguez' && !(Number.isInteger(row.level) && row.level >= 1 && row.level <= 20)) return false;
   return true;
 }
 
@@ -89,6 +100,7 @@ export function toSend(meta, now = Date.now()) {
   const sent = meta.online?.sent || {};
   if (!meta.online?.id || !cleanName(meta.online?.name)) return [];
   return GAMES.filter((game) => {
+    if (NOT_ON_BOARD_YET.includes(game)) return false;
     const row = rowFor(meta, game);
     return row && row.score > (sent[game] || 0) && plausible(row, now);
   });

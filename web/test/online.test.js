@@ -240,3 +240,14 @@ describe('online Hall of Fame', () => {
     expect(toSend(normalizeMeta(merged), NOW + 2000)).toEqual([]);
   });
 });
+
+it('keeps Golden Merguez records on the phone until the database accepts them', async () => {
+  const { toSend, NOT_ON_BOARD_YET } = await import('../src/marathon/online.js');
+  const { emptyMeta, applyMerguez } = await import('../src/marathon/meta.js');
+  let meta = emptyMeta();
+  meta.online = { ...meta.online, id: 'p1', name: 'Cous' };
+  meta = applyMerguez(meta, { score: 12000, hero: 'cous', level: 1, finished: true, time: 90 }).meta;
+  expect(NOT_ON_BOARD_YET).toContain('merguez');
+  expect(toSend(meta)).not.toContain('merguez');
+  expect(meta.merguez.best).toBe(12000);
+});

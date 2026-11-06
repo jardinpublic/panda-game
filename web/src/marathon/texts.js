@@ -35,6 +35,37 @@ registerTexts('pb', {
   },
 });
 
+registerTexts('gm', {
+  en: {
+    play: '🌭 Golden Merguez',
+    loading: 'Grilling the merguez…',
+    over: 'Mission accomplished!',
+    lost: 'Knocked out!',
+    best: 'Golden Merguez record',
+    scores: 'Golden Merguez top 10',
+    none: 'No Golden Merguez mission yet.',
+    rank: '#{n} of your missions',
+    levels: 'Levels',
+    kos: 'Knocked out',
+    share_win: 'Golden Merguez: {score} points, the whole gang knocked out with my {weapon}! Hoho! {url}',
+    share_lost: 'Golden Merguez: {score} points before I got knocked out… Hoho! {url}',
+  },
+  fr: {
+    play: '🌭 Golden Merguez',
+    loading: 'Les merguez grillent…',
+    over: 'Mission accomplie !',
+    lost: 'T’es KO !',
+    best: 'Record Golden Merguez',
+    scores: 'Top 10 Golden Merguez',
+    none: 'Pas encore de mission Golden Merguez.',
+    rank: 'N°{n} de tes missions',
+    levels: 'Niveaux',
+    kos: 'Mis KO',
+    share_win: 'Golden Merguez : {score} points, toute la bande KO avec mes {weapon} ! Hoho ! {url}',
+    share_lost: 'Golden Merguez : {score} points avant d’finir KO… Hoho ! {url}',
+  },
+});
+
 registerTexts('spx', {
   en: {
     play: '🛵 103 RCX',
@@ -135,6 +166,7 @@ registerTexts('m', {
     install_offline: 'Once installed, the game opens full screen from your home screen and plays even without a network.',
     tab_flipper: 'Flipper',
     tab_spx: '103 RCX',
+    tab_merguez: 'Golden Merguez',
     tab_gang: 'The gang',
     tab_marathon: 'PandAventures',
     board_gang: 'The gang',
@@ -230,6 +262,7 @@ registerTexts('m', {
     install_offline: 'Une fois installé, eul’ jeu s’ouvre en plein écran depuis ton écran d’accueil et marche même sans réseau.',
     tab_flipper: 'Flipper',
     tab_spx: '103 RCX',
+    tab_merguez: 'Golden Merguez',
     tab_gang: 'La bande',
     tab_marathon: 'PandAventures',
     board_gang: 'La bande',

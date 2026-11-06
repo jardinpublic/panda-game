@@ -14,7 +14,7 @@ import { createFx } from './fx.js';
 import * as art from './art.js';
 import { PAL, CAST_IDS } from './art.js';
 import { sfx, unlock, startGroove, setGroove, stopGroove, setMuted, isMuted } from './sound.js';
-import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, dropOldRecords, buy, HEROES, HATS } from './meta.js';
+import { loadMeta, saveMeta, onMetaChanged, askPersist, refillMissions, applyRun, applyPinball, applySpx, applyMerguez, dropOldRecords, buy, HEROES, HATS } from './meta.js';
 import { t, locale, toggleLocale } from '../core/i18n.js';
 import { installMode } from './install.js';
 import { GAMES as BOARD_GAMES, NAME_MAX, createOnline, memoryBackend, toSend, rowFor, bestRun, cleanName, newPlayerId } from './online.js';
@@ -986,7 +986,7 @@ let spxModule = null;
 
 /** The bonus games with a screen of their own (they take the input and the drawing). */
 function isExtra() {
-  return A.screen === 'pinball' || A.screen === 'spx';
+  return A.screen === 'pinball' || A.screen === 'spx' || A.screen === 'merguez';
 }
 
 /** Opens 103 RCX: Panda's moped ride home through Montceau (3D, loaded on demand). */
@@ -1096,12 +1096,122 @@ function renderSpxUI() {
   }
 }
 
+// ---- Golden Merguez ---------------------------------------------------------------------
+
+let merguezModule = null;
+
+/** Opens Golden Merguez: the gang's food fight across Montceau (3D, loaded on demand). */
+async function startMerguez() {
+  unlock();
+  sfx.click();
+  disposeMerguez();
+  A.screen = 'merguez';
+  A.paused = false;
+  A.gmDone = false;
+  A.gmResult = null;
+  stopGroove();
+  renderUI();
+  try {
+    merguezModule = merguezModule || (await import('../merguez/index.js'));
+    if (A.screen !== 'merguez') return;
+    const root = document.createElement('div');
+    root.className = 'm-flipper-root';
+    phone.insertBefore(root, ui);
+    A.gmRoot = root;
+    A.gm = await merguezModule.startMerguez({
+      root,
+      lang: locale(),
+      hero: A.meta.hero,
+      auto: params.has('gmauto'),
+      onGameOver: ({ score, summary }) => merguezOver(score, summary),
+      onExit: leaveMerguez,
+    });
+    if (!isMuted()) startGroove(118, 0.24);
+    renderUI();
+  } catch (err) {
+    reportError(err);
+    leaveMerguez();
+  }
+}
+
+function disposeMerguez() {
+  try {
+    A.gm?.dispose?.();
+  } catch (err) {
+    reportError(err);
+  }
+  A.gm = null;
+  A.gmRoot?.remove();
+  A.gmRoot = null;
+}
+
+function merguezOver(score = 0, summary = {}) {
+  if (A.gmDone) return;
+  A.gmDone = true;
+  let res = { meta: A.meta, rank: 0, newBest: false };
+  try {
+    res = applyMerguez(A.meta, { score, hero: A.meta.hero, level: summary.level || 0, finished: !!summary.finished, time: summary.time || 0 });
+    A.meta = res.meta;
+    persist();
+    askPersist();
+  } catch (err) {
+    reportError(err);
+  }
+  A.gmResult = { ...res, score, summary };
+  if (res.newBest && score > 0) sfx.best();
+  renderUI();
+}
+
+function leaveMerguez() {
+  disposeMerguez();
+  A.screen = 'home';
+  A.paused = false;
+  A.gmDone = false;
+  startGroove(88, 0.25);
+  renderUI();
+}
+
+function renderMerguezUI() {
+  if (!A.gm && !A.gmDone) {
+    el('div', 'm-chip m-loading', ui, t('gm.loading'));
+    return;
+  }
+  if (!A.gmDone) return;
+  const r = A.gmResult;
+  const sum = r.summary || {};
+  const card = el('div', 'm-card m-over', ui);
+  el('div', 'm-band', card);
+  el('h2', '', card, sum.finished ? t('gm.over') : t('gm.lost'));
+  el('div', 'm-score', card, r.score.toLocaleString(locale()));
+  if (r.newBest && r.score > 0) el('div', 'm-badge', card, `🏆 ${t('m.new_best')}`);
+  const stats = el('div', 'm-stats', card);
+  el('span', '', stats, `🗺️ ${t('gm.levels')} ${sum.level || 0}`);
+  el('span', '', stats, `💥 ${t('gm.kos')} ${sum.kos || 0}`);
+  el('span', '', stats, `${t('gm.best')} ${A.meta.merguez.best.toLocaleString(locale())}`);
+  if (r.rank > 0) el('span', 'm-gold', stats, `🏆 ${t('gm.rank', { n: r.rank })}`);
+  const again = el('button', 'm-btn m-play', ui, t('m.replay'));
+  again.onclick = startMerguez;
+  const row = el('div', 'm-row', ui);
+  const menu = el('button', 'm-btn m-ghost', row, t('m.menu'));
+  menu.onclick = leaveMerguez;
+  const top = el('button', 'm-btn m-ghost', row, `🏆 ${t('gm.scores')}`);
+  top.onclick = () => openRecords('merguez');
+  if (r.score > 0) {
+    const score = r.score.toLocaleString(locale());
+    const weapon = merguezModule?.WEAPON_NAMES?.[merguezModule.WEAPON_OF?.[A.meta.hero]]?.[locale() === 'fr' ? 'fr' : 'en'] || 'merguez';
+    const text = sum.finished ? t('gm.share_win', { score, weapon, url: shareUrl() }) : t('gm.share_lost', { score, url: shareUrl() });
+    shareButton(ui, r, { score: r.score, scoreText: score, reached: `🌭 Golden Merguez · ${t('gm.levels')} ${sum.level || 0}`, best: !!r.newBest }, text);
+    onlineBlock(ui, 'merguez', r.newBest);
+  }
+}
+
 function renderUI() {
   ui.textContent = '';
   if (A.screen === 'home') renderHome();
   else if (A.screen === 'run') renderRunUI();
   else if (A.screen === 'pinball') renderPinballUI();
   else if (A.screen === 'spx') renderSpxUI();
+  else if (A.screen === 'merguez') renderMerguezUI();
   else renderOver();
 }
 
@@ -1232,10 +1342,11 @@ function renderHome() {
   el('p', '', title, t('m.tagline'));
   const play = el('button', 'm-btn m-play', ui, t('m.play'));
   play.onclick = startRun;
-  // The two other games, as big cards side by side
+  // The other games, as big cards side by side
   const games = el('div', 'm-games', ui);
   sideGame(games, 'm-game-pb', t('pb.play'), A.meta.pinball.best, startPinball);
   sideGame(games, 'm-game-spx', t('spx.play'), A.meta.spx.best, startSpxRide);
+  sideGame(games, 'm-game-gm', t('gm.play'), A.meta.merguez.best, startMerguez);
   const row = el('div', 'm-row', ui);
   const missions = el('button', 'm-btn m-ghost', row, `🎯 ${t('m.missions')}`);
   missions.onclick = () => openMissions();
@@ -1452,7 +1563,7 @@ function syncScores() {
         resetChecked = true;
         if (since > A.meta.online.since) {
           A.meta.online.since = since;
-          A.meta.online.sent = { marathon: 0, flipper: 0, spx: 0 };
+          A.meta.online.sent = { marathon: 0, flipper: 0, spx: 0, merguez: 0 };
           dropOldRecords(A.meta);
           persist();
           if (A.screen === 'home' && !document.querySelector('.m-sheet')) renderUI();
@@ -1534,7 +1645,7 @@ function askName(after) {
     }
     const o = A.meta.online;
     // A new name or face for someone already on the board: send the bests again so the board shows it now
-    if (o.name && (o.name !== name || o.avatar !== face)) o.sent = { marathon: 0, flipper: 0, spx: 0 };
+    if (o.name && (o.name !== name || o.avatar !== face)) o.sent = { marathon: 0, flipper: 0, spx: 0, merguez: 0 };
     o.name = name;
     o.avatar = face;
     o.id ||= newPlayerId();
@@ -1602,6 +1713,7 @@ function openRecords(tab = 'marathon') {
   const clockOf = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
   const detail = (x, at) => {
     if (tab === 'marathon') return `${t('m.reached', { n: x.level })} · ${date(at)}`;
+    if (tab === 'merguez') return `${x.finished || x.home ? '🏆' : '💥'} ${t('gm.levels')} ${x.level || 0} · ${date(at)}`;
     if (tab === 'spx') {
       const secs = x.time ?? x.ride_time;
       const home = x.finished ?? x.home;
@@ -1645,8 +1757,8 @@ function openRecords(tab = 'marathon') {
       });
   }
   el('h3', 'm-sec', panel, `📱 ${t('m.board_mine')}`);
-  const mine = tab === 'marathon' ? A.meta.scores : tab === 'flipper' ? A.meta.pinball.scores : A.meta.spx.scores;
-  if (!mine.length) el('p', 'm-empty', panel, t(tab === 'marathon' ? 'm.no_records' : tab === 'flipper' ? 'pb.none' : 'spx.none'));
+  const mine = tab === 'marathon' ? A.meta.scores : tab === 'flipper' ? A.meta.pinball.scores : tab === 'merguez' ? A.meta.merguez.scores : A.meta.spx.scores;
+  if (!mine.length) el('p', 'm-empty', panel, t(tab === 'marathon' ? 'm.no_records' : tab === 'flipper' ? 'pb.none' : tab === 'merguez' ? 'gm.none' : 'spx.none'));
   mine.forEach((x, i) => recordRow(panel, i + 1, x.hero, fmt(x.score), detail(x, x.at)));
   if (net.configured) el('p', 'm-hint', panel, t('m.gang_hint'));
 }
@@ -1780,4 +1892,6 @@ window.__m = {
   openMissions,
   pinballOver,
   spxOver,
+  startMerguez,
+  merguezOver,
 };
