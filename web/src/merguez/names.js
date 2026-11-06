@@ -21,3 +21,22 @@ export const BONUS_NAMES = {
   tong: { fr: 'Tong', en: 'Flip-flop' }, banane: { fr: 'Sac banane', en: 'Bum bag' }, rhum: { fr: 'Bouteille d’rhum', en: 'Bottle of rum' },
   malibu: { fr: 'Malibu coco', en: 'Coconut liqueur' }, pastis: { fr: 'Pastaga', en: 'Pastis' }, nain: { fr: 'Nain d’jardin', en: 'Garden gnome' },
 };
+
+/**
+ * What the people outside the gang say when knocked out (the gang members say
+ * one of their own punchlines, quote_<id> in core/strings.js).
+ */
+export const KO_LINES = {
+  jojo: { fr: ['Mmm, j’ai qu’ça à faire.'], en: ['Mmm, like I’ve got nothing better to do.'] },
+  lamoule: { fr: ['Mon poulet !', 'José, démarre eul’ 205 !', 'On r’viendra vous chercher !'], en: ['My chicken!', 'José, start the 205!', 'We’ll be back for you!'] },
+  jose: { fr: ['Mes sardines !', 'Lamoule, à l’aide !', 'Obrigado… pour rien !'], en: ['My sardines!', 'Lamoule, help!', 'Obrigado… for nothing!'] },
+  rudy: { fr: ['Retour au CRAPA…', 'Ma salade de museau !', 'J’retourne vivre dans les bois !'], en: ['Back to the CRAPA…', 'My snout salad!', 'Back to living in the woods!'] },
+  gogol: { fr: ['Ma boule était pointée !', 'Eh, y’a mène ici !'], en: ['My ball was right there!', 'Hey, we’re playing here!'] },
+  pineur: { fr: ['Bon sang d’bonsoir !', 'De mon temps, on lançait mieux !'], en: ['Good grief!', 'In my day we threw better!'] },
+  gardien: { fr: ['Interdit d’marcher sur la pelouse !', 'J’vais siffler la fin !'], en: ['Keep off the grass!', 'I’m blowing the whistle!'] },
+  controleur: { fr: ['Vos billets, s’il vous plaît…', 'Pas d’billet, pas d’chocolat !'], en: ['Tickets, please…', 'No ticket, no treat!'] },
+  videur: { fr: ['Pas ce soir…', 'Te rentres pas !'], en: ['Not tonight…', 'You’re not getting in!'] },
+  proprio: { fr: ['Mes lampes !', 'Revenez ici, bande ed’ voyous !'], en: ['My lamps!', 'Come back here, you hooligans!'] },
+  flic: { fr: ['Bonsoir jeune homme…', 'Circulez !'], en: ['Evening, young man…', 'Move along!'] },
+  chasseur: { fr: ['J’l’avais dans l’viseur !', 'Y’a du gibier par ici ?'], en: ['I had it in my sights!', 'Any game around here?'] },
+};

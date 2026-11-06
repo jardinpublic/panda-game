@@ -12,7 +12,8 @@
 import { createRules, botInput, HEARTS, LEVELS, PEOPLE } from './rules.js';
 export { WEAPON_OF } from './rules.js';
 import { createView } from './view.js';
-import { NAMES, WEAPON_NAMES, BONUS_NAMES } from './names.js';
+import { NAMES, WEAPON_NAMES, BONUS_NAMES, KO_LINES } from './names.js';
+import { STRINGS } from '../core/strings.js';
 import { loadHeads } from '../marathon/art.js';
 import { sfx } from '../marathon/sound.js';
 import { paintFace } from '../spx/faces.js';
@@ -219,6 +220,12 @@ export async function startMerguez(options) {
     clearTimeout(chatTimer);
     chatTimer = later(() => (chat.hidden = true), 2200);
   }
+  /** One of someone's punchlines, in the player's language (gang: core/strings.js; others: KO_LINES). */
+  function punchline(who) {
+    const list = STRINGS[`quote_${who}`]?.[lang] || KO_LINES[who]?.[lang];
+    if (!list) return '';
+    return Array.isArray(list) ? list[Math.floor(Math.random() * list.length)] : list;
+  }
   let tipTimer = 0;
   function showTip(text, ms = 1800) {
     tip.textContent = text;
@@ -257,6 +264,9 @@ export async function startMerguez(options) {
     } else if (e.type === 'ko') {
       sfx.coin();
       toast(tx('ko', { name: NAMES[e.who] || e.who }));
+      // Knocked out: they say one of their punchlines
+      const line = punchline(e.who);
+      if (line) sayLine(e.who, line);
       if (e.boss) {
         sfx.good();
         bossBox.hidden = true;
