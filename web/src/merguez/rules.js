@@ -85,7 +85,7 @@ export const LEVELS = [
     stations: [
       { x: 0, z: 0, cover: 'hedge', foes: [{ who: 'gang', x: -2.4, z: -7, cover: 'bench', side: 1 }, { who: 'gang', x: 2.6, z: -9, cover: 'tree', side: -1 }] },
       { x: 0.5, z: -16, cover: 'bench', foes: [{ who: 'gang', x: -2.2, z: -24, cover: 'fountain', side: -1 }, { who: 'pineur', x: 3, z: -23, cover: 'bin', side: -1 }] },
-      { x: -0.5, z: -34, cover: 'tree', foes: [{ who: 'gang', x: -3.2, z: -42, cover: 'kiosque', side: 1 }, { who: 'gang', x: 2.4, z: -41, cover: 'bench', side: -1 }, { who: 'gardien', x: 0.4, z: -44.5, cover: 'kiosque', side: 1 }] },
+      { x: -0.5, z: -34, cover: 'wall', foes: [{ who: 'gang', x: -3.2, z: -42, cover: 'kiosque', side: 1 }, { who: 'gang', x: 2.4, z: -41, cover: 'bench', side: -1 }, { who: 'gardien', x: 0.4, z: -44.5, cover: 'kiosque', side: 1 }] },
       { x: 0, z: -52, cover: 'bin', foes: [{ who: 'gogol', x: -2.4, z: -59, cover: 'wall', side: 1 }, { who: 'pineur', x: 2, z: -60, cover: 'wall', side: -1 }, { who: 'gang', x: 3.8, z: -58.5, cover: 'hedge', side: -1 }] },
       { x: 0, z: -68, cover: 'bench', boss: true, foes: [{ who: 'lamoule', x: 0.4, z: -77, cover: 'car205', side: 1, boss: true }] },
     ],
@@ -97,7 +97,7 @@ export const LEVELS = [
     stations: [
       { x: 0, z: 0, cover: 'cart', foes: [{ who: 'gang', x: -2.4, z: -8, cover: 'pillar', side: 1 }, { who: 'controleur', x: 2.6, z: -9, cover: 'machine', side: -1 }] },
       { x: 0, z: -16, cover: 'bench', foes: [{ who: 'gang', x: -2.8, z: -24, cover: 'cart', side: 1 }, { who: 'gang', x: 2.2, z: -25, cover: 'pillar', side: -1 }] },
-      { x: 0, z: -32, cover: 'machine', foes: [{ who: 'controleur', x: -2.2, z: -40, cover: 'bench', side: 1 }, { who: 'gang', x: 2.8, z: -41, cover: 'machine', side: -1 }, { who: 'gang', x: 0.2, z: -43, cover: 'pillar', side: 1 }] },
+      { x: 0, z: -32, cover: 'cart', foes: [{ who: 'controleur', x: -2.2, z: -40, cover: 'bench', side: 1 }, { who: 'gang', x: 2.8, z: -41, cover: 'machine', side: -1 }, { who: 'gang', x: 0.2, z: -43, cover: 'pillar', side: 1 }] },
       { x: 0, z: -50, cover: 'bench', foes: [{ who: 'gang', x: -3, z: -58, cover: 'cart', side: 1 }, { who: 'controleur', x: 2.6, z: -59, cover: 'bench', side: -1 }, { who: 'gang', x: 0.4, z: -61, cover: 'machine', side: 1 }] },
       { x: 0, z: -68, cover: 'cart', boss: true, foes: [{ who: 'romain', x: 0.4, z: -77, cover: 'kiosk', side: 1, boss: true }] },
     ],

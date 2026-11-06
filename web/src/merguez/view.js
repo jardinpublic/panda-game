@@ -138,7 +138,9 @@ export function createView({ canvas, rules }) {
     for (const st of L.stations) {
       // The hero's own cover, wide enough to slide along it (rules: SIDE = 1.2 m each way).
       // Low enough to see the people over it from the crouch (they are who you tap).
-      buildCover(kit, st.cover, st.x, st.z - 1.25, -1).scale.set(1.6, 0.72, 1);
+      const own = buildCover(kit, st.cover, st.x, st.z - 1.25, -1);
+      const tall = new THREE.Box3().setFromObject(own).max.y || 1;
+      own.scale.set(1.6, Math.min(0.72, 0.85 / tall), 1); // never above 0.85 m: never in the way
       for (const f of st.foes) buildCover(kit, f.cover, f.x, f.z + (bigCover[f.cover] || 0.65), 1);
     }
     shownLevel = index;
