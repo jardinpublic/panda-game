@@ -26,6 +26,9 @@ const CSS = `
 .gm-top { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 56px; right: 10px; display: flex; gap: 6px; align-items: center; }
 .gm-chip { background: rgba(20, 16, 40, 0.55); backdrop-filter: blur(4px); border-radius: 999px; padding: 4px 10px; font-weight: 700; font-size: 15px; white-space: nowrap; }
 .gm-score { font-size: 22px; margin-left: auto; padding: 3px 12px; }
+.gm-clock { font-variant-numeric: tabular-nums; transition: background .3s; }
+.gm-clock.is-near { background: rgba(232,118,31,.85); }
+.gm-clock.is-late { background: rgba(214,40,40,.85); }
 .gm-mult { position: absolute; right: 12px; top: calc(max(10px, env(safe-area-inset-top)) + 42px); font-size: 30px; font-weight: 800; color: #ffd23f; -webkit-text-stroke: 1.5px #5a2a00; text-shadow: 0 3px 0 #ef2d6b; }
 .gm-mult.is-up { animation: gm-up .4s cubic-bezier(.3,1.8,.5,1); }
 .gm-tapmark { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 4px solid #ffd23f; pointer-events: none; animation: gm-tap .35s ease-out forwards; }
@@ -82,7 +85,7 @@ const T = {
     quit: 'Quitter', hold: 'Tape sur quelqu’un pour y lancer un coup d’{w} ! Après, te r’tournes à couvert tout seul.',
     tuto1: 'Tape sur <b>quelqu’un</b> pour y lancer un coup d’{w} !', tuto2: 'Un <b>!</b> rouge ? Y va lancer : attends à couvert… pis tape-le quand y ressort !', tuto3: 'Vise <b>la tête</b> : en pleine poire, ça paie double !', go: 'C’est parti !',
     soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
-    advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
+    advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé !\n⏱ +{time}  ❤ +{hearts}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
     romain: 'Un sac d’os dans ta poire !', jose: 'Sardines à volonté !', babar: 'Héhéhé… un p’tit coup d’rouge ?', rudy: 'Bienvenue dans mon CRAPA !',
     mamar: 'Je suis une proie facile… mais pas ce soir !', greg: 'Aux States, on fait des côtes plus grosses !',
@@ -92,7 +95,7 @@ const T = {
     quit: 'Quit', hold: 'Tap someone to throw your {w} at them! You duck back into cover by yourself.',
     tuto1: 'Tap <b>someone</b> to throw your {w} at them!', tuto2: 'A red <b>!</b>? They’re about to throw: wait in cover… then tap them when they come out!', tuto3: 'Aim for <b>the head</b>: right in the face pays double!', go: 'Go!',
     soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
-    advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared! +{bonus}',
+    advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared!\n⏱ +{time}  ❤ +{hearts}',
     end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
     romain: 'A bag of bones in your face!', jose: 'All-you-can-eat sardines!', babar: 'Hehehe… fancy a glass of red?', rudy: 'Welcome to my CRAPA!',
     mamar: 'I’m easy prey… but not tonight!', greg: 'In the States, we grill bigger ribs!',
@@ -155,6 +158,7 @@ export async function startMerguez(options) {
   const top = el('div', 'gm-top', hud);
   const hearts = el('span', 'gm-chip', top);
   const levelChip = el('span', 'gm-chip', top);
+  const clock = el('span', 'gm-chip gm-clock', top);
   const score = el('span', 'gm-chip gm-score', top);
   const mult = el('div', 'gm-mult', hud);
   const ammo = el('div', 'gm-ammo', hud);
@@ -271,7 +275,7 @@ export async function startMerguez(options) {
       sfx.speedup();
     } else if (e.type === 'level') {
       sfx.good();
-      showPop(tx('cleared', { level: rules.levels[e.index].name[lang], bonus: fmt(e.bonus) }), 2300);
+      showPop(tx('cleared', { level: rules.levels[e.index].name[lang], time: fmt(e.timeBonus), hearts: fmt(e.heartBonus) }), 2600);
     } else if (e.type === 'over') {
       over = true;
       if (e.won) {
@@ -291,6 +295,11 @@ export async function startMerguez(options) {
   function hudUpdate() {
     hearts.textContent = '❤'.repeat(Math.max(0, rules.hearts)) + '♡'.repeat(Math.max(0, HEARTS - rules.hearts));
     levelChip.textContent = `${rules.station + 1}/${rules.stationCount()}`;
+    // The level's stopwatch: orange near the par time, red past it (no more time bonus).
+    const secs = Math.floor(rules.levelTime);
+    clock.textContent = `⏱ ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    clock.classList.toggle('is-late', rules.levelTime > rules.par());
+    clock.classList.toggle('is-near', rules.levelTime <= rules.par() && rules.levelTime > rules.par() - 20);
     score.textContent = fmt(rules.score);
     const m = rules.mult();
     mult.textContent = m > 1 ? `×${m}` : '';

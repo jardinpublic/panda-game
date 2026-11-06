@@ -31,6 +31,8 @@ const STAY = 0.35; // after a throw, the hero stays out this long, then ducks ba
 const QUEUE = 2; // taps waiting to be thrown
 const DODGE = 0.6; // a throw misses a hero who moved this far since it was thrown (m)
 const COMBO_STEP = 3;
+export const TIME_BONUS = 250; // points per second under a level's par time
+const HEART_BONUS = 500; // points per heart left at the end of a level
 const MAX_MULT = 5;
 
 /** Every weapon: damage, throws per second, clip, flight speed (m/s), and how it behaves. */
@@ -291,6 +293,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.yaw = clamp(y, -0.75, 0.75);
     r.pitch = clamp(p, -0.35, 0.35);
   };
+  /** The par time of the level being played (seconds). */
+  r.par = () => levels[r.level].par;
   r.mult = () => Math.min(MAX_MULT, 1 + Math.floor(r.combo / COMBO_STEP));
   r.stationCount = () => levels[r.level].stations.length;
   r.boss = () => r.foes.find((f) => f.kind === 'boss') || null;
@@ -521,11 +525,13 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
         r.events.push({ type: 'cleared', index: r.station });
       } else {
         const L = levels[r.level];
-        const bonus = r.hearts * 500 + Math.max(0, Math.round(L.par - r.levelTime)) * 20;
+        const timeBonus = Math.max(0, Math.round(L.par - r.levelTime)) * TIME_BONUS;
+        const heartBonus = r.hearts * HEART_BONUS;
+        const bonus = timeBonus + heartBonus;
         r.score += bonus;
         r.phase = 'levelDone';
         r.phaseT = 0;
-        r.events.push({ type: 'level', index: r.level, bonus, time: r.levelTime });
+        r.events.push({ type: 'level', index: r.level, bonus, timeBonus, heartBonus, time: r.levelTime });
       }
     } else if (r.phase === 'move' && r.phaseT >= 1.3) {
       r.station++;

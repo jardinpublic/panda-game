@@ -169,6 +169,14 @@ describe('Golden Merguez rules', () => {
     expect(r.rise).toBe(0); // back in cover without doing anything
   });
 
+  it('pays for speed: 250 points per second under the par time', () => {
+    const { events } = play({ hero: 'panda', seed: 3 }, botInput);
+    const level = events.find((e) => e.type === 'level');
+    expect(level.timeBonus).toBe(Math.max(0, Math.round(LEVELS[0].par - level.time)) * 250);
+    expect(level.timeBonus).toBeGreaterThan(5000);
+    expect(level.bonus).toBe(level.timeBonus + level.heartBonus);
+  });
+
   it('gives a heart back between levels', () => {
     const r = createRules({ hero: 'panda', random: seeded(1) });
     r.hearts = 2;
@@ -179,4 +187,10 @@ describe('Golden Merguez rules', () => {
     expect(r.level).toBe(1);
     expect(r.hearts).toBe(3);
   });
+});
+
+it('loads the game screen module (catches a broken text or syntax error the rules tests do not see)', async () => {
+  const m = await import('../src/merguez/index.js');
+  expect(typeof m.startMerguez).toBe('function');
+  expect(m.PLAYABLE).toBe(LEVELS.length);
 });

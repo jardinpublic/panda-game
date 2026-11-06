@@ -53,7 +53,8 @@ peeks out as an opponent or gets hit as the hero: « Je suis une proie facile ! 
 - Hit: 10 × damage × combo. In the face: « En pleine poire ! » +50 × combo.
 - Opponent out: +300 × combo. Boss out: +5,000.
 - Combo: ×1, +1 every 3 hits in a row, up to ×5. Reset when the hero is hit.
-- End of level: +500 per heart left, +20 per second under the par time.
+- End of level: +250 per second under the par time (a ⏱ stopwatch on screen,
+  orange near par, red past it) and +500 per heart left.
 - A run is the levels in a row until the hearts run out.
 
 ## Levels
