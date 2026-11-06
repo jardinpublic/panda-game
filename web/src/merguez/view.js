@@ -270,6 +270,17 @@ export function createView({ canvas, rules }) {
     return new THREE.Vector3(x, y, z);
   }
 
+  /** The shout comes out of a flying megaphone, growing as it travels. */
+  function shoutFrom(sp, k, hidden = false) {
+    if (!sp.userData.words) sp.userData.words = wordSprite();
+    const w = sp.userData.words;
+    w.visible = !hidden;
+    const g = 0.35 + 0.65 * k;
+    w.scale.set(2.4 * g, 0.6 * g, 1);
+    w.position.copy(sp.position);
+    w.position.y += 0.32 * g;
+  }
+
   function render(dt) {
     t += dt;
     if (rules.level !== shownLevel) loadLevel(rules.level);
@@ -334,6 +345,7 @@ export function createView({ canvas, rules }) {
       sp.position.lerpVectors(from, to, k);
       sp.position.y += Math.sin(k * Math.PI) * Math.min(1.2, s.dist * 0.05);
       sp.material.rotation = t * spin;
+      if (s.kind === 'megaphone') shoutFrom(sp, k);
     }
     // Their throws: from their hand to the hero's face.
     for (const s of rules.incoming) {
@@ -352,9 +364,13 @@ export function createView({ canvas, rules }) {
       sp.position.lerpVectors(sp.userData.from, to, k);
       sp.position.y += Math.sin(k * Math.PI) * 1.1;
       sp.material.rotation = t * sp.userData.spin;
+      if (s.kind === 'megaphone') shoutFrom(sp, k, s.t < 0);
     }
     for (const [s, sp] of flying) {
       if (live.has(s)) continue;
+      // The shout lingers where the megaphone landed, floating up
+      const w = sp.userData.words;
+      if (w) fx.push({ s: w, vx: 0, vy: 0.9, vz: 0, life: 1.2, grav: 0 });
       scene.remove(sp);
       flying.delete(s);
     }
@@ -376,42 +392,31 @@ export function createView({ canvas, rules }) {
   }
 
   const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', megaphone: '#e8e4dc', treuffe: '#c9a36a', mouchoir: '#ffffff', sacdos: '#f1ece0', sardine: '#9ab7d4' };
-  /** Words floating up in the scene (Cous's megaphones). */
+  /** « Tu es creux ! », the shout of Cous's megaphones, as a sprite. */
   const SHOUT = 'Tu es creux !';
-  function words(text, x, y, z) {
-    const cv = document.createElement('canvas');
-    cv.width = 512;
-    cv.height = 128;
-    const c = cv.getContext('2d');
-    c.font = '800 64px Fredoka, sans-serif';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.lineWidth = 12;
-    c.strokeStyle = '#ef2d6b';
-    c.strokeText(text, 256, 64);
-    c.fillStyle = '#ffffff';
-    c.fillText(text, 256, 64);
-    const s = sprite(cv, 2.4, 0.6, [0.5, 0.5]);
+  let shoutCv = null;
+  function wordSprite() {
+    if (!shoutCv) {
+      shoutCv = document.createElement('canvas');
+      shoutCv.width = 512;
+      shoutCv.height = 128;
+      const c = shoutCv.getContext('2d');
+      c.font = '800 64px Fredoka, sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.lineWidth = 12;
+      c.strokeStyle = '#ef2d6b';
+      c.strokeText(SHOUT, 256, 64);
+      c.fillStyle = '#ffffff';
+      c.fillText(SHOUT, 256, 64);
+    }
+    const s = sprite(shoutCv, 2.4, 0.6, [0.5, 0.5]);
     s.material.depthTest = false;
     s.renderOrder = 6;
-    s.position.set(x, y, z);
-    fx.push({ s, vx: 0, vy: 0.9, vz: 0, life: 1.4, grav: 0 });
+    return s;
   }
 
   function event(e) {
-    if (e.type === 'hit' && e.kind === 'megaphone') {
-      const f = rules.foes.find((x) => x.id === e.foe);
-      if (f) {
-        const p = rules.foePos(f);
-        words(SHOUT, p.x, 2.2, p.z);
-      }
-    } else if (e.type === 'throw' && e.weapon === 'megaphone' && !e.mine) {
-      const f = rules.foes.find((x) => x.id === e.foe);
-      if (f) {
-        const p = rules.foePos(f);
-        words(SHOUT, p.x, 2.3, p.z);
-      }
-    }
     if (e.type === 'hit' || e.type === 'ko') {
       const f = rules.foes.find((x) => x.id === e.foe);
       if (!f) return;
