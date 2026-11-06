@@ -33,11 +33,11 @@ from any of them: no spy, no levels, no music, no look.
 | Babar | Mollards, and every 5th throw a Chorizo | fast, light |
 | Cous | Shots de Cointreau-saucisse | 3 at once, spread |
 | Mamar | Andouille | slow, heavy |
-| Victor | Crottes de nez | very fast, very light |
+| Victor | Loulous (his word for crottes de nez) | very fast, very light |
 | Romain | Gardon | bounces to another opponent if the first ducks |
 | Eugénie | Rouleau à pâtisserie | slow, heavy |
 | Violaine | Archet de violon | goes through cover (half damage) |
-| Aline | Roses | curve towards the target (wider aim assist) |
+| Aline | Treuffes (Burgundy for potatoes) | curve towards the target (wider aim assist) |
 | Greg | Côte de bœuf XXXXL | very slow, huge |
 | Jojo (opponent only) | Mouchoirs | 4 at once, spread |
 | Rudy (boss) | Poisson-chat | bounces |

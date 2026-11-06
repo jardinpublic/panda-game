@@ -44,7 +44,7 @@ export const WEAPONS = {
   gardon: { dmg: 2, rate: 2.6, clip: 8, speed: 22, bounce: true },
   rouleau: { dmg: 4, rate: 1.1, clip: 4, speed: 21 },
   archet: { dmg: 3, rate: 2, clip: 6, speed: 26, pierce: true },
-  rose: { dmg: 2, rate: 2.6, clip: 8, speed: 20, assist: 0.2 },
+  treuffe: { dmg: 2, rate: 2.6, clip: 8, speed: 20, assist: 0.2 },
   cote: { dmg: 6, rate: 0.8, clip: 3, speed: 20 },
   mouchoir: { dmg: 1, rate: 1.6, clip: 6, speed: 18, n: 4, spread: 0.09 },
   poissonchat: { dmg: 3, rate: 1.6, clip: 6, speed: 20, bounce: true },
@@ -59,7 +59,7 @@ export const WEAPONS = {
 
 export const WEAPON_OF = {
   panda: 'merguez', babar: 'mollard', cous: 'shot', mamar: 'andouille', victor: 'crotte', romain: 'gardon',
-  eugenie: 'rouleau', violaine: 'archet', aline: 'rose', greg: 'cote', jojo: 'mouchoir',
+  eugenie: 'rouleau', violaine: 'archet', aline: 'treuffe', greg: 'cote', jojo: 'mouchoir',
   rudy: 'poissonchat', jose: 'sardine', lamoule: 'poulet', gogol: 'boule', pineur: 'boule', gardien: 'pomme',
   controleur: 'pv', videur: 'glacon', proprio: 'pantoufle', flic: 'pv', chasseur: 'pomme',
 };

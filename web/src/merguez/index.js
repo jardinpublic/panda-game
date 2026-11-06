@@ -235,7 +235,7 @@ export async function startMerguez(options) {
     void shell.offsetWidth;
     shell.classList.add('gm-shake');
   }
-  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', andouille: '#8f7a6c', merguez: '#b8402c', chorizo: '#a3221d', rose: '#d8243c', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
+  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', andouille: '#8f7a6c', merguez: '#b8402c', chorizo: '#a3221d', treuffe: '#c9a36a', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
 
   let over = false;
   function handle(e) {

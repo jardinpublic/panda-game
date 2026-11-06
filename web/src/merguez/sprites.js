@@ -262,17 +262,14 @@ export function drawWeapon(c, kind, s) {
       c.fillStyle = '#1e1a18';
       c.fill();
       break;
-    case 'rose':
-      c.strokeStyle = '#2f8a3e';
-      c.lineWidth = s * 0.05;
-      c.beginPath();
-      c.moveTo(0, s * 0.05);
-      c.lineTo(s * 0.05, s * 0.45);
-      c.stroke();
-      ellipse(c, s * 0.1, s * 0.25, s * 0.09, s * 0.04, '#3aa04c', 0.6);
-      circle(c, 0, -s * 0.1, s * 0.2, '#d8243c');
-      circle(c, -s * 0.06, -s * 0.14, s * 0.11, '#ef3e58');
-      circle(c, s * 0.05, -s * 0.08, s * 0.08, '#b81a30');
+    case 'treuffe':
+      // A treuffe (Burgundy for a potato): a lumpy spud with its eyes
+      c.rotate(-0.3);
+      ellipse(c, 0, 0, s * 0.34, s * 0.24, '#b98a52');
+      ellipse(c, s * 0.12, -s * 0.06, s * 0.18, s * 0.16, '#c99a5e');
+      ellipse(c, -s * 0.12, s * 0.06, s * 0.16, s * 0.13, '#a97a46');
+      ellipse(c, -s * 0.08, -s * 0.1, s * 0.14, s * 0.05, 'rgba(255,240,210,0.45)', -0.2);
+      for (const [ex, ey] of [[-0.18, 0.02], [0.05, 0.1], [0.2, -0.08], [-0.02, -0.12]]) circle(c, s * ex, s * ey, s * 0.022, '#6e4a26');
       break;
     case 'cote':
       ellipse(c, 0, 0, s * 0.42, s * 0.3, '#9e3b2d');

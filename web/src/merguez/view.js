@@ -375,7 +375,7 @@ export function createView({ canvas, rules }) {
     renderer.render(scene, camera);
   }
 
-  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', rose: '#d8243c', mouchoir: '#ffffff', gardon: '#c7d3dc', sardine: '#9ab7d4' };
+  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', treuffe: '#c9a36a', mouchoir: '#ffffff', gardon: '#c7d3dc', sardine: '#9ab7d4' };
   function event(e) {
     if (e.type === 'hit' || e.type === 'ko') {
       const f = rules.foes.find((x) => x.id === e.foe);
