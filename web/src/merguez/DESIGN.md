@@ -31,7 +31,7 @@ from any of them: no spy, no levels, no music, no look.
 |---|---|---|
 | Panda | Merguez | all-round |
 | Babar | Cubis d'rouge Villageoise | slow, heavy, splashes red |
-| Cous | Shots de Cointreau-saucisse | 3 at once, spread |
+| Cous | Mégaphones that shout « Tu es creux ! » when they land | medium, solid |
 | Mamar | Citrouilles | slow, heavy |
 | Victor | Loulous (his word for crottes de nez) | very fast, very light |
 | Romain | Sacs d'os (little skeletons) | bounce to another opponent if the first ducks |

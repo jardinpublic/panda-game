@@ -37,7 +37,7 @@ const MAX_MULT = 5;
 export const WEAPONS = {
   merguez: { dmg: 2, rate: 3, clip: 8, speed: 24 },
   cubi: { dmg: 5, rate: 0.9, clip: 3, speed: 19 },
-  shot: { dmg: 1, rate: 1.8, clip: 6, speed: 22, n: 3, spread: 0.07 },
+  megaphone: { dmg: 3, rate: 1.5, clip: 5, speed: 20, shout: true },
   citrouille: { dmg: 4, rate: 1.2, clip: 4, speed: 21 },
   crotte: { dmg: 1, rate: 6, clip: 16, speed: 30 },
   sacdos: { dmg: 2, rate: 2.6, clip: 8, speed: 22, bounce: true },
@@ -57,7 +57,7 @@ export const WEAPONS = {
 };
 
 export const WEAPON_OF = {
-  panda: 'merguez', babar: 'cubi', cous: 'shot', mamar: 'citrouille', victor: 'crotte', romain: 'sacdos',
+  panda: 'merguez', babar: 'cubi', cous: 'megaphone', mamar: 'citrouille', victor: 'crotte', romain: 'sacdos',
   eugenie: 'rouleau', violaine: 'archet', aline: 'treuffe', greg: 'cote', jojo: 'mouchoir',
   rudy: 'museau', jose: 'sardine', lamoule: 'poulet', gogol: 'boule', pineur: 'boule', gardien: 'pomme',
   controleur: 'pv', videur: 'glacon', proprio: 'pantoufle', flic: 'pv', chasseur: 'pomme',
@@ -335,7 +335,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.events.push({ type: 'throw', who: hero, weapon: kind, mine: true });
   }
 
-  function hitFoe(f, dmg, head, how = '') {
+  function hitFoe(f, dmg, head, how = '', kind = weapon) {
     const real = head ? dmg * 2 : dmg;
     f.hp -= real;
     f.hurt = 0.35;
@@ -343,7 +343,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.combo++;
     const m = r.mult();
     r.score += 10 * real * m + (head ? 50 * m : 0);
-    r.events.push({ type: 'hit', foe: f.id, who: f.who, head, dmg: real, how, mult: m });
+    r.events.push({ type: 'hit', foe: f.id, who: f.who, head, dmg: real, how, mult: m, kind });
     if (f.who === 'mamar' && f.said <= 0) {
       f.said = 4;
       r.say('mamar', 'proie');
@@ -360,11 +360,11 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   function land(s) {
     const f = r.foes.find((x) => x.id === s.target);
     // Still out, or not yet fully back behind the cover: it lands.
-    if (f && f.state !== 'ko' && (visible(f) || f.peek > 0.35)) return hitFoe(f, s.dmg, s.head);
-    if (f && f.state !== 'ko' && s.pierce) return hitFoe(f, Math.max(1, Math.floor(s.dmg / 2)), false, 'pierce');
+    if (f && f.state !== 'ko' && (visible(f) || f.peek > 0.35)) return hitFoe(f, s.dmg, s.head, '', s.kind);
+    if (f && f.state !== 'ko' && s.pierce) return hitFoe(f, Math.max(1, Math.floor(s.dmg / 2)), false, 'pierce', s.kind);
     if (s.bounce) {
       const other = r.foes.find((x) => x.state !== 'ko' && visible(x));
-      if (other) return hitFoe(other, Math.max(1, Math.floor(s.dmg / 2)), false, 'bounce');
+      if (other) return hitFoe(other, Math.max(1, Math.floor(s.dmg / 2)), false, 'bounce', s.kind);
     }
     r.events.push({ type: 'miss', foe: f?.id ?? null, kind: s.kind, cover: !!f });
   }

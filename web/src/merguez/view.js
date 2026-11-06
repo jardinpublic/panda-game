@@ -361,11 +361,11 @@ export function createView({ canvas, rules }) {
     // Bursts
     for (const p of fx) {
       p.life -= dt;
-      p.vy -= 9 * dt;
+      p.vy -= (p.grav ?? 9) * dt;
       p.s.position.x += p.vx * dt;
       p.s.position.y += p.vy * dt;
       p.s.position.z += p.vz * dt;
-      p.s.material.opacity = Math.max(0, p.life / 0.6);
+      p.s.material.opacity = Math.max(0, Math.min(1, p.life / 0.6));
     }
     for (let i = fx.length - 1; i >= 0; i--) {
       if (fx[i].life > 0) continue;
@@ -375,8 +375,43 @@ export function createView({ canvas, rules }) {
     renderer.render(scene, camera);
   }
 
-  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', shot: '#f39a1e', treuffe: '#c9a36a', mouchoir: '#ffffff', sacdos: '#f1ece0', sardine: '#9ab7d4' };
+  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', megaphone: '#e8e4dc', treuffe: '#c9a36a', mouchoir: '#ffffff', sacdos: '#f1ece0', sardine: '#9ab7d4' };
+  /** Words floating up in the scene (Cous's megaphones). */
+  const SHOUT = 'Tu es creux !';
+  function words(text, x, y, z) {
+    const cv = document.createElement('canvas');
+    cv.width = 512;
+    cv.height = 128;
+    const c = cv.getContext('2d');
+    c.font = '800 64px Fredoka, sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.lineWidth = 12;
+    c.strokeStyle = '#ef2d6b';
+    c.strokeText(text, 256, 64);
+    c.fillStyle = '#ffffff';
+    c.fillText(text, 256, 64);
+    const s = sprite(cv, 2.4, 0.6, [0.5, 0.5]);
+    s.material.depthTest = false;
+    s.renderOrder = 6;
+    s.position.set(x, y, z);
+    fx.push({ s, vx: 0, vy: 0.9, vz: 0, life: 1.4, grav: 0 });
+  }
+
   function event(e) {
+    if (e.type === 'hit' && e.kind === 'megaphone') {
+      const f = rules.foes.find((x) => x.id === e.foe);
+      if (f) {
+        const p = rules.foePos(f);
+        words(SHOUT, p.x, 2.2, p.z);
+      }
+    } else if (e.type === 'throw' && e.weapon === 'megaphone' && !e.mine) {
+      const f = rules.foes.find((x) => x.id === e.foe);
+      if (f) {
+        const p = rules.foePos(f);
+        words(SHOUT, p.x, 2.3, p.z);
+      }
+    }
     if (e.type === 'hit' || e.type === 'ko') {
       const f = rules.foes.find((x) => x.id === e.foe);
       if (!f) return;

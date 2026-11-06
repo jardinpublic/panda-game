@@ -216,24 +216,33 @@ export function drawWeapon(c, kind, s) {
       circle(c, -s * 0.08 * big, -s * 0.07 * big, s * 0.07 * big, 'rgba(255,255,255,0.75)');
       break;
     }
-    case 'shot':
-      c.fillStyle = 'rgba(230,240,255,0.85)';
+    case 'megaphone':
+      // A megaphone: white cone, red ring, black handle, sound waves
+      c.rotate(-0.25);
+      c.fillStyle = '#f4f1ea';
       c.beginPath();
-      c.moveTo(-s * 0.2, -s * 0.3);
-      c.lineTo(s * 0.2, -s * 0.3);
-      c.lineTo(s * 0.15, s * 0.3);
-      c.lineTo(-s * 0.15, s * 0.3);
+      c.moveTo(-s * 0.3, -s * 0.08);
+      c.lineTo(s * 0.2, -s * 0.24);
+      c.lineTo(s * 0.2, s * 0.24);
+      c.lineTo(-s * 0.3, s * 0.08);
       c.closePath();
       c.fill();
-      c.fillStyle = '#f39a1e';
-      c.beginPath();
-      c.moveTo(-s * 0.18, -s * 0.12);
-      c.lineTo(s * 0.18, -s * 0.12);
-      c.lineTo(s * 0.15, s * 0.25);
-      c.lineTo(-s * 0.15, s * 0.25);
-      c.closePath();
+      ellipse(c, s * 0.2, 0, s * 0.06, s * 0.24, '#d8243c');
+      ellipse(c, s * 0.21, 0, s * 0.035, s * 0.18, '#3a3644');
+      rrect(c, -s * 0.36, -s * 0.09, s * 0.1, s * 0.18, s * 0.03);
+      c.fillStyle = '#d8243c';
       c.fill();
-      ellipse(c, s * 0.16, -s * 0.32, s * 0.12, s * 0.07, '#b8402c', 0.4); // the sausage slice
+      rrect(c, -s * 0.18, s * 0.06, s * 0.07, s * 0.2, s * 0.03);
+      c.fillStyle = '#2b2b33';
+      c.fill();
+      c.strokeStyle = '#2b2b33';
+      c.lineWidth = s * 0.025;
+      c.lineCap = 'round';
+      for (const r of [0.32, 0.42]) {
+        c.beginPath();
+        c.arc(s * 0.1, 0, s * r, -0.5, 0.5);
+        c.stroke();
+      }
       break;
     case 'sacdos': {
       // A "sac d'os": a little cartoon skeleton, arms and legs flailing

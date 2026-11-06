@@ -79,8 +79,8 @@ const CSS = `
 
 const T = {
   fr: {
-    quit: 'Quitter', hold: 'Tape sur quelqu’un pour lui lancer ta {w} ! Après, te r’tournes à couvert tout seul.',
-    tuto1: 'Tape sur <b>quelqu’un</b> pour lui lancer ta {w} !', tuto2: 'Un <b>!</b> rouge ? Y va lancer : attends à couvert… pis tape-le quand y ressort !', tuto3: 'Vise <b>la tête</b> : en pleine poire, ça paie double !', go: 'C’est parti !',
+    quit: 'Quitter', hold: 'Tape sur quelqu’un pour y lancer un coup d’{w} ! Après, te r’tournes à couvert tout seul.',
+    tuto1: 'Tape sur <b>quelqu’un</b> pour y lancer un coup d’{w} !', tuto2: 'Un <b>!</b> rouge ? Y va lancer : attends à couvert… pis tape-le quand y ressort !', tuto3: 'Vise <b>la tête</b> : en pleine poire, ça paie double !', go: 'C’est parti !',
     soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
@@ -235,7 +235,7 @@ export async function startMerguez(options) {
     void shell.offsetWidth;
     shell.classList.add('gm-shake');
   }
-  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', shot: '#f39a1e', citrouille: '#f08a24', museau: '#e7a9a0', merguez: '#b8402c', treuffe: '#c9a36a', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
+  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', megaphone: '#e8e4dc', citrouille: '#f08a24', museau: '#e7a9a0', merguez: '#b8402c', treuffe: '#c9a36a', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
 
   let over = false;
   function handle(e) {

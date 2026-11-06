@@ -7,7 +7,7 @@ export const NAMES = {
 
 export const WEAPON_NAMES = {
   merguez: { fr: 'Merguez', en: 'Merguez' }, cubi: { fr: 'Cubis d’rouge Villageoise', en: 'Villageoise red wine boxes' },
-  shot: { fr: 'Shots de Cointreau-saucisse', en: 'Cointreau-sausage shots' }, citrouille: { fr: 'Citrouilles', en: 'Pumpkins' },
+  megaphone: { fr: 'Mégaphones', en: 'Megaphones' }, citrouille: { fr: 'Citrouilles', en: 'Pumpkins' },
   crotte: { fr: 'Loulous', en: 'Loulous (bogeys)' }, sacdos: { fr: 'Sacs d’os', en: 'Bags of bones' }, rouleau: { fr: 'Rouleau à pâtisserie', en: 'Rolling pin' },
   archet: { fr: 'Archet de violon', en: 'Violin bow' }, treuffe: { fr: 'Treuffes', en: 'Treuffes (spuds)' }, cote: { fr: 'Côte de bœuf XXXXL', en: 'XXXXL rib steak' },
   mouchoir: { fr: 'Mouchoirs', en: 'Tissues' }, museau: { fr: 'Salade de museau', en: 'Snout salad' }, sardine: { fr: 'Sardines', en: 'Sardines' },
