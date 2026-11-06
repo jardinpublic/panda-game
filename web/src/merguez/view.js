@@ -12,7 +12,7 @@ import { ENV, buildDecor, buildCover } from './decor.js';
 
 const CHAR_SIZE = 1.9; // metres, a character's billboard height
 const SINK = 1.08; // how far a hiding character crouches
-const HEAVY = { andouille: 1, rouleau: 1, cote: 1, poulet: 1, chorizo: 1, poissonchat: 1 };
+const HEAVY = { citrouille: 1, rouleau: 1, cote: 1, poulet: 1, cubi: 1, museau: 1 };
 
 function seeded(seed) {
   let x = seed;
@@ -375,7 +375,7 @@ export function createView({ canvas, rules }) {
     renderer.render(scene, camera);
   }
 
-  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', treuffe: '#c9a36a', mouchoir: '#ffffff', gardon: '#c7d3dc', sardine: '#9ab7d4' };
+  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', shot: '#f39a1e', treuffe: '#c9a36a', mouchoir: '#ffffff', sacdos: '#f1ece0', sardine: '#9ab7d4' };
   function event(e) {
     if (e.type === 'hit' || e.type === 'ko') {
       const f = rules.foes.find((x) => x.id === e.foe);

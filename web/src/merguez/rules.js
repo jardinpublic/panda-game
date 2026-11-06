@@ -36,18 +36,17 @@ const MAX_MULT = 5;
 /** Every weapon: damage, throws per second, clip, flight speed (m/s), and how it behaves. */
 export const WEAPONS = {
   merguez: { dmg: 2, rate: 3, clip: 8, speed: 24 },
-  mollard: { dmg: 1, rate: 5, clip: 12, speed: 28, every: 5, big: 'chorizo' },
-  chorizo: { dmg: 4, rate: 1, clip: 1, speed: 20 },
+  cubi: { dmg: 5, rate: 0.9, clip: 3, speed: 19 },
   shot: { dmg: 1, rate: 1.8, clip: 6, speed: 22, n: 3, spread: 0.07 },
-  andouille: { dmg: 4, rate: 1.2, clip: 4, speed: 21 },
+  citrouille: { dmg: 4, rate: 1.2, clip: 4, speed: 21 },
   crotte: { dmg: 1, rate: 6, clip: 16, speed: 30 },
-  gardon: { dmg: 2, rate: 2.6, clip: 8, speed: 22, bounce: true },
+  sacdos: { dmg: 2, rate: 2.6, clip: 8, speed: 22, bounce: true },
   rouleau: { dmg: 4, rate: 1.1, clip: 4, speed: 21 },
   archet: { dmg: 3, rate: 2, clip: 6, speed: 26, pierce: true },
   treuffe: { dmg: 2, rate: 2.6, clip: 8, speed: 20, assist: 0.2 },
   cote: { dmg: 6, rate: 0.8, clip: 3, speed: 20 },
   mouchoir: { dmg: 1, rate: 1.6, clip: 6, speed: 18, n: 4, spread: 0.09 },
-  poissonchat: { dmg: 3, rate: 1.6, clip: 6, speed: 20, bounce: true },
+  museau: { dmg: 3, rate: 1.6, clip: 6, speed: 20, bounce: true },
   sardine: { dmg: 1, rate: 4, clip: 12, speed: 26, n: 2, spread: 0.05 },
   poulet: { dmg: 4, rate: 1, clip: 4, speed: 20 },
   boule: { dmg: 2, rate: 1, clip: 3, speed: 16 },
@@ -58,9 +57,9 @@ export const WEAPONS = {
 };
 
 export const WEAPON_OF = {
-  panda: 'merguez', babar: 'mollard', cous: 'shot', mamar: 'andouille', victor: 'crotte', romain: 'gardon',
+  panda: 'merguez', babar: 'cubi', cous: 'shot', mamar: 'citrouille', victor: 'crotte', romain: 'sacdos',
   eugenie: 'rouleau', violaine: 'archet', aline: 'treuffe', greg: 'cote', jojo: 'mouchoir',
-  rudy: 'poissonchat', jose: 'sardine', lamoule: 'poulet', gogol: 'boule', pineur: 'boule', gardien: 'pomme',
+  rudy: 'museau', jose: 'sardine', lamoule: 'poulet', gogol: 'boule', pineur: 'boule', gardien: 'pomme',
   controleur: 'pv', videur: 'glacon', proprio: 'pantoufle', flic: 'pv', chasseur: 'pomme',
 };
 

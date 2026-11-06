@@ -30,17 +30,17 @@ from any of them: no spy, no levels, no music, no look.
 | Who | Weapon | Feel |
 |---|---|---|
 | Panda | Merguez | all-round |
-| Babar | Mollards, and every 5th throw a Chorizo | fast, light |
+| Babar | Cubis d'rouge Villageoise | slow, heavy, splashes red |
 | Cous | Shots de Cointreau-saucisse | 3 at once, spread |
-| Mamar | Andouille | slow, heavy |
+| Mamar | Citrouilles | slow, heavy |
 | Victor | Loulous (his word for crottes de nez) | very fast, very light |
-| Romain | Gardon | bounces to another opponent if the first ducks |
+| Romain | Sacs d'os (little skeletons) | bounce to another opponent if the first ducks |
 | Eugénie | Rouleau à pâtisserie | slow, heavy |
 | Violaine | Archet de violon | goes through cover (half damage) |
 | Aline | Treuffes (Burgundy for potatoes) | curve towards the target (wider aim assist) |
 | Greg | Côte de bœuf XXXXL | very slow, huge |
 | Jojo (opponent only) | Mouchoirs | 4 at once, spread |
-| Rudy (boss) | Poisson-chat | bounces |
+| Rudy (boss) | Salade de museau | bounces |
 | José (boss) | Sardines | fast, spread |
 | Lamoule (boss) | Poulet | heavy |
 
@@ -59,10 +59,10 @@ peeks out as an opponent or gets hit as the hero: « Je suis une proie facile ! 
 ## Levels
 
 1. Eul' Jardin Public — boss **Lamoule** behind José's 205 (step 1).
-2. Montceau station — boss **Romain** and his gardons (later).
-3. Le Molière — boss **José** (later).
-4. Cous's garage street — boss **Babar**, mollards and chorizo (later).
-5. The CRAPA woods at night — final boss **Rudy** (later).
+2. Montceau station — boss **Romain** and his sacs d'os.
+3. Le Molière — boss **José**.
+4. Cous's garage street — boss **Babar** and his wine boxes.
+5. The CRAPA woods at night — final boss **Rudy**.
 
 Lamoule, José and Rudy come in that order. When the hero is Babar or Romain,
 their boss is played by another gang member (never yourself).

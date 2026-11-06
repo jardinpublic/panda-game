@@ -175,26 +175,37 @@ export function drawWeapon(c, kind, s) {
         c.stroke();
       }
       break;
-    case 'chorizo':
-      sausage(c, s, '#a3221d', '#5e0f0c', { thick: 0.26, len: 0.8 });
-      for (let i = 0; i < 7; i++) circle(c, -s * 0.3 + i * s * 0.1, ((i * 7) % 5) - 2, 3, 'rgba(255,240,220,0.8)');
-      c.strokeStyle = '#efe6d2';
-      c.lineWidth = 3;
-      c.beginPath();
-      c.moveTo(s * 0.4, s * 0.1);
-      c.lineTo(s * 0.48, -s * 0.02);
-      c.stroke();
+    case 'cubi':
+      // A cubi of red wine: a cardboard box with its handle hole, a wine label and the tap
+      c.rotate(-0.15);
+      rrect(c, -s * 0.3, -s * 0.3, s * 0.6, s * 0.56, s * 0.04);
+      c.fillStyle = '#d9b98a';
+      c.fill();
+      rrect(c, -s * 0.12, -s * 0.27, s * 0.24, s * 0.06, s * 0.03);
+      c.fillStyle = '#7a5a36';
+      c.fill();
+      rrect(c, -s * 0.25, -s * 0.16, s * 0.5, s * 0.3, s * 0.03);
+      c.fillStyle = '#8e1b34';
+      c.fill();
+      for (const [gx, gy] of [[-0.1, -0.08], [-0.04, -0.08], [-0.07, -0.03], [-0.01, -0.03], [-0.04, 0.02]]) circle(c, s * gx, s * gy, s * 0.028, '#b14ad0');
+      ellipse(c, -s * 0.02, -s * 0.12, s * 0.04, s * 0.02, '#4f7a2a', 0.5);
+      c.font = `800 ${Math.round(s * 0.07)}px Fredoka, sans-serif`;
+      c.textAlign = 'center';
+      c.fillStyle = '#f7e6c4';
+      c.fillText('VIN ROUGE', s * 0.1, s * 0.08);
+      rrect(c, s * 0.18, s * 0.24, s * 0.08, s * 0.08, s * 0.02);
+      c.fillStyle = '#2b2b33';
+      c.fill();
       break;
-    case 'andouille':
-      sausage(c, s, '#8f7a6c', '#4a3d34', { thick: 0.3, len: 0.85, bend: 0.2 });
-      c.strokeStyle = 'rgba(70,50,40,0.6)';
-      c.lineWidth = 2;
-      for (let i = -3; i <= 3; i++) {
-        c.beginPath();
-        c.arc(i * s * 0.1, 0, s * 0.08, 0.6, 2.4);
-        c.stroke();
-      }
+    case 'citrouille': {
+      // A pumpkin: orange ribs and its green stalk
+      for (const [dx, rx, col] of [[-0.2, 0.17, '#e0701c'], [0.2, 0.17, '#e0701c'], [-0.09, 0.2, '#f08a24'], [0.09, 0.2, '#f08a24'], [0, 0.2, '#f59a34']]) ellipse(c, s * dx, s * 0.04, s * rx, s * 0.28, col);
+      ellipse(c, -s * 0.1, -s * 0.08, s * 0.06, s * 0.12, 'rgba(255,230,170,0.45)', -0.3);
+      rrect(c, -s * 0.04, -s * 0.34, s * 0.08, s * 0.12, s * 0.03);
+      c.fillStyle = '#4f7a2a';
+      c.fill();
       break;
+    }
     case 'mollard':
     case 'crotte': {
       const big = kind === 'mollard' ? 1 : 0.6;
@@ -224,11 +235,42 @@ export function drawWeapon(c, kind, s) {
       c.fill();
       ellipse(c, s * 0.16, -s * 0.32, s * 0.12, s * 0.07, '#b8402c', 0.4); // the sausage slice
       break;
-    case 'gardon':
-      fish(c, s, '#c7d3dc', '#eef2f4', '#e0533c');
+    case 'sacdos': {
+      // A "sac d'os": a little cartoon skeleton, arms and legs flailing
+      const bone = '#f4efe2';
+      c.strokeStyle = bone;
+      c.lineCap = 'round';
+      c.lineWidth = s * 0.05;
+      const line = (x1, y1, x2, y2) => {
+        c.beginPath();
+        c.moveTo(s * x1, s * y1);
+        c.lineTo(s * x2, s * y2);
+        c.stroke();
+      };
+      line(0, -0.12, 0, 0.14); // spine
+      for (const y of [-0.06, 0.0, 0.06]) line(-0.09, y, 0.09, y); // ribs
+      line(0, -0.08, -0.22, -0.2); // arms up
+      line(0, -0.08, 0.22, -0.2);
+      line(0, 0.14, -0.14, 0.36); // legs
+      line(0, 0.14, 0.15, 0.34);
+      circle(c, 0, -0.26 * s, s * 0.13, bone); // skull
+      circle(c, -0.045 * s, -0.27 * s, s * 0.035, '#2b2620');
+      circle(c, 0.045 * s, -0.27 * s, s * 0.035, '#2b2620');
+      c.lineWidth = s * 0.02;
+      c.strokeStyle = '#2b2620';
+      line(-0.05, -0.18, 0.05, -0.18);
       break;
-    case 'poissonchat':
-      fish(c, s, '#6d6250', '#b9ad92', '#4e4638', { whiskers: true, len: 1 });
+    }
+    case 'museau':
+      // Salade de museau: a little glass bowl of pink slices, gherkins and parsley
+      ellipse(c, 0, s * 0.08, s * 0.36, s * 0.2, 'rgba(220,240,250,0.85)');
+      for (const [dx, dy, r] of [[-0.18, -0.02, 0.1], [0.02, -0.06, 0.11], [0.18, -0.01, 0.09], [-0.06, 0.06, 0.09], [0.12, 0.07, 0.08]]) {
+        ellipse(c, s * dx, s * dy, s * r, s * r * 0.6, '#e7a9a0');
+        ellipse(c, s * dx, s * dy, s * r * 0.55, s * r * 0.3, '#f4d6cc');
+      }
+      for (const [dx, dy] of [[-0.08, -0.1], [0.14, -0.1]]) ellipse(c, s * dx, s * dy, s * 0.05, s * 0.025, '#5d7a2e', 0.4);
+      for (const [dx, dy] of [[0.04, -0.14], [-0.2, -0.08], [0.24, 0.02]]) circle(c, s * dx, s * dy, s * 0.025, '#3aa04c');
+      ellipse(c, -s * 0.12, s * 0.16, s * 0.16, s * 0.04, 'rgba(255,255,255,0.6)');
       break;
     case 'sardine':
       fish(c, s * 0.8, '#5f86b0', '#dfe8f0', '#3f5f84', { len: 1.05 });

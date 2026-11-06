@@ -6,11 +6,11 @@ export const NAMES = {
 };
 
 export const WEAPON_NAMES = {
-  merguez: { fr: 'Merguez', en: 'Merguez' }, mollard: { fr: 'Mollards', en: 'Spit gobs' }, chorizo: { fr: 'Chorizo', en: 'Chorizo' },
-  shot: { fr: 'Shots de Cointreau-saucisse', en: 'Cointreau-sausage shots' }, andouille: { fr: 'Andouille', en: 'Andouille' },
-  crotte: { fr: 'Loulous', en: 'Loulous (bogeys)' }, gardon: { fr: 'Gardons', en: 'Roach fish' }, rouleau: { fr: 'Rouleau à pâtisserie', en: 'Rolling pin' },
+  merguez: { fr: 'Merguez', en: 'Merguez' }, cubi: { fr: 'Cubis d’rouge Villageoise', en: 'Villageoise red wine boxes' },
+  shot: { fr: 'Shots de Cointreau-saucisse', en: 'Cointreau-sausage shots' }, citrouille: { fr: 'Citrouilles', en: 'Pumpkins' },
+  crotte: { fr: 'Loulous', en: 'Loulous (bogeys)' }, sacdos: { fr: 'Sacs d’os', en: 'Bags of bones' }, rouleau: { fr: 'Rouleau à pâtisserie', en: 'Rolling pin' },
   archet: { fr: 'Archet de violon', en: 'Violin bow' }, treuffe: { fr: 'Treuffes', en: 'Treuffes (spuds)' }, cote: { fr: 'Côte de bœuf XXXXL', en: 'XXXXL rib steak' },
-  mouchoir: { fr: 'Mouchoirs', en: 'Tissues' }, poissonchat: { fr: 'Poisson-chat', en: 'Catfish' }, sardine: { fr: 'Sardines', en: 'Sardines' },
+  mouchoir: { fr: 'Mouchoirs', en: 'Tissues' }, museau: { fr: 'Salade de museau', en: 'Snout salad' }, sardine: { fr: 'Sardines', en: 'Sardines' },
   poulet: { fr: 'Poulet', en: 'Chicken' }, boule: { fr: 'Boules de pétanque', en: 'Pétanque balls' }, pomme: { fr: 'Pommes de pin', en: 'Pine cones' },
   pv: { fr: 'PV', en: 'Fines' }, glacon: { fr: 'Glaçons', en: 'Ice cubes' }, pantoufle: { fr: 'Pantoufles', en: 'Slippers' },
 };

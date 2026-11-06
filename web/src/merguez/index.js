@@ -84,7 +84,7 @@ const T = {
     soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
-    romain: 'Un gardon dans ta poire !', jose: 'Sardines à volonté !', babar: 'Héhéhé… ça va cracher !', rudy: 'Bienvenue dans mon CRAPA !',
+    romain: 'Un sac d’os dans ta poire !', jose: 'Sardines à volonté !', babar: 'Héhéhé… un p’tit coup d’rouge ?', rudy: 'Bienvenue dans mon CRAPA !',
     mamar: 'Je suis une proie facile… mais pas ce soir !', greg: 'Aux States, on fait des côtes plus grosses !',
     level: 'Niveau {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Arme : {w}',
   },
@@ -94,7 +94,7 @@ const T = {
     soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
     advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared! +{bonus}',
     end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
-    romain: 'A roach fish in your face!', jose: 'All-you-can-eat sardines!', babar: 'Hehehe… here comes the spit!', rudy: 'Welcome to my CRAPA!',
+    romain: 'A bag of bones in your face!', jose: 'All-you-can-eat sardines!', babar: 'Hehehe… fancy a glass of red?', rudy: 'Welcome to my CRAPA!',
     mamar: 'I’m easy prey… but not tonight!', greg: 'In the States, we grill bigger ribs!',
     level: 'Level {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Weapon: {w}',
   },
@@ -235,7 +235,7 @@ export async function startMerguez(options) {
     void shell.offsetWidth;
     shell.classList.add('gm-shake');
   }
-  const SPLAT = { mollard: '#d9f2c4', crotte: '#b8c95a', shot: '#f39a1e', andouille: '#8f7a6c', merguez: '#b8402c', chorizo: '#a3221d', treuffe: '#c9a36a', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
+  const SPLAT = { cubi: '#8e1b34', crotte: '#b8c95a', shot: '#f39a1e', citrouille: '#f08a24', museau: '#e7a9a0', merguez: '#b8402c', treuffe: '#c9a36a', mouchoir: '#ffffff', poulet: '#e0a050', boule: '#9aa2ac', pomme: '#7a4f2a' };
 
   let over = false;
   function handle(e) {
