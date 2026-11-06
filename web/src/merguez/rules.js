@@ -15,7 +15,7 @@ import { CAST_IDS } from '../marathon/art.js';
 export const HEARTS = 5;
 export const EYE_OUT = 1.45; // eye height out of cover
 export const EYE_IN = 1.15; // crouched behind cover (high enough to see over it)
-const OUT_TIME = 0.14; // popping out / ducking back
+const OUT_TIME = 0.09; // popping out / ducking back (quick: a fast tap beats a slow opponent)
 const RELOAD = 0.75; // seconds in cover to refill
 const TELL = 0.7; // an opponent's wind-up before throwing
 const THROW = 0.35; // stays out after throwing
@@ -359,6 +359,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
       r.kos++;
       r.score += f.kind === 'boss' ? 5000 : 300 * m;
       r.events.push({ type: 'ko', foe: f.id, who: f.who, boss: f.kind === 'boss' });
+      // Knocked out in time: what they had just thrown falls short.
+      r.incoming = r.incoming.filter((x) => x.foe !== f.id);
     }
   }
 
@@ -466,7 +468,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.cool = Math.max(0, r.cool - dt);
     r.tap = Math.max(0, r.tap - dt);
     // A tapped target: aim at it and throw (it is hit if still out, or not fully back, when it lands).
-    if (r.phase === 'fight' && r.rise >= 1 && r.queue.length && r.cool <= 0) {
+    if (r.phase === 'fight' && r.rise >= 0.7 && r.queue.length && r.cool <= 0) {
       const q = r.queue.shift();
       if (r.ammo <= 0) {
         r.queue = [];

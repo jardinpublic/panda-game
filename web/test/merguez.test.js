@@ -202,6 +202,39 @@ describe('Golden Merguez rules', () => {
     expect(byFoe.get(kos.find((e) => e.boss).foe)).toBeGreaterThan(1);
   });
 
+  it('a quick tap on someone winding up knocks them out before they can throw', () => {
+    const r = createRules({ hero: 'panda', random: seeded(5) });
+    let f = null;
+    for (let i = 0; i < 600 && !f; i++) {
+      r.step(1 / 60);
+      r.events.splice(0);
+      f = r.foes.find((x) => x.state === 'tell');
+    }
+    r.tapFoe(f.id, false);
+    const events = [];
+    for (let i = 0; i < 90; i++) {
+      r.step(1 / 60);
+      events.push(...r.events.splice(0));
+    }
+    expect(f.state).toBe('ko');
+    expect(events.some((e) => e.type === 'throw' && e.foe === f.id)).toBe(false);
+    expect(r.hearts).toBe(HEARTS);
+  });
+
+  it('knocking someone out stops what they just threw', () => {
+    const r = createRules({ hero: 'panda', random: seeded(6) });
+    let f = null;
+    for (let i = 0; i < 900 && !f; i++) {
+      r.step(1 / 60);
+      r.events.splice(0);
+      f = r.foes.find((x) => x.state === 'throw' && r.incoming.some((s) => s.foe === x.id));
+    }
+    r.tapFoe(f.id, false);
+    for (let i = 0; i < 40 && f.state !== 'ko'; i++) r.step(1 / 60);
+    expect(f.state).toBe('ko');
+    expect(r.incoming.some((s) => s.foe === f.id)).toBe(false);
+  });
+
   it('gives a heart back between levels', () => {
     const r = createRules({ hero: 'panda', random: seeded(1) });
     r.hearts = 2;
