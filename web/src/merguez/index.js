@@ -75,7 +75,7 @@ const CSS = `
 
 const T = {
   fr: {
-    quit: 'Quitter', hold: 'Glisse pour viser. ◀ ▶ pour t’décaler, DEBOUT pour sortir d’ta planque, et tape eul’ gros bouton pour lancer !', go: 'C’est parti !',
+    quit: 'Quitter', hold: 'Glisse pour viser, tape pour lancer ! ◀ ▶ pour t’décaler, À COUVERT pour t’planquer.', go: 'C’est parti !',
     soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
@@ -84,7 +84,7 @@ const T = {
     level: 'Niveau {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Arme : {w}',
   },
   en: {
-    quit: 'Quit', hold: 'Drag to aim. ◀ ▶ to slide along your cover, STAND to pop out, and tap the big button to throw!', go: 'Go!',
+    quit: 'Quit', hold: 'Drag to aim, tap to throw! ◀ ▶ to slide along your cover, TAKE COVER to hide.', go: 'Go!',
     soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
     advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared! +{bonus}',
     end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
@@ -124,7 +124,7 @@ export function castUrl(id) {
 }
 
 /** Levels open in this version (the others are still being built). */
-export const PLAYABLE = 1;
+export const PLAYABLE = 5;
 
 export async function startMerguez(options) {
   const { root } = options;
@@ -185,7 +185,7 @@ export async function startMerguez(options) {
   close.type = 'button';
   close.setAttribute('aria-label', tx('quit'));
 
-  const rules = createRules({ hero: options.hero || 'panda', random: options.random || Math.random, levels: LEVELS.slice(0, options.levels || PLAYABLE) });
+  const rules = createRules({ hero: options.hero || 'panda', random: options.random || Math.random, levels: LEVELS.slice(options.from || 0, (options.from || 0) + (options.levels || PLAYABLE)) });
   const view = createView({ canvas, rules });
   fireBtn.appendChild(weaponCanvas(rules.weapon, 132));
   fireBtn.setAttribute('aria-label', WEAPON_NAMES[rules.weapon][lang]);
@@ -193,7 +193,7 @@ export async function startMerguez(options) {
 
   // Level card
   const card = el('div', '', intro);
-  const L = LEVELS[0];
+  const L = rules.levels[0];
   el('h3', '', card, tx('level', { n: 1 }));
   el('h2', '', card, L.name[lang]);
   el('p', '', card, tx('weapon', { w: WEAPON_NAMES[rules.weapon][lang] }));
@@ -284,11 +284,11 @@ export async function startMerguez(options) {
       if (T[lang][e.who]) sayLine(e.who, tx(e.who));
     } else if (e.type === 'say' && e.text === 'proie') sayLine(e.who, tx('proie'));
     else if (e.type === 'levelStart') {
-      showPop(`${tx('level', { n: e.index + 1 })}\n${LEVELS[e.index].name[lang]}`, 2400);
+      showPop(`${tx('level', { n: e.index + 1 })}\n${rules.levels[e.index].name[lang]}`, 2400);
       sfx.speedup();
     } else if (e.type === 'level') {
       sfx.good();
-      showPop(tx('cleared', { level: LEVELS[e.index].name[lang], bonus: fmt(e.bonus) }), 2300);
+      showPop(tx('cleared', { level: rules.levels[e.index].name[lang], bonus: fmt(e.bonus) }), 2300);
     } else if (e.type === 'over') {
       over = true;
       if (e.won) {
@@ -351,7 +351,7 @@ export async function startMerguez(options) {
   on(touch, 'pointerdown', (ev) => {
     if (over) return;
     start();
-    pointer = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+    pointer = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, at: performance.now() };
     capture(touch, ev.pointerId);
   });
   on(touch, 'pointermove', (ev) => {
@@ -362,12 +362,21 @@ export async function startMerguez(options) {
     pointer.y = ev.clientY;
     rules.aimBy(dx * SENS, -dy * SENS);
   });
+  // A quick tap (no drag) throws at the crosshair.
   const up = (ev) => {
     if (!pointer || ev.pointerId !== pointer.id) return;
+    const tap = Math.hypot(ev.clientX - pointer.x0, ev.clientY - pointer.y0) < 14 && performance.now() - pointer.at < 350;
     pointer = null;
+    if (tap && ev.type === 'pointerup') shoot();
   };
   on(touch, 'pointerup', up);
   on(touch, 'pointercancel', up);
+  /** One throw: stands up first if ducked. */
+  function shoot() {
+    if (over) return;
+    if (!rules.stand) rules.setStand(true);
+    rules.tapFire();
+  }
   /** A button held down: `down` when pressed, `upFn` when let go (or the finger slides off). */
   function hold(btn, downFn, upFn) {
     on(btn, 'pointerdown', (ev) => {
@@ -396,10 +405,7 @@ export async function startMerguez(options) {
     sfx.click();
   }, () => {});
   // One tap, one throw.
-  hold(fireBtn, () => {
-    if (!rules.stand) showTip(tx('standFirst'), 1200);
-    rules.tapFire();
-  }, () => {});
+  hold(fireBtn, shoot, () => {});
 
   // Keyboard: arrows aim, A/Q and D slide, S or C stands/ducks, Space throws.
   const keys = new Set();
@@ -410,7 +416,7 @@ export async function startMerguez(options) {
     const k = ev.key.toLowerCase();
     if (k === ' ') {
       start();
-      rules.tapFire();
+      shoot();
       ev.preventDefault();
     } else if (k === 's' || k === 'c') {
       start();

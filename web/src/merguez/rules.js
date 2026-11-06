@@ -66,7 +66,7 @@ export const WEAPON_OF = {
 export const PEOPLE = ['gogol', 'pineur', 'gardien', 'controleur', 'videur', 'proprio', 'flic', 'chasseur'];
 
 /** How far someone steps out of a cover to peek (past the end of a car, a stall, a tent). */
-const REACH = { car205: 2.5, car: 2.5, kiosk: 1.8, tent: 1.9, dj: 1.7, gate: 1.5 };
+const REACH = { car205: 2.5, car: 2.5, kiosk: 2.5, tent: 2.3, dj: 2.3, gate: 2.0 };
 
 /** Who stands in for a boss the hero is playing (never fight yourself). */
 const STAND_IN = { babar: 'mamar', romain: 'greg' };
@@ -266,7 +266,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   };
   /** One tap, one throw (kept a moment if the weapon is not ready yet). */
   r.tapFire = () => {
-    r.tap = 0.3;
+    r.tap = 0.45; // long enough to stand up first
   };
   r.setMove = (dir) => {
     r.move = Math.sign(dir || 0);

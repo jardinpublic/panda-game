@@ -26,6 +26,11 @@ export function createView({ canvas, rules }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 260);
   camera.rotation.order = 'YXZ';
@@ -35,8 +40,21 @@ export function createView({ canvas, rules }) {
   const hemi = new THREE.HemisphereLight('#fff4e0', '#4c7a3a', 1.6);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight('#fff1d6', 1.6);
-  sun.position.set(-20, 30, 10);
-  scene.add(sun);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 120 });
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun, sun.target);
+  let shadowAt = null;
+  /** The sun follows the station so the shadows around the hero stay sharp. */
+  function aimSun(z) {
+    sun.position.set(-18, 30, z + 6);
+    sun.target.position.set(0, 0, z - 10);
+    sun.target.updateMatrixWorld();
+    renderer.shadowMap.needsUpdate = true;
+    shadowAt = z;
+  }
   const skyCv = document.createElement('canvas');
   skyCv.width = 4;
   skyCv.height = 256;
@@ -49,7 +67,7 @@ export function createView({ canvas, rules }) {
   const mats = new Map();
   const mat = (color) => {
     if (!mats.has(color)) {
-      const m = new THREE.MeshLambertMaterial({ color, flatShading: true });
+      const m = new THREE.MeshStandardMaterial({ color, roughness: 0.86, metalness: 0.02 });
       mats.set(color, m);
       disposables.push(m);
     }
@@ -66,12 +84,26 @@ export function createView({ canvas, rules }) {
     track: (x) => worldStuff.push(x),
     mesh(geo, color, x, y, z, parent = kit.group) {
       worldStuff.push(geo);
-      const m = new THREE.Mesh(geo, mat(color));
+      const m = new THREE.Mesh(geo, typeof color === 'string' ? mat(color) : color);
+      m.castShadow = true;
+      m.receiveShadow = true;
       m.position.set(x, y, z);
       parent.add(m);
       return m;
     },
     box: (w, h, d, color, x, y, z, parent) => kit.mesh(new THREE.BoxGeometry(w, h, d), color, x, y + h / 2, z, parent),
+    /** A material painted with a canvas texture, repeated rx × ry times. */
+    painted(cv, rx = 1, ry = 1, opts = {}) {
+      const t = new THREE.CanvasTexture(cv);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = THREE.RepeatWrapping;
+      t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(rx, ry);
+      t.anisotropy = 8;
+      const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.92, metalness: 0, ...opts });
+      worldStuff.push(t, m);
+      return m;
+    },
   };
   function loadLevel(index) {
     if (world) {
@@ -109,6 +141,7 @@ export function createView({ canvas, rules }) {
       for (const f of st.foes) buildCover(kit, f.cover, f.x, f.z + (bigCover[f.cover] || 0.65), 1);
     }
     shownLevel = index;
+    shadowAt = null;
   }
   loadLevel(rules.level);
 
@@ -164,18 +197,24 @@ export function createView({ canvas, rules }) {
   function foeSprite(f) {
     if (foeArt.has(f.id)) return foeArt.get(f.id);
     const body = sprite(characterCanvas(f.who, 'idle'), CHAR_SIZE * (CHAR_W / CHAR_H), CHAR_SIZE);
+    const blobGeo = new THREE.PlaneGeometry(1.1, 0.55);
+    const blobMat = new THREE.MeshBasicMaterial({ map: tex(shadowCv), transparent: true, depthWrite: false });
+    disposables.push(blobGeo, blobMat);
+    const blob = new THREE.Mesh(blobGeo, blobMat);
+    blob.rotation.x = -Math.PI / 2;
+    scene.add(blob);
     const mark = sprite(markCv, 0.42, 0.42, [0.5, 0.5]);
     mark.material.depthTest = false; // seen even from behind the hero's cover
     mark.renderOrder = 5;
     mark.visible = false;
-    const art = { body, mark, pose: 'idle' };
+    const art = { body, mark, blob, pose: 'idle' };
     foeArt.set(f.id, art);
     return art;
   }
   function dropFoes(keep) {
     for (const [id, a] of foeArt) {
       if (keep.has(id)) continue;
-      scene.remove(a.body, a.mark);
+      scene.remove(a.body, a.mark, a.blob);
       foeArt.delete(id);
     }
   }
@@ -233,6 +272,7 @@ export function createView({ canvas, rules }) {
   function render(dt) {
     t += dt;
     if (rules.level !== shownLevel) loadLevel(rules.level);
+    if (shadowAt !== rules.pos.z) aimSun(rules.pos.z);
     const eye = eyePos();
     camera.position.copy(eye);
     const yaw = rules.phase === 'move' ? 0 : rules.yaw;
@@ -261,6 +301,8 @@ export function createView({ canvas, rules }) {
       a.body.material.opacity = f.state === 'ko' ? Math.max(0, 1 - Math.max(0, f.t - 0.8) * 2) : 1;
       a.body.material.color.setRGB(1, f.hurt > 0 ? 0.6 : 1, f.hurt > 0 ? 0.6 : 1);
       a.mark.visible = f.state === 'tell';
+      a.blob.position.set(p.x, 0.03, p.z);
+      a.blob.material.opacity = f.state === 'ko' ? Math.max(0, 1 - f.t) : 0.35 + 0.65 * f.peek;
       a.mark.position.set(p.x, CHAR_SIZE + 0.35 - sink + Math.sin(t * 12) * 0.05, p.z);
     }
     dropFoes(alive);

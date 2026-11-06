@@ -4,12 +4,13 @@
  * so everything a level adds is disposed when the next level starts.
  */
 import * as THREE from 'three';
+import { grassCanvas, pavementCanvas, tilesCanvas, roadCanvas } from '../spx/textures.js';
 
 /** Sky gradient (top → horizon), fog, ambient and sun of each level. */
 export const ENV = {
   jardin: { sky: ['#5aa9e6', '#a9d6f2', '#ffe0b8'], fog: ['#cfe6f2', 40, 130], hemi: ['#fff4e0', '#4c7a3a', 1.6], sun: ['#fff1d6', 1.6] },
   gare: { sky: ['#8fb3d1', '#c9d8e2', '#e8e2d6'], fog: ['#d4dbe0', 35, 120], hemi: ['#f4f4f0', '#6b6258', 1.5], sun: ['#fff6e6', 1.2] },
-  moliere: { sky: ['#0b0618', '#1c0f33', '#2a1440'], fog: ['#140c24', 16, 80], hemi: ['#c9b8ff', '#3a1f55', 1.4], sun: ['#ff7ad9', 0.7] },
+  moliere: { sky: ['#0b0618', '#1c0f33', '#2a1440'], fog: ['#1a0f2e', 20, 90], hemi: ['#d9ccff', '#5a3a7a', 2.1], sun: ['#ff9ae0', 0.9] },
   rue: { sky: ['#0d1433', '#1d2a5a', '#3a3a66'], fog: ['#1a2040', 20, 95], hemi: ['#a9bcff', '#3a3f4a', 1.25], sun: ['#ffd9a0', 0.6] },
   crapa: { sky: ['#060b1f', '#10204a', '#1d2f55'], fog: ['#0e1a33', 14, 75], hemi: ['#9fb6ff', '#24331f', 1.15], sun: ['#cfe0ff', 0.6] },
 };
@@ -67,9 +68,20 @@ function glow(k, geo, color, x, y, z, parent = k.group) {
 }
 
 function tree(k, x, z, s = 1, crown = '#3f8a3a', trunk = '#7a5536') {
-  k.mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.4 * s, 7), trunk, x, 1.2 * s, z);
-  k.mesh(new THREE.IcosahedronGeometry(1.5 * s, 0), crown, x, 3.1 * s, z);
-  k.mesh(new THREE.IcosahedronGeometry(1.0 * s, 0), crown, x + 0.6 * s, 2.6 * s, z + 0.4 * s);
+  k.mesh(new THREE.CylinderGeometry(0.14 * s, 0.24 * s, 2.6 * s, 10), trunk, x, 1.3 * s, z);
+  const light = new THREE.Color(crown).offsetHSL(0.01, 0.02, 0.06).getStyle();
+  k.mesh(new THREE.SphereGeometry(1.35 * s, 14, 10), crown, x, 3.2 * s, z);
+  k.mesh(new THREE.SphereGeometry(0.95 * s, 12, 9), light, x + 0.8 * s, 3.6 * s, z + 0.3 * s);
+  k.mesh(new THREE.SphereGeometry(0.9 * s, 12, 9), crown, x - 0.75 * s, 2.8 * s, z + 0.4 * s);
+  k.mesh(new THREE.SphereGeometry(0.8 * s, 12, 9), light, x + 0.1 * s, 4.1 * s, z - 0.3 * s);
+}
+
+/** A painted ground: the texture repeats every `tile` metres. */
+function ground(k, w, d, cv, tile, x, z, y = 0, opts) {
+  const p = k.mesh(new THREE.PlaneGeometry(w, d), k.painted(cv, w / tile, d / tile, opts), x, y, z);
+  p.rotation.x = -Math.PI / 2;
+  p.castShadow = false;
+  return p;
 }
 
 function flat(k, w, d, color, x, z, y = 0.01) {
@@ -81,8 +93,8 @@ function flat(k, w, d, color, x, z, y = 0.01) {
 /* ---------- The five places ---------- */
 
 function jardin(k) {
-  flat(k, 90, 160, '#69a84f', 0, -45, 0);
-  flat(k, 4.2, 120, '#dcc79c', 0, -40);
+  ground(k, 90, 160, grassCanvas(11), 6, 0, -45);
+  ground(k, 4.2, 120, pavementCanvas(5), 3, 0, -40, 0.01, { color: '#f0dcae' });
   flat(k, 40, 3, '#dcc79c', 0, -38, 0.012);
   flat(k, 12, 7, '#e4d2a6', 0.5, -62.5, 0.013); // the pétanque ground
   const rnd = seeded(7);
@@ -123,7 +135,7 @@ function jardin(k) {
 }
 
 function gare(k) {
-  flat(k, 16, 140, '#b9b3a8', -1, -40, 0); // the platform
+  ground(k, 16, 140, pavementCanvas(7), 2.5, -1, -40); // the platform
   flat(k, 0.3, 140, '#f2c230', 6.4, -40, 0.012); // the yellow line
   k.box(10, 0.6, 140, '#6b5f55', 12, -0.6, -40); // the track bed, lower
   for (const x of [10.2, 11.6]) k.box(0.12, 0.12, 140, '#8c8f96', x, 0, -40);
@@ -141,22 +153,31 @@ function gare(k) {
   label(k, 'MONTCEAU-LES-MINES', 9, 1.1, '#ffffff', '#1f4fa0', -7.9, 5.2, -30, { rotY: Math.PI / 2 });
   label(k, 'MONTCEAU-LES-MINES', 9, 1.1, '#ffffff', '#1f4fa0', -7.9, 5.2, -75, { rotY: Math.PI / 2 });
   // The canopy over the platform, on its columns
-  k.box(15, 0.25, 140, '#d9d4cb', -1, 4.4, -40);
-  for (let z = 10; z > -100; z -= 9) k.mesh(new THREE.CylinderGeometry(0.12, 0.12, 4.4, 8), '#3a5a8a', -5.5, 2.2, z);
-  label(k, '12:07', 1.4, 0.6, '#1d1d24', '#f6f2e8', -1, 3.6, -30);
+  k.box(5, 0.2, 140, '#ece8e0', -5.6, 4.4, -40);
+  for (let z = 10; z > -100; z -= 9) k.mesh(new THREE.CylinderGeometry(0.12, 0.12, 4.4, 12), '#3a5a8a', -3.4, 2.2, z);
+  label(k, '12:07', 1.4, 0.6, '#1d1d24', '#f6f2e8', -3.4, 3.6, -30);
 }
 
 function moliere(k) {
-  flat(k, 14, 120, '#1d1730', 0, -40, 0);
+  ground(k, 14, 120, tilesCanvas(13), 2, 0, -40, 0, { color: '#5a4a7a', roughness: 0.35, metalness: 0.15 });
   // The dance floor: tiles that glow
   const cols = ['#ff4fb4', '#4fd6ff', '#ffd23f', '#8a5bff'];
   for (let i = 0; i < 6; i++) for (let j = 0; j < 8; j++) glow(k, new THREE.PlaneGeometry(1.1, 1.1), cols[(i + j) % 4], -3.3 + i * 1.3, 0.015, -28 - j * 1.3).rotation.x = -Math.PI / 2;
   for (const side of [-1, 1]) {
-    k.box(0.4, 5.5, 120, '#2a1840', side * 7.2, 0, -40);
+    k.box(0.4, 5.5, 120, '#4a2c6e', side * 7.2, 0, -40);
     glow(k, new THREE.BoxGeometry(0.06, 0.08, 118), side > 0 ? '#ff4fb4' : '#4fd6ff', side * 6.98, 3.6, -40);
     glow(k, new THREE.BoxGeometry(0.06, 0.08, 118), '#ffd23f', side * 6.98, 1.2, -40);
   }
-  k.box(14.8, 0.3, 120, '#140c24', 0, 5.5, -40);
+  k.box(14.8, 0.3, 120, '#2a1840', 0, 5.5, -40);
+  // Coloured spotlights along the club
+  const spots = ['#ff4fb4', '#4fd6ff', '#ffd23f'];
+  for (let i = 0; i < 7; i++) {
+    const z = 4 - i * 14;
+    const light = new THREE.PointLight(spots[i % 3], 40, 22, 1.6);
+    light.position.set(i % 2 ? 3 : -3, 4.6, z);
+    k.group.add(light);
+    glow(k, new THREE.CylinderGeometry(0.2, 0.32, 0.4, 12), spots[i % 3], i % 2 ? 3 : -3, 5.1, z);
+  }
   // Disco ball and its sparkles
   glow(k, new THREE.IcosahedronGeometry(0.6, 1), '#dfe6f0', 0, 4.4, -32);
   for (let i = 0; i < 30; i++) {
@@ -171,8 +192,8 @@ function moliere(k) {
 }
 
 function rue(k) {
-  flat(k, 8, 140, '#3f414b', 0, -40, 0);
-  for (const side of [-1, 1]) flat(k, 3, 140, '#8a8781', side * 5.5, -40, 0.02);
+  ground(k, 8, 140, roadCanvas({ dashes: false, seed: 3 }), 8, 0, -40);
+  for (const side of [-1, 1]) ground(k, 3, 140, pavementCanvas(9), 2.5, side * 5.5, -40, 0.02);
   for (let z = 20; z > -100; z -= 6) flat(k, 0.2, 2.5, '#e8e6df', 0, z, 0.015);
   // Houses on both sides, some windows lit
   const fronts = ['#d8cbb3', '#cdb89a', '#e3d6bd', '#bfa98e'];
@@ -204,7 +225,7 @@ function rue(k) {
 }
 
 function crapa(k) {
-  flat(k, 90, 160, '#2a3a24', 0, -45, 0);
+  ground(k, 90, 160, grassCanvas(31), 6, 0, -45, 0, { color: '#4f6a46' });
   flat(k, 3, 120, '#4a3d2c', 0, -40, 0.01);
   const rnd = seeded(23);
   for (let i = 0; i < 70; i++) {
@@ -257,13 +278,16 @@ export function buildCover(k, type, x, z, facing = 1) {
       for (const kx of [-0.8, 0.8]) box(0.08, 0.45, 0.46, '#2b2f36', kx, 0, 0);
       break;
     case 'hedge':
-      box(2, 0.9, 0.8, '#3f7f3a', 0, 0, 0);
-      for (const kx of [-0.6, 0, 0.6]) mesh(new THREE.IcosahedronGeometry(0.3, 0), '#4a8f42', kx, 0.92, 0);
+      // A trimmed hedge: a rounded block of leaves
+      box(1.9, 0.8, 0.75, '#3f7f3a', 0, 0, 0);
+      for (const kx of [-0.7, -0.23, 0.23, 0.7]) mesh(new THREE.SphereGeometry(0.36, 14, 10), kx % 0.5 ? '#4a8f42' : '#3f7f3a', kx, 0.78, 0);
+      for (const kx of [-0.95, 0.95]) mesh(new THREE.SphereGeometry(0.4, 14, 10), '#3f7f3a', kx, 0.42, 0);
       break;
     case 'tree':
-      mesh(new THREE.CylinderGeometry(0.3, 0.38, 2.6, 8), '#6a4a30', 0, 1.3, 0);
-      mesh(new THREE.IcosahedronGeometry(1.7, 0), k.night ? '#1f4a2a' : '#3f8a3a', 0, 3.2, 0);
-      for (const kx of [-0.55, 0.55]) mesh(new THREE.IcosahedronGeometry(0.62, 0), k.night ? '#24552e' : '#4a8f42', kx, 0.5, 0.1);
+      mesh(new THREE.CylinderGeometry(0.26, 0.4, 2.8, 12), '#6a4a30', 0, 1.4, 0);
+      for (const [cx, cy, cz, cr] of [[0, 3.4, 0, 1.5], [0.9, 3.9, 0.2, 1.0], [-0.85, 3.0, 0.3, 1.0], [0.1, 4.5, -0.2, 0.9]]) mesh(new THREE.SphereGeometry(cr, 14, 10), k.night ? '#1f4a2a' : '#3f8a3a', cx, cy, cz);
+      // a bush at its foot to hide behind
+      for (const kx of [-0.55, 0.55]) mesh(new THREE.SphereGeometry(0.62, 14, 10), k.night ? '#24552e' : '#4a8f42', kx, 0.5, 0.15);
       break;
     case 'bin':
       box(1.5, 1.05, 0.8, '#2f6e3c', 0, 0, 0);
