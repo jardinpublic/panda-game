@@ -14,7 +14,7 @@ import { CAST_IDS } from '../marathon/art.js';
 
 export const HEARTS = 5;
 export const EYE_OUT = 1.45; // eye height out of cover
-export const EYE_IN = 0.75; // crouched behind cover
+export const EYE_IN = 1.15; // crouched behind cover (high enough to see over it)
 const OUT_TIME = 0.14; // popping out / ducking back
 const RELOAD = 0.75; // seconds in cover to refill
 const TELL = 0.7; // an opponent's wind-up before throwing
@@ -27,6 +27,8 @@ const HEAD_R = 0.16;
 const MAX_TELLS = 2; // opponents winding up at the same time
 const SIDE = 1.2; // how far the hero can slide left or right along the cover (m)
 const MOVE_SPEED = 2.4; // m/s, sliding sideways
+const STAY = 0.35; // after a throw, the hero stays out this long, then ducks back on their own
+const QUEUE = 2; // taps waiting to be thrown
 const DODGE = 0.6; // a throw misses a hero who moved this far since it was thrown (m)
 const COMBO_STEP = 3;
 const MAX_MULT = 5;
@@ -171,6 +173,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     stand: false, // the player wants to stand up (out of cover)
     fire: false, // throws over and over (the test bot)
     tap: 0, // a tap on the throw button waiting to be thrown (seconds left)
+    queue: [], // tapped targets waiting to be thrown at: { foe, head } or { yaw, pitch }
+    stay: 0, // seconds left out of cover after the last throw
     move: 0, // -1 sliding left, 1 right, 0 still
     ox: 0, // sideways offset along the cover (m)
     rise: 0, // 0 in cover .. 1 fully out
@@ -201,7 +205,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   }
 
   /** Difficulty of the current station: opponents hide less and throw sooner. */
-  const diff = () => 1 + r.station * 0.08 + r.level * 0.15;
+  const diff = () => 1 + r.station * 0.06 + r.level * 0.15;
 
   function startStation() {
     const L = levels[r.level];
@@ -264,6 +268,14 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   r.setFire = (v) => {
     r.fire = !!v;
   };
+  /** Tapped on someone: pop out, throw at them (head or body), duck back. */
+  r.tapFoe = (id, head = false) => {
+    if (r.queue.length < QUEUE) r.queue.push({ foe: id, head: !!head });
+  };
+  /** Tapped on nobody: throw that way anyway. */
+  r.tapDir = (yaw, pitch) => {
+    if (r.queue.length < QUEUE) r.queue.push({ yaw, pitch });
+  };
   /** One tap, one throw (kept a moment if the weapon is not ready yet). */
   r.tapFire = () => {
     r.tap = 0.45; // long enough to stand up first
@@ -303,7 +315,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     return best;
   }
 
-  function throwOne() {
+  function throwOne(forced = null) {
     const big = W.every && (r.throws + 1) % W.every === 0;
     const kind = big ? W.big : weapon;
     const spec = WEAPONS[kind];
@@ -313,7 +325,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
       const yaw = r.yaw + off;
       const keep = r.yaw;
       r.yaw = yaw;
-      const target = pick(spec.assist ?? W.assist ?? 0.1);
+      const target = i === Math.floor(n / 2) && forced ? forced : pick(spec.assist ?? W.assist ?? 0.1);
       r.yaw = keep;
       const dist = target ? r.dirTo(target.foe).dist : 18;
       r.shots.push({ kind, dmg: spec.dmg, yaw, pitch: r.pitch, target: target?.foe.id ?? null, head: !!target?.head, t: 0, T: dist / spec.speed, dist, bounce: !!spec.bounce, pierce: !!spec.pierce });
@@ -432,7 +444,9 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.levelTime += dt;
     r.phaseT += dt;
     // Pop out / duck
-    const target = r.stand && r.phase === 'fight' ? 1 : 0;
+    // Out while told to stand, while a tap waits, or just after a throw; else back in cover.
+    if (!r.queue.length) r.stay = Math.max(0, r.stay - dt);
+    const target = (r.stand || r.queue.length > 0 || r.stay > 0) && r.phase === 'fight' ? 1 : 0;
     if (r.phase === 'fight') r.ox = clamp(r.ox + r.move * MOVE_SPEED * dt, -SIDE, SIDE);
     r.rise += Math.sign(target - r.rise) * Math.min(Math.abs(target - r.rise), dt / OUT_TIME);
     // Reload in cover
@@ -447,6 +461,26 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     // Throwing
     r.cool = Math.max(0, r.cool - dt);
     r.tap = Math.max(0, r.tap - dt);
+    // A tapped target: aim at it and throw (it is hit if still out, or not fully back, when it lands).
+    if (r.phase === 'fight' && r.rise >= 1 && r.queue.length && r.cool <= 0) {
+      const q = r.queue.shift();
+      if (r.ammo <= 0) {
+        r.queue = [];
+        r.stay = 0;
+        r.events.push({ type: 'empty' });
+      } else {
+        const f = q.foe ? r.foes.find((x) => x.id === q.foe && x.state !== 'ko') : null;
+        if (f) {
+          const d = r.dirTo(f, q.head ? HEAD_H : BODY_H);
+          r.aimTo(d.yaw, d.pitch);
+          throwOne({ foe: f, head: q.head });
+        } else {
+          r.aimTo(q.yaw ?? r.yaw, q.pitch ?? r.pitch);
+          throwOne();
+        }
+        r.stay = STAY;
+      }
+    }
     const wants = r.fire || r.tap > 0;
     if (r.phase === 'fight' && r.rise >= 1 && wants && r.ammo > 0 && r.cool <= 0) {
       throwOne();
@@ -531,14 +565,12 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   return r;
 }
 
-/** A test player: out when nothing is about to land, aims at the closest foe who is out. */
+/** A test player: taps the closest face that is out, never when something is about to land. */
 export function botInput(r) {
-  const danger = r.incoming.some((s) => s.T - s.t < 0.4 && s.t > -0.05);
+  const danger = r.incoming.some((s) => s.T - s.t < 0.55 && s.t > -0.05);
+  if (danger || r.queue.length || r.cool > 0.05) return;
   const foes = r.foes.filter((f) => f.state === 'tell' || f.state === 'throw');
-  if (danger || r.ammo <= 0) return r.setOut(false);
-  if (!foes.length) return r.setOut(false);
+  if (!foes.length) return;
   const f = foes.sort((a, b) => r.dirTo(a).dist - r.dirTo(b).dist)[0];
-  const h = r.dirTo(f, HEAD_H);
-  r.aimTo(h.yaw, h.pitch);
-  r.setOut(true);
+  r.tapFoe(f.id, true);
 }

@@ -149,6 +149,26 @@ describe('Golden Merguez rules', () => {
     expect(r.throws).toBe(2);
   });
 
+  it('a tap on someone pops out, throws at them and ducks back by itself', () => {
+    const r = createRules({ hero: 'panda', random: seeded(3) });
+    let f = null;
+    for (let i = 0; i < 600 && !f; i++) {
+      r.step(1 / 60);
+      f = r.foes.find((x) => x.state === 'tell');
+    }
+    r.tapFoe(f.id, false);
+    let wasOut = false;
+    for (let i = 0; i < 20; i++) {
+      r.step(1 / 60);
+      if (r.rise >= 1) wasOut = true;
+    }
+    expect(wasOut).toBe(true);
+    expect(r.throws).toBe(1);
+    expect(r.shots[0]?.target ?? r.hits).toBeTruthy();
+    for (let i = 0; i < 60; i++) r.step(1 / 60);
+    expect(r.rise).toBe(0); // back in cover without doing anything
+  });
+
   it('gives a heart back between levels', () => {
     const r = createRules({ hero: 'panda', random: seeded(1) });
     r.hearts = 2;

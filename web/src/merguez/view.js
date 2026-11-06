@@ -137,7 +137,8 @@ export function createView({ canvas, rules }) {
     const bigCover = { car205: 1.15, car: 1.15, kiosk: 1.0, tent: 1.6, dj: 0.9 };
     for (const st of L.stations) {
       // The hero's own cover, wide enough to slide along it (rules: SIDE = 1.2 m each way).
-      buildCover(kit, st.cover, st.x, st.z - 1.25, -1).scale.x = 1.6;
+      // Low enough to see the people over it from the crouch (they are who you tap).
+      buildCover(kit, st.cover, st.x, st.z - 1.25, -1).scale.set(1.6, 0.72, 1);
       for (const f of st.foes) buildCover(kit, f.cover, f.x, f.z + (bigCover[f.cover] || 0.65), 1);
     }
     shownLevel = index;
@@ -275,8 +276,8 @@ export function createView({ canvas, rules }) {
     if (shadowAt !== rules.pos.z) aimSun(rules.pos.z);
     const eye = eyePos();
     camera.position.copy(eye);
-    const yaw = rules.phase === 'move' ? 0 : rules.yaw;
-    camera.rotation.set(rules.phase === 'move' ? 0 : rules.pitch, -yaw, 0);
+    // A still camera, looking a little down onto the station (you tap the people you see).
+    camera.rotation.set(-0.05, 0, 0);
     // Weapon in hand: lowered in cover, kicks on each throw.
     recoil = Math.max(0, recoil - dt * 6);
     const low = 1 - rules.rise;
@@ -399,7 +400,50 @@ export function createView({ canvas, rules }) {
   }
   resize();
 
+  /**
+   * Who is under a tap at (clientX, clientY): the closest person (head or body)
+   * within reach of the finger, out or still behind their cover; else the
+   * direction of the tap as { yaw, pitch }.
+   */
+  const v = new THREE.Vector3();
+  function pick(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const toScreen = (x, y, z) => {
+      v.set(x, y, z).project(camera);
+      return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height, front: v.z < 1 };
+    };
+    const reach = Math.max(46, rect.width * 0.12);
+    let best = null;
+    for (const f of rules.foes) {
+      if (f.state === 'ko') continue;
+      const p = rules.foePos(f);
+      const sink = 1.08 * (1 - f.peek);
+      for (const [h, head] of [[1.55, true], [1.0, false]]) {
+        const s = toScreen(p.x, h - sink, p.z);
+        if (!s.front) continue;
+        const d = Math.hypot(s.x - clientX, s.y - clientY);
+        const limit = head ? reach * 0.45 : reach;
+        if (d < limit && (!best || d - (head ? 8 : 0) < best.d)) best = { foe: f.id, head, d: d - (head ? 8 : 0) };
+      }
+    }
+    if (best) return { foe: best.foe, head: best.head };
+    const ndc = new THREE.Vector3(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1, 0.5).unproject(camera).sub(camera.position).normalize();
+    return { yaw: Math.atan2(ndc.x, -ndc.z), pitch: Math.atan2(ndc.y, Math.hypot(ndc.x, ndc.z)) };
+  }
+
+  /** Where a person's head is on screen (testing). */
+  function screenOf(id) {
+    const f = rules.foes.find((x) => x.id === id);
+    if (!f) return null;
+    const rect = canvas.getBoundingClientRect();
+    const p = rules.foePos(f);
+    v.set(p.x, 1.55 - 1.08 * (1 - f.peek), p.z).project(camera);
+    return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+  }
+
   return {
+    pick,
+    screenOf,
     render,
     event,
     resize,

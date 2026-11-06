@@ -6,19 +6,24 @@ Montceau-les-Mines. Its own high scores (save `merguez`, records tab "Golden
 Merguez"). A wink at the 1990s console mission shooters, with nothing taken
 from any of them: no spy, no levels, no music, no look.
 
-## The loop: cover shooter
+## The loop: tap the person you want to hit
 
 - The hero goes from cover to cover along the level (a "station" each time).
-- **Hold** anywhere: the hero pops out of cover and throws their weapon,
-  over and over at the weapon's rate. **Drag** to aim (the camera turns; the
-  crosshair stays in the middle). Gentle aim assist pulls the crosshair to an
-  exposed opponent and every throw goes to the opponent under the crosshair.
-- **Release**: back in cover. Safe there, and the weapon reloads.
+  The camera stays still at each station and frames everyone there.
+- **Tap someone**: the hero pops out of cover, throws at them (a tap on the
+  head is a hit in the face), and ducks back by themself 0.35 s later. A tap
+  near someone counts (generous reach); a tap on someone still behind their
+  cover throws at them anyway, and it lands if they come out in time.
+- That is the only gesture. The hero is exposed only while throwing: the skill
+  is to tap at the right moment.
 - Opponents hide behind their own cover, then peek out: a "!" and a glow (the
   tell, 0.7 s), they throw, they duck again. A throw lands on the hero only if
   the hero is out of cover when it arrives.
-- When every opponent of a station is out, the hero moves on ("Avance !").
-- 5 hearts. A hit splats the screen and resets the combo.
+- The hero reloads in cover. When every opponent of a station is out, the hero
+  moves on ("Avance !"). 5 hearts, one back between levels. A hit splats the
+  screen and resets the combo.
+- Three short tips on the first station: tap someone, wait out a red "!",
+  aim for the head.
 
 ## Weapons (each hero only uses their own)
 

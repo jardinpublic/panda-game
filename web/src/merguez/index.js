@@ -12,7 +12,6 @@
 import { createRules, botInput, HEARTS, LEVELS, PEOPLE } from './rules.js';
 export { WEAPON_OF } from './rules.js';
 import { createView } from './view.js';
-import { weaponCanvas } from './sprites.js';
 import { loadHeads } from '../marathon/art.js';
 import { sfx } from '../marathon/sound.js';
 import { paintFace } from '../spx/faces.js';
@@ -28,11 +27,15 @@ const CSS = `
 .gm-score { font-size: 22px; margin-left: auto; padding: 3px 12px; }
 .gm-mult { position: absolute; right: 12px; top: calc(max(10px, env(safe-area-inset-top)) + 42px); font-size: 30px; font-weight: 800; color: #ffd23f; -webkit-text-stroke: 1.5px #5a2a00; text-shadow: 0 3px 0 #ef2d6b; }
 .gm-mult.is-up { animation: gm-up .4s cubic-bezier(.3,1.8,.5,1); }
+.gm-tapmark { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 4px solid #ffd23f; pointer-events: none; animation: gm-tap .35s ease-out forwards; }
+.gm-tuto { position: absolute; left: 7%; right: 7%; top: 16%; text-align: center; background: rgba(255,253,247,.96); color: #2b2340; border-radius: 18px; padding: 10px 16px; font-weight: 700; font-size: 17px; line-height: 1.25; box-shadow: 0 8px 24px rgba(20,10,40,.35); animation: gm-in .3s ease-out; pointer-events: none; }
+.gm-tuto b { color: #ef2d6b; }
+@keyframes gm-tap { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
 .gm-cross { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 3px solid rgba(255,255,255,.9); box-shadow: 0 0 0 2px rgba(0,0,0,.25); transition: transform .12s, border-color .12s, opacity .15s; }
 .gm-cross::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #fff; }
 .gm-cross.is-on { border-color: #ff3b3b; transform: scale(.8); }
 .gm-cross.is-hid { opacity: .35; }
-.gm-ammo { position: absolute; left: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 92px); background: rgba(20,16,40,.55); border-radius: 14px; padding: 6px 10px; font-weight: 700; font-size: 14px; }
+.gm-ammo { position: absolute; left: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 10px); background: rgba(20,16,40,.55); border-radius: 14px; padding: 6px 10px; font-weight: 700; font-size: 14px; }
 .gm-ctrl { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 4px); display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
 .gm-b { pointer-events: auto; touch-action: none; border: 3px solid rgba(255,255,255,.85); color: #fff; font: 800 14px Fredoka, system-ui, sans-serif; display: grid; place-items: center; text-shadow: 0 1px 3px rgba(0,0,0,.4); box-shadow: 0 6px 16px rgba(20,10,40,.35); -webkit-tap-highlight-color: transparent; }
 .gm-b:active, .gm-b.is-on { transform: scale(.94); filter: brightness(1.15); }
@@ -51,11 +54,11 @@ const CSS = `
 .gm-pop.is-on { transform: scale(1); opacity: 1; }
 .gm-toasts { position: absolute; left: 0; right: 0; top: 58%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .gm-toast { background: rgba(20, 16, 40, 0.6); border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 15px; animation: gm-fade 1.5s ease-out forwards; }
-.gm-chat { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 132px); display: flex; gap: 8px; align-items: flex-end; animation: gm-in .25s ease-out; }
+.gm-chat { position: absolute; left: 10px; right: 10px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 58px); display: flex; gap: 8px; align-items: flex-end; animation: gm-in .25s ease-out; }
 .gm-chat img { width: 54px; height: 66px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
 .gm-chat p { margin: 0; background: #fffdf7; color: #2b2340; border-radius: 16px 16px 16px 4px; padding: 7px 12px; font-size: 16px; line-height: 1.25; box-shadow: 0 4px 14px rgba(20,10,40,.25); max-width: 78%; }
 .gm-chat b { display: block; font-size: 12px; color: #ef2d6b; }
-.gm-tip { position: absolute; left: 14px; right: 14px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 108px); text-align: center; font-weight: 700; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
+.gm-tip { position: absolute; left: 14px; right: 14px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 52px); text-align: center; font-weight: 700; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
 .gm-hurt { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
 .gm-hurt.is-on { animation: gm-splat 1.1s ease-out; }
 .gm-hurt i { position: absolute; border-radius: 50%; }
@@ -75,7 +78,8 @@ const CSS = `
 
 const T = {
   fr: {
-    quit: 'Quitter', hold: 'Glisse pour viser, tape pour lancer ! ◀ ▶ pour t’décaler, À COUVERT pour t’planquer.', go: 'C’est parti !',
+    quit: 'Quitter', hold: 'Tape sur quelqu’un pour lui lancer ta {w} ! Après, te r’tournes à couvert tout seul.',
+    tuto1: 'Tape sur <b>quelqu’un</b> pour lui lancer ta {w} !', tuto2: 'Un <b>!</b> rouge ? Y va lancer : attends à couvert… pis tape-le quand y ressort !', tuto3: 'Vise <b>la tête</b> : en pleine poire, ça paie double !', go: 'C’est parti !',
     soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé ! +{bonus}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
@@ -84,7 +88,8 @@ const T = {
     level: 'Niveau {n}', boss: 'BOSS', combo: 'COMBO', weapon: 'Arme : {w}',
   },
   en: {
-    quit: 'Quit', hold: 'Drag to aim, tap to throw! ◀ ▶ to slide along your cover, TAKE COVER to hide.', go: 'Go!',
+    quit: 'Quit', hold: 'Tap someone to throw your {w} at them! You duck back into cover by yourself.',
+    tuto1: 'Tap <b>someone</b> to throw your {w} at them!', tuto2: 'A red <b>!</b>? They’re about to throw: wait in cover… then tap them when they come out!', tuto3: 'Aim for <b>the head</b>: right in the face pays double!', go: 'Go!',
     soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
     advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared! +{bonus}',
     end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
@@ -165,14 +170,7 @@ export async function startMerguez(options) {
   const levelChip = el('span', 'gm-chip', top);
   const score = el('span', 'gm-chip gm-score', top);
   const mult = el('div', 'gm-mult', hud);
-  const cross = el('div', 'gm-cross', hud);
   const ammo = el('div', 'gm-ammo', hud);
-  const ctrl = el('div', 'gm-ctrl', shell);
-  const left = el('button', 'gm-b gm-move', ctrl, '◀');
-  const right = el('button', 'gm-b gm-move', ctrl, '▶');
-  const standBtn = el('button', 'gm-b gm-stand', ctrl);
-  const fireBtn = el('button', 'gm-b gm-fire', ctrl);
-  for (const b of [left, right, standBtn, fireBtn]) b.type = 'button';
   const bossBox = el('div', 'gm-boss', hud);
   bossBox.hidden = true;
   const pop = el('div', 'gm-pop', hud);
@@ -187,8 +185,6 @@ export async function startMerguez(options) {
 
   const rules = createRules({ hero: options.hero || 'panda', random: options.random || Math.random, levels: LEVELS.slice(options.from || 0, (options.from || 0) + (options.levels || PLAYABLE)) });
   const view = createView({ canvas, rules });
-  fireBtn.appendChild(weaponCanvas(rules.weapon, 132));
-  fireBtn.setAttribute('aria-label', WEAPON_NAMES[rules.weapon][lang]);
   const auto = !!options.auto;
 
   // Level card
@@ -197,7 +193,7 @@ export async function startMerguez(options) {
   el('h3', '', card, tx('level', { n: 1 }));
   el('h2', '', card, L.name[lang]);
   el('p', '', card, tx('weapon', { w: WEAPON_NAMES[rules.weapon][lang] }));
-  el('p', '', card, tx('hold'));
+  el('p', '', card, tx('hold', { w: WEAPON_NAMES[rules.weapon][lang].toLowerCase() }));
   let started = false;
   function start() {
     if (started) return;
@@ -321,13 +317,6 @@ export async function startMerguez(options) {
     const max = Math.min(16, Math.max(clip, ammoMax));
     ammo.replaceChildren(document.createTextNode(`${WEAPON_NAMES[rules.weapon][lang]} `));
     for (let i = 0; i < max; i++) el('i', i < clip ? '' : 'off', ammo);
-    cross.classList.toggle('is-hid', rules.rise < 0.5);
-    const label = rules.stand ? tx('down') : tx('up');
-    if (standBtn.textContent !== label) standBtn.textContent = label;
-    standBtn.classList.toggle('is-up', rules.stand);
-    fireBtn.classList.toggle('is-off', !rules.stand || rules.ammo <= 0);
-    const onFoe = rules.foes.some((f) => (f.state === 'tell' || f.state === 'throw') && Math.hypot(rules.dirTo(f).yaw - rules.yaw, rules.dirTo(f).pitch - rules.pitch) < 0.09);
-    cross.classList.toggle('is-on', onFoe && rules.rise >= 1);
     const b = rules.boss();
     if (b && !bossBox.hidden) {
       const bar = bossBox.querySelector('i');
@@ -337,109 +326,77 @@ export async function startMerguez(options) {
   const ammoMax = rules.ammo;
 
   /* ---------- Input ---------- */
-  // Keeps the finger's moves on this element; some browsers refuse it, and that is fine.
-  const capture = (node, id) => {
-    try {
-      node.setPointerCapture?.(id);
-    } catch {
-      /* nothing to do */
-    }
-  };
-  // Drag anywhere (but on the buttons) to aim.
-  let pointer = null;
-  const SENS = 0.0045;
-  on(touch, 'pointerdown', (ev) => {
+  // Tap someone: the hero pops out, throws at them and ducks back (rules.js).
+  function tapAt(x, y) {
     if (over) return;
     start();
-    pointer = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, at: performance.now() };
-    capture(touch, ev.pointerId);
-  });
-  on(touch, 'pointermove', (ev) => {
-    if (!pointer || ev.pointerId !== pointer.id) return;
-    const dx = ev.clientX - pointer.x;
-    const dy = ev.clientY - pointer.y;
-    pointer.x = ev.clientX;
-    pointer.y = ev.clientY;
-    rules.aimBy(dx * SENS, -dy * SENS);
-  });
-  // A quick tap (no drag) throws at the crosshair.
-  const up = (ev) => {
-    if (!pointer || ev.pointerId !== pointer.id) return;
-    const tap = Math.hypot(ev.clientX - pointer.x0, ev.clientY - pointer.y0) < 14 && performance.now() - pointer.at < 350;
-    pointer = null;
-    if (tap && ev.type === 'pointerup') shoot();
-  };
-  on(touch, 'pointerup', up);
-  on(touch, 'pointercancel', up);
-  /** One throw: stands up first if ducked. */
-  function shoot() {
-    if (over) return;
-    if (!rules.stand) rules.setStand(true);
-    rules.tapFire();
+    const hit = view.pick(x, y);
+    if (hit.foe) rules.tapFoe(hit.foe, hit.head);
+    else rules.tapDir(hit.yaw, hit.pitch);
+    const mark = el('div', 'gm-tapmark', hud);
+    const box = shell.getBoundingClientRect();
+    mark.style.left = `${x - box.left}px`;
+    mark.style.top = `${y - box.top}px`;
+    if (hit.foe) mark.style.borderColor = '#ff3b3b';
+    later(() => mark.remove(), 400);
+    tuto.tapped();
   }
-  /** A button held down: `down` when pressed, `upFn` when let go (or the finger slides off). */
-  function hold(btn, downFn, upFn) {
-    on(btn, 'pointerdown', (ev) => {
-      ev.preventDefault();
-      if (over) return;
-      start();
-      capture(btn, ev.pointerId);
-      btn.classList.add('is-on');
-      downFn();
-    });
-    const release = () => {
-      btn.classList.remove('is-on');
-      upFn();
-    };
-    on(btn, 'pointerup', release);
-    on(btn, 'pointercancel', release);
-    on(btn, 'contextmenu', (ev) => ev.preventDefault());
-  }
-  let moveL = false;
-  let moveR = false;
-  const applyMove = () => rules.setMove((moveR ? 1 : 0) - (moveL ? 1 : 0));
-  hold(left, () => ((moveL = true), applyMove()), () => ((moveL = false), applyMove()));
-  hold(right, () => ((moveR = true), applyMove()), () => ((moveR = false), applyMove()));
-  hold(standBtn, () => {
-    rules.setStand(!rules.stand);
-    sfx.click();
-  }, () => {});
-  // One tap, one throw.
-  hold(fireBtn, shoot, () => {});
-
-  // Keyboard: arrows aim, A/Q and D slide, S or C stands/ducks, Space throws.
-  const keys = new Set();
+  on(touch, 'pointerdown', (ev) => {
+    ev.preventDefault();
+    tapAt(ev.clientX, ev.clientY);
+  });
+  // Keyboard: Space throws at the closest person who is out.
   on(window, 'keydown', (ev) => {
     if (ev.key === 'Escape') return onExit();
     if (ev.repeat) return;
-    keys.add(ev.key);
-    const k = ev.key.toLowerCase();
-    if (k === ' ') {
-      start();
-      shoot();
+    if (ev.key === ' ') {
       ev.preventDefault();
-    } else if (k === 's' || k === 'c') {
       start();
-      rules.setStand(!rules.stand);
-    } else if (k === 'a' || k === 'q') {
-      moveL = true;
-      applyMove();
-    } else if (k === 'd') {
-      moveR = true;
-      applyMove();
+      const f = rules.foes.filter((x) => x.state === 'tell' || x.state === 'throw').sort((a, b) => rules.dirTo(a).dist - rules.dirTo(b).dist)[0];
+      if (f) rules.tapFoe(f.id, true);
+      tuto.tapped();
     }
   });
-  on(window, 'keyup', (ev) => {
-    keys.delete(ev.key);
-    const k = ev.key.toLowerCase();
-    if (k === 'a' || k === 'q') {
-      moveL = false;
-      applyMove();
-    } else if (k === 'd') {
-      moveR = false;
-      applyMove();
-    }
-  });
+
+  /* ---------- Tutorial: three short tips on the first station ---------- */
+  const tuto = (() => {
+    const box = el('div', 'gm-tuto', hud);
+    box.hidden = true;
+    let step = 0;
+    const show = (key) => {
+      box.innerHTML = tx(key, { w: WEAPON_NAMES[rules.weapon][lang].toLowerCase() });
+      box.hidden = false;
+    };
+    return {
+      update() {
+        if (!started || over || step > 3) return;
+        if (step === 0) {
+          show('tuto1');
+          step = 1;
+        } else if (step === 2 && rules.foes.some((f) => f.state === 'tell')) {
+          show('tuto2');
+          step = 3;
+          later(() => {
+            if (step === 3) {
+              show('tuto3');
+              step = 4;
+              later(() => (box.hidden = true), 3500);
+            }
+          }, 3500);
+        }
+        if (rules.station > 0 || rules.level > 0) {
+          box.hidden = true;
+          step = 9;
+        }
+      },
+      tapped() {
+        if (step <= 1) {
+          box.hidden = true;
+          step = 2;
+        }
+      },
+    };
+  })();
   on(close, 'click', () => onExit());
   on(window, 'resize', () => view.resize());
 
@@ -453,22 +410,19 @@ export async function startMerguez(options) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (started && !over) {
-      const k = 1.4 * dt;
-      if (keys.has('ArrowLeft')) rules.aimBy(-k, 0);
-      if (keys.has('ArrowRight')) rules.aimBy(k, 0);
-      if (keys.has('ArrowUp')) rules.aimBy(0, k * 0.7);
-      if (keys.has('ArrowDown')) rules.aimBy(0, -k * 0.7);
       if (auto) botInput(rules);
       rules.step(dt);
     } else if (over) rules.step(dt);
     for (const e of rules.events.splice(0)) handle(e);
     view.render(dt);
     hudUpdate();
+    tuto.update();
   }
   raf = requestAnimationFrame(frame);
 
   return {
     rules,
+    view,
     /** Testing and screenshots: plays `seconds` of game at once (with the bot if `auto`). */
     advance(seconds) {
       start();
@@ -479,6 +433,7 @@ export async function startMerguez(options) {
         view.render(1 / 60);
       }
       hudUpdate();
+      tuto.update();
     },
     dispose() {
       alive = false;
