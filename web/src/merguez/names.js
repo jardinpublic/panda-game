@@ -28,9 +28,9 @@ export const BONUS_NAMES = {
  */
 export const KO_LINES = {
   jojo: { fr: ['Mmm, j’ai qu’ça à faire.'], en: ['Mmm, like I’ve got nothing better to do.'] },
-  lamoule: { fr: ['Mon poulet !', 'José, démarre eul’ 205 !', 'On r’viendra vous chercher !'], en: ['My chicken!', 'José, start the 205!', 'We’ll be back for you!'] },
-  jose: { fr: ['Mes sardines !', 'Lamoule, à l’aide !', 'Obrigado… pour rien !'], en: ['My sardines!', 'Lamoule, help!', 'Obrigado… for nothing!'] },
-  rudy: { fr: ['Retour au CRAPA…', 'Ma salade de museau !', 'J’retourne vivre dans les bois !'], en: ['Back to the CRAPA…', 'My snout salad!', 'Back to living in the woods!'] },
+  lamoule: { fr: ['Pas grave, je vais briller dans eul’ commerce international.'], en: ['No matter, I’ll shine in international trade.'] },
+  jose: { fr: ['Hinnnnnnnnn !'], en: ['Hinnnnnnnnn!'] },
+  rudy: { fr: ['Je suis une poupée gore.'], en: ['I’m a gore doll.'] },
   gogol: { fr: ['Ma boule était pointée !', 'Eh, y’a mène ici !'], en: ['My ball was right there!', 'Hey, we’re playing here!'] },
   pineur: { fr: ['Bon sang d’bonsoir !', 'De mon temps, on lançait mieux !'], en: ['Good grief!', 'In my day we threw better!'] },
   gardien: { fr: ['Interdit d’marcher sur la pelouse !', 'J’vais siffler la fin !'], en: ['Keep off the grass!', 'I’m blowing the whistle!'] },
