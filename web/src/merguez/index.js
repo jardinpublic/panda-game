@@ -12,7 +12,7 @@
 import { createRules, botInput, HEARTS, LEVELS, PEOPLE } from './rules.js';
 export { WEAPON_OF } from './rules.js';
 import { createView } from './view.js';
-import { NAMES, WEAPON_NAMES } from './names.js';
+import { NAMES, WEAPON_NAMES, BONUS_NAMES } from './names.js';
 import { loadHeads } from '../marathon/art.js';
 import { sfx } from '../marathon/sound.js';
 import { paintFace } from '../spx/faces.js';
@@ -247,6 +247,10 @@ export async function startMerguez(options) {
     if (e.type === 'throw' && e.mine) sfx.tap();
     else if (e.type === 'throw') sfx.whoosh();
     else if (e.type === 'tell') sfx.tick(true);
+    else if (e.type === 'bonus') {
+      sfx.coin();
+      showPop(`${BONUS_NAMES[e.kind][lang]} !\n+${fmt(e.pts)}`, 1300);
+    } else if (e.type === 'bonusIn') sfx.whoosh();
     else if (e.type === 'hit') {
       sfx.pop();
       if (e.head) toast(tx('head'));
@@ -327,13 +331,15 @@ export async function startMerguez(options) {
     if (over) return;
     start();
     const hit = view.pick(x, y);
-    if (hit.foe) rules.tapFoe(hit.foe, hit.head);
+    if (hit.bonus) rules.tapBonus(hit.bonus);
+    else if (hit.foe) rules.tapFoe(hit.foe, hit.head);
     else rules.tapDir(hit.yaw, hit.pitch);
     const mark = el('div', 'gm-tapmark', hud);
     const box = shell.getBoundingClientRect();
     mark.style.left = `${x - box.left}px`;
     mark.style.top = `${y - box.top}px`;
     if (hit.foe) mark.style.borderColor = '#ff3b3b';
+    if (hit.bonus) mark.style.borderColor = '#7dffb0';
     later(() => mark.remove(), 400);
     tuto.tapped();
   }

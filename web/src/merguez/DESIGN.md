@@ -49,6 +49,14 @@ Opponents are the other gang members with their own weapons, plus people from
 the level (the pétanque grandpas, the park keeper...). Mamar, every time he
 peeks out as an opponent or gets hit as the hero: « Je suis une proie facile ! »
 
+## Flying bonuses
+
+Every 5 to 10 seconds a beauf object flies across the scene, with a golden halo:
+pneu (500), tranche d'jambon (750), canette (750), tong (1,000), sac banane
+(1,000), bouteille d'rhum (1,500), Malibu coco (1,500), pastaga (1,500), nain
+d'jardin (2,000). Tap it to throw at it (the throw aims where it will be): its
+points if it is hit. It pops the hero out of cover, so an opponent can catch you.
+
 ## Score
 
 - Hit: 10 × damage × combo. In the face: « En pleine poire ! » +50 × combo.

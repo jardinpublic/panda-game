@@ -17,9 +17,9 @@ export const EYE_OUT = 1.45; // eye height out of cover
 export const EYE_IN = 1.15; // crouched behind cover (high enough to see over it)
 const OUT_TIME = 0.09; // popping out / ducking back (quick: a fast tap beats a slow opponent)
 const RELOAD = 0.75; // seconds in cover to refill
-const TELL = 0.7; // an opponent's wind-up before throwing
-const THROW = 0.35; // stays out after throwing
-const ENEMY_SPEED = 14; // m/s of an opponent's throw
+const TELL = 0.55; // an opponent's wind-up before throwing (bosses: BOSS_TELL)
+const THROW = 0.28; // stays out after throwing
+const ENEMY_SPEED = 15.5; // m/s of an opponent's throw
 const BODY_H = 1.0;
 const HEAD_H = 1.55;
 const BODY_R = 0.32;
@@ -143,6 +143,11 @@ export const LEVELS = [
 ];
 
 // One hit is enough for everyone but the bosses.
+/** Flying bonuses (the beauf collection): tap one to throw at it, points if it is hit. */
+export const BONUSES = { pneu: 500, jambon: 750, canette: 750, tong: 1000, banane: 1000, rhum: 1500, malibu: 1500, pastis: 1500, nain: 2000 };
+const BONUS_GAP = [5, 10]; // seconds between two flying bonuses
+const BONUS_FLIGHT = [3.0, 4.0]; // seconds to cross the scene
+
 export const HP = { gang: 1, people: 1, boss: 40 };
 const BOSS_HP_PER_LEVEL = 8; // each boss is tougher than the last (Rudy: 72)
 const BOSS_TELL = 0.8; // a boss's wind-up (a bit longer than it was: they were too hard)
@@ -156,6 +161,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   const weapon = WEAPON_OF[hero] || 'merguez';
   const W = WEAPONS[weapon];
   // The gang members met as opponents (Jojo too, with his tissues), never the hero.
+  let bonusCount = 0;
   const pool = shuffle([...CAST_IDS.filter((id) => id !== hero), 'jojo'], random);
   let poolAt = 0;
 
@@ -190,6 +196,8 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     cool: 0,
     throws: 0,
     foes: [],
+    bonuses: [], // flying bonuses: { id, kind, t, T, x0, x1, y, z }
+    nextBonus: 0,
     shots: [], // the hero's throws in flight
     incoming: [], // opponents' throws in flight
     finished: false,
@@ -277,6 +285,15 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   r.tapFoe = (id, head = false) => {
     if (r.queue.length < QUEUE) r.queue.push({ foe: id, head: !!head });
   };
+  /** Tapped on a flying bonus: pop out and throw at it. */
+  r.tapBonus = (id) => {
+    if (r.queue.length < QUEUE) r.queue.push({ bonus: id });
+  };
+  /** Where a flying bonus is now. */
+  r.bonusPos = (b, dt = 0) => {
+    const k = Math.min(1, (b.t + dt) / b.T);
+    return { x: b.x0 + (b.x1 - b.x0) * k, y: b.y + Math.sin(k * Math.PI) * 1.0, z: b.z };
+  };
   /** Tapped on nobody: throw that way anyway. */
   r.tapDir = (yaw, pitch) => {
     if (r.queue.length < QUEUE) r.queue.push({ yaw, pitch });
@@ -343,6 +360,49 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     r.events.push({ type: 'throw', who: hero, weapon: kind, mine: true });
   }
 
+  /** The hero throws at a flying bonus, aiming where it will be when the throw gets there. */
+  function throwAtBonus(b) {
+    const spec = WEAPONS[weapon];
+    let p = r.bonusPos(b);
+    let dist = Math.hypot(p.x - r.heroX(), p.z - r.pos.z);
+    const T = dist / spec.speed;
+    p = r.bonusPos(b, T);
+    dist = Math.hypot(p.x - r.heroX(), p.z - r.pos.z);
+    r.aimTo(Math.atan2(p.x - r.heroX(), -(p.z - r.pos.z)), Math.atan2(p.y - r.eye(), dist));
+    r.shots.push({ kind: weapon, dmg: 0, yaw: r.yaw, pitch: r.pitch, target: null, bonus: b.id, aim: p, head: false, t: 0, T, dist });
+    r.throws++;
+    r.ammo--;
+    r.cool = 1 / W.rate;
+    r.events.push({ type: 'throw', who: hero, weapon, mine: true });
+  }
+
+  function stepBonuses(dt) {
+    if (r.phase !== 'fight') {
+      r.bonuses = [];
+      return;
+    }
+    r.nextBonus -= dt;
+    if (r.nextBonus <= 0) {
+      r.nextBonus = BONUS_GAP[0] + random() * (BONUS_GAP[1] - BONUS_GAP[0]);
+      const kinds = Object.keys(BONUSES);
+      const side = random() < 0.5 ? -1 : 1;
+      r.bonuses.push({
+        id: ++bonusCount,
+        kind: kinds[Math.floor(random() * kinds.length)],
+        t: 0,
+        T: BONUS_FLIGHT[0] + random() * (BONUS_FLIGHT[1] - BONUS_FLIGHT[0]),
+        // from just off one edge of a portrait screen to just off the other
+        x0: r.pos.x + side * 4.2,
+        x1: r.pos.x - side * 4.2,
+        y: 2.0 + random() * 1.0,
+        z: r.pos.z - (5 + random() * 3),
+      });
+      r.events.push({ type: 'bonusIn' });
+    }
+    for (const b of r.bonuses) b.t += dt;
+    r.bonuses = r.bonuses.filter((b) => b.t < b.T);
+  }
+
   function hitFoe(f, dmg, head, how = '', kind = weapon) {
     const real = head ? dmg * 2 : dmg;
     f.hp -= real;
@@ -368,9 +428,21 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   }
 
   function land(s) {
+    if (s.bonus) {
+      const b = r.bonuses.find((x) => x.id === s.bonus);
+      if (b) {
+        const pts = BONUSES[b.kind];
+        r.score += pts;
+        r.bonuses = r.bonuses.filter((x) => x !== b);
+        const p = r.bonusPos(b);
+        r.events.push({ type: 'bonus', kind: b.kind, pts, x: p.x, y: p.y, z: p.z });
+      } else r.events.push({ type: 'miss', foe: null, kind: s.kind, cover: false });
+      return;
+    }
     const f = r.foes.find((x) => x.id === s.target);
     // Still out, or not yet fully back behind the cover: it lands.
-    if (f && f.state !== 'ko' && (visible(f) || f.peek > 0.35)) return hitFoe(f, s.dmg, s.head, '', s.kind);
+    // Only lands on someone still out (not on their way back behind their cover).
+    if (f && f.state !== 'ko' && visible(f) && f.peek > 0.5) return hitFoe(f, s.dmg, s.head, '', s.kind);
     if (f && f.state !== 'ko' && s.pierce) return hitFoe(f, Math.max(1, Math.floor(s.dmg / 2)), false, 'pierce', s.kind);
     if (s.bounce) {
       const other = r.foes.find((x) => x.state !== 'ko' && visible(x));
@@ -479,7 +551,10 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
         r.events.push({ type: 'empty' });
       } else {
         const f = q.foe ? r.foes.find((x) => x.id === q.foe && x.state !== 'ko') : null;
-        if (f) {
+        const b = q.bonus ? r.bonuses.find((x) => x.id === q.bonus) : null;
+        if (b) {
+          throwAtBonus(b);
+        } else if (f) {
           const d = r.dirTo(f, q.head ? HEAD_H : BODY_H);
           r.aimTo(d.yaw, d.pitch);
           throwOne({ foe: f, head: q.head });
@@ -520,6 +595,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
     for (const s of r.shots.filter((x) => x.t >= x.T)) land(s);
     r.shots = r.shots.filter((x) => x.t < x.T);
     stepFoes(dt);
+    stepBonuses(dt);
     stepIncoming(dt);
     if (r.phase === 'over') return;
     // Station cleared: move on (or finish the level).
@@ -572,6 +648,7 @@ export function createRules({ hero = 'panda', random = Math.random, level = 0, l
   r.nextStation = () => levels[r.level].stations[r.station + 1] || null;
   r.summary = () => ({ score: r.score, level: r.level + (r.finished ? 1 : 0), finished: r.finished, time: Math.round(r.time), kos: r.kos, hero });
 
+  r.nextBonus = 4 + random() * 3;
   startStation();
   return r;
 }

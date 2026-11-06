@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRules, botInput, WEAPONS, WEAPON_OF, LEVELS, HEARTS, PEOPLE } from '../src/merguez/rules.js';
+import { createRules, botInput, WEAPONS, WEAPON_OF, LEVELS, HEARTS, PEOPLE, BONUSES } from '../src/merguez/rules.js';
 import { CAST_IDS, EXTRA_IDS } from '../src/marathon/art.js';
 
 function seeded(seed) {
@@ -222,7 +222,9 @@ describe('Golden Merguez rules', () => {
   });
 
   it('knocking someone out stops what they just threw', () => {
-    const r = createRules({ hero: 'panda', random: seeded(6) });
+    // Someone close, so the hero's throw lands before theirs.
+    const levels = [{ id: 't', name: {}, par: 60, stations: [{ x: 0, z: 0, cover: 'bench', foes: [{ who: 'mamar', x: 0, z: -4, cover: 'tree' }] }] }];
+    const r = createRules({ hero: 'panda', random: seeded(6), levels });
     let f = null;
     for (let i = 0; i < 900 && !f; i++) {
       r.step(1 / 60);
@@ -233,6 +235,24 @@ describe('Golden Merguez rules', () => {
     for (let i = 0; i < 40 && f.state !== 'ko'; i++) r.step(1 / 60);
     expect(f.state).toBe('ko');
     expect(r.incoming.some((s) => s.foe === f.id)).toBe(false);
+  });
+
+  it('sends flying bonuses across, and hitting one pays its points', () => {
+    const r = createRules({ hero: 'panda', random: seeded(2) });
+    for (let i = 0; i < 60 * 12 && !r.bonuses.length; i++) r.step(1 / 60);
+    expect(r.bonuses.length).toBe(1);
+    const b = r.bonuses[0];
+    expect(BONUSES[b.kind]).toBeGreaterThan(0);
+    const before = r.score;
+    r.tapBonus(b.id);
+    const events = [];
+    for (let i = 0; i < 90; i++) {
+      r.step(1 / 60);
+      events.push(...r.events.splice(0));
+    }
+    const got = events.find((e) => e.type === 'bonus');
+    expect(got?.kind).toBe(b.kind);
+    expect(r.score - before).toBeGreaterThanOrEqual(BONUSES[b.kind]);
   });
 
   it('gives a heart back between levels', () => {

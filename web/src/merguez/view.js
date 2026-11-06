@@ -254,6 +254,59 @@ export function createView({ canvas, rules }) {
   camera.add(held);
   let recoil = 0;
 
+  /* ---------- Flying bonuses ---------- */
+  const bonusArt = new Map(); // bonus id -> sprite
+  let halo = null;
+  /** A soft golden glow behind a bonus. */
+  function haloCv() {
+    if (halo) return halo;
+    halo = document.createElement('canvas');
+    halo.width = 128;
+    halo.height = 128;
+    const c = halo.getContext('2d');
+    const g = c.createRadialGradient(64, 64, 10, 64, 64, 62);
+    g.addColorStop(0, 'rgba(255,230,120,0.9)');
+    g.addColorStop(1, 'rgba(255,210,63,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 128, 128);
+    return halo;
+  }
+  /** Where a bonus is on screen (testing). */
+  function bonusScreen(id) {
+    const b = rules.bonuses.find((x) => x.id === id);
+    if (!b) return null;
+    const rect = canvas.getBoundingClientRect();
+    const p = rules.bonusPos(b);
+    v.set(p.x, p.y, p.z).project(camera);
+    return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+  }
+  function drawBonuses() {
+    const alive = new Set();
+    for (const b of rules.bonuses) {
+      alive.add(b.id);
+      let sp = bonusArt.get(b.id);
+      if (!sp) {
+        sp = sprite(weaponCanvas(b.kind, 160), 1.3, 1.3, [0.5, 0.5]);
+        sp.userData.halo = sprite(haloCv(), 1.9, 1.9, [0.5, 0.5]);
+        sp.userData.halo.renderOrder = -1;
+        bonusArt.set(b.id, sp);
+      }
+      const p = rules.bonusPos(b);
+      sp.position.set(p.x, p.y, p.z);
+      sp.material.rotation = t * 3 + b.id;
+      // a gentle golden glow so it reads as a bonus
+      const pulse = 0.85 + 0.15 * Math.sin(t * 10);
+      sp.scale.set(1.3 * pulse, 1.3 * pulse, 1);
+      sp.userData.halo.position.copy(sp.position);
+      sp.userData.halo.material.opacity = 0.55 + 0.35 * Math.sin(t * 10);
+    }
+    for (const [id, sp] of bonusArt) {
+      if (alive.has(id)) continue;
+      scene.remove(sp, sp.userData.halo);
+      bonusArt.delete(id);
+    }
+  }
+
   /* ---------- Per frame ---------- */
   const ease = (k) => k * k * (3 - 2 * k);
   let t = 0;
@@ -320,6 +373,7 @@ export function createView({ canvas, rules }) {
       a.mark.position.set(p.x, CHAR_SIZE + 0.35 - sink + Math.sin(t * 12) * 0.05, p.z);
     }
     dropFoes(alive);
+    drawBonuses();
 
     // The hero's throws: from the hand to the target (or along the aim).
     const live = new Set();
@@ -331,7 +385,9 @@ export function createView({ canvas, rules }) {
         const from = new THREE.Vector3(0.22, -0.2, -0.5).applyQuaternion(camera.quaternion).add(camera.position);
         const f = rules.foes.find((x) => x.id === s.target);
         let to;
-        if (f) {
+        if (s.aim) {
+          to = new THREE.Vector3(s.aim.x, s.aim.y, s.aim.z);
+        } else if (f) {
           const p = rules.foePos(f);
           to = new THREE.Vector3(p.x, s.head ? 1.55 : 1.0, p.z);
         } else {
@@ -419,6 +475,7 @@ export function createView({ canvas, rules }) {
   }
 
   function event(e) {
+    if (e.type === 'bonus') burst(e.x, e.y, e.z, '#ffd23f', 14, 0.2);
     if (e.type === 'hit' || e.type === 'ko') {
       const f = rules.foes.find((x) => x.id === e.foe);
       if (!f) return;
@@ -454,7 +511,12 @@ export function createView({ canvas, rules }) {
       v.set(x, y, z).project(camera);
       return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height, front: v.z < 1 };
     };
-    const reach = Math.max(46, rect.width * 0.12);
+    const reach = Math.max(40, rect.width * 0.09);
+    for (const b of rules.bonuses) {
+      const p = rules.bonusPos(b);
+      const s = toScreen(p.x, p.y, p.z);
+      if (s.front && Math.hypot(s.x - clientX, s.y - clientY) < reach * 1.1) return { bonus: b.id };
+    }
     let best = null;
     for (const f of rules.foes) {
       if (f.state === 'ko') continue;
@@ -486,6 +548,7 @@ export function createView({ canvas, rules }) {
   return {
     pick,
     screenOf,
+    bonusScreen,
     render,
     event,
     resize,

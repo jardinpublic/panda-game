@@ -14,3 +14,10 @@ export const WEAPON_NAMES = {
   poulet: { fr: 'Poulet', en: 'Chicken' }, boule: { fr: 'Boules de pétanque', en: 'Pétanque balls' }, pomme: { fr: 'Pommes de pin', en: 'Pine cones' },
   pv: { fr: 'PV', en: 'Fines' }, glacon: { fr: 'Glaçons', en: 'Ice cubes' }, pantoufle: { fr: 'Pantoufles', en: 'Slippers' },
 };
+
+/** The flying bonuses (the beauf collection). */
+export const BONUS_NAMES = {
+  pneu: { fr: 'Pneu', en: 'Tyre' }, jambon: { fr: 'Tranche d’jambon', en: 'Slice of ham' }, canette: { fr: 'Canette', en: 'Can of beer' },
+  tong: { fr: 'Tong', en: 'Flip-flop' }, banane: { fr: 'Sac banane', en: 'Bum bag' }, rhum: { fr: 'Bouteille d’rhum', en: 'Bottle of rum' },
+  malibu: { fr: 'Malibu coco', en: 'Coconut liqueur' }, pastis: { fr: 'Pastaga', en: 'Pastis' }, nain: { fr: 'Nain d’jardin', en: 'Garden gnome' },
+};

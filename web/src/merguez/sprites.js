@@ -394,6 +394,115 @@ export function drawWeapon(c, kind, s) {
       ellipse(c, s * 0.12, -s * 0.02, s * 0.2, s * 0.12, '#b0507a');
       for (let i = 0; i < 5; i++) circle(c, s * (0.02 + i * 0.06), -s * 0.12, s * 0.035, '#f4ecdf');
       break;
+    case 'jambon':
+      // A slice of ham: pink with its white fat rim
+      ellipse(c, 0, 0, s * 0.4, s * 0.3, '#f6efe4');
+      ellipse(c, s * 0.02, s * 0.01, s * 0.34, s * 0.24, '#f08aa0');
+      ellipse(c, -s * 0.08, -s * 0.06, s * 0.12, s * 0.06, 'rgba(255,255,255,0.4)', -0.3);
+      break;
+    case 'rhum':
+    case 'malibu':
+    case 'pastis': {
+      // A bottle: dark rum, white coconut liqueur, yellow pastis
+      const body = kind === 'rhum' ? '#5a2f1a' : kind === 'malibu' ? '#f4f1ea' : '#e8c23a';
+      const label = kind === 'rhum' ? '#f2c94c' : kind === 'malibu' ? '#2f8a3e' : '#1f4fa0';
+      const word = kind === 'rhum' ? 'RHUM' : kind === 'malibu' ? 'COCO' : 'PASTAGA';
+      c.rotate(0.35);
+      rrect(c, -s * 0.14, -s * 0.18, s * 0.28, s * 0.5, s * 0.07);
+      c.fillStyle = body;
+      c.fill();
+      rrect(c, -s * 0.05, -s * 0.4, s * 0.1, s * 0.24, s * 0.03);
+      c.fill();
+      rrect(c, -s * 0.06, -s * 0.44, s * 0.12, s * 0.06, s * 0.02);
+      c.fillStyle = '#c8332b';
+      c.fill();
+      rrect(c, -s * 0.13, -s * 0.02, s * 0.26, s * 0.18, s * 0.02);
+      c.fillStyle = label;
+      c.fill();
+      c.font = `800 ${Math.round(s * (word.length > 5 ? 0.055 : 0.075))}px Fredoka, sans-serif`;
+      c.textAlign = 'center';
+      c.fillStyle = '#ffffff';
+      c.fillText(word, 0, s * 0.1);
+      ellipse(c, -s * 0.07, -s * 0.08, s * 0.025, s * 0.09, 'rgba(255,255,255,0.45)');
+      break;
+    }
+    case 'pneu':
+      // A tyre
+      c.lineWidth = s * 0.14;
+      c.strokeStyle = '#26262c';
+      c.beginPath();
+      c.arc(0, 0, s * 0.27, 0, Math.PI * 2);
+      c.stroke();
+      c.lineWidth = s * 0.02;
+      c.strokeStyle = '#4a4a54';
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        c.beginPath();
+        c.moveTo(Math.cos(a) * s * 0.21, Math.sin(a) * s * 0.21);
+        c.lineTo(Math.cos(a) * s * 0.33, Math.sin(a) * s * 0.33);
+        c.stroke();
+      }
+      circle(c, 0, 0, s * 0.12, '#9aa2ac');
+      break;
+    case 'nain':
+      // A garden gnome: red hat, white beard, blue coat
+      rrect(c, -s * 0.16, 0, s * 0.32, s * 0.36, s * 0.1);
+      c.fillStyle = '#2f5fb3';
+      c.fill();
+      circle(c, 0, -s * 0.06, s * 0.12, '#f2c3a6');
+      ellipse(c, 0, s * 0.06, s * 0.13, s * 0.12, '#ffffff');
+      c.fillStyle = '#d8243c';
+      c.beginPath();
+      c.moveTo(-s * 0.14, -s * 0.12);
+      c.lineTo(s * 0.14, -s * 0.12);
+      c.lineTo(s * 0.02, -s * 0.46);
+      c.closePath();
+      c.fill();
+      circle(c, -s * 0.04, -s * 0.08, s * 0.018, '#2a1a10');
+      circle(c, s * 0.04, -s * 0.08, s * 0.018, '#2a1a10');
+      circle(c, 0, -s * 0.03, s * 0.03, '#e88a8a');
+      break;
+    case 'tong':
+      // A flip-flop
+      c.rotate(-0.4);
+      ellipse(c, 0, 0, s * 0.18, s * 0.38, '#2fb3c9');
+      ellipse(c, 0, s * 0.02, s * 0.13, s * 0.32, '#5fd0e0');
+      c.strokeStyle = '#f2c230';
+      c.lineWidth = s * 0.04;
+      c.beginPath();
+      c.moveTo(-s * 0.13, s * 0.02);
+      c.quadraticCurveTo(0, -s * 0.24, s * 0.13, s * 0.02);
+      c.stroke();
+      break;
+    case 'canette':
+      // A can of beer
+      c.rotate(0.3);
+      rrect(c, -s * 0.15, -s * 0.3, s * 0.3, s * 0.6, s * 0.06);
+      c.fillStyle = '#e8b830';
+      c.fill();
+      ellipse(c, 0, -s * 0.3, s * 0.15, s * 0.04, '#c8ccd4');
+      rrect(c, -s * 0.15, -s * 0.06, s * 0.3, s * 0.14, 0);
+      c.fillStyle = '#c8332b';
+      c.fill();
+      c.font = `800 ${Math.round(s * 0.075)}px Fredoka, sans-serif`;
+      c.textAlign = 'center';
+      c.fillStyle = '#ffffff';
+      c.fillText('BIÈRE', 0, s * 0.04);
+      break;
+    case 'banane':
+      // A bum bag on its belt
+      c.strokeStyle = '#2b2b33';
+      c.lineWidth = s * 0.05;
+      c.beginPath();
+      c.moveTo(-s * 0.46, -s * 0.04);
+      c.lineTo(s * 0.46, -s * 0.04);
+      c.stroke();
+      ellipse(c, 0, s * 0.04, s * 0.3, s * 0.17, '#7a3b8f');
+      ellipse(c, 0, s * 0.0, s * 0.26, s * 0.05, '#c86bdc');
+      rrect(c, -s * 0.05, -s * 0.08, s * 0.1, s * 0.08, s * 0.02);
+      c.fillStyle = '#f2c230';
+      c.fill();
+      break;
     case 'pomme':
     default:
       ellipse(c, 0, 0, s * 0.18, s * 0.3, '#7a4f2a');
