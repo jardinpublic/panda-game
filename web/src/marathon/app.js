@@ -449,10 +449,14 @@ function draw() {
   A.fx.draw(c, 400, A.H);
 }
 
+let homeCrowd = null;
+
 function drawHome() {
   const H = A.H;
   art.scene.beach(c, 400, H, A.t, { horizon: 0.42, shore: 0.55 });
-  const others = CAST_IDS.filter((id) => id !== A.meta.hero);
+  // The friends around the hero, in a random order (drawn once per visit, so nobody jumps around).
+  if (!homeCrowd || homeCrowd.hero !== A.meta.hero) homeCrowd = { hero: A.meta.hero, ids: shuffled(CAST_IDS.filter((id) => id !== A.meta.hero)) };
+  const others = homeCrowd.ids;
   const spots = [
     [48, 0.63, 118, 'dance'], [352, 0.63, 118, 'idle'], [100, 0.6, 104, 'cheer'], [300, 0.6, 104, 'dance'],
     [150, 0.585, 92, 'idle'], [250, 0.585, 92, 'cheer'], [30, 0.74, 140, 'idle'], [370, 0.74, 140, 'dance'], [200, 0.575, 86, 'dance'],
