@@ -33,7 +33,7 @@ export const PAL = {
 
 export const CAST_IDS = ['panda', 'cous', 'mamar', 'babar', 'victor', 'romain', 'eugenie', 'violaine', 'aline', 'greg'];
 /** People from the stories who are not in the gang: drawn like them, never playable, never
- * random friends or cameos. They appear only in their own mini-games (car205, rudy-escape, rudy-food, coma). */
+ * random friends or cameos. They appear only in their own mini-games (car205, rudy-escape, rudy-food, coma, proprio, autruche, bang). */
 export const EXTRA_IDS = ['rudy', 'jose', 'lamoule', 'jojo'];
 
 /** Shirt, trousers and build per friend. Panda wears madras, Cous a hawaiian shirt. */
