@@ -241,13 +241,13 @@ describe('online Hall of Fame', () => {
   });
 });
 
-it('keeps Golden Merguez records on the phone until the database accepts them', async () => {
+it('sends Golden Merguez records to the board (the database accepts them since 2026-11-07)', async () => {
   const { toSend, NOT_ON_BOARD_YET } = await import('../src/marathon/online.js');
   const { emptyMeta, applyMerguez } = await import('../src/marathon/meta.js');
   let meta = emptyMeta();
   meta.online = { ...meta.online, id: 'p1', name: 'Cous' };
   meta = applyMerguez(meta, { score: 12000, hero: 'cous', level: 1, finished: true, time: 90 }).meta;
-  expect(NOT_ON_BOARD_YET).toContain('merguez');
-  expect(toSend(meta)).not.toContain('merguez');
+  expect(NOT_ON_BOARD_YET).not.toContain('merguez');
+  expect(toSend(meta)).toContain('merguez');
   expect(meta.merguez.best).toBe(12000);
 });

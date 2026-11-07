@@ -16,7 +16,7 @@ export const NAME_MAX = 20;
 // Flipper scores go past 300 million (the last replay); 2 billion stays within the database's integer column
 // Games the database does not accept yet (supabase.sql not applied): their records
 // stay on the phone and are sent once the game leaves this list (none is lost).
-export const NOT_ON_BOARD_YET = ['merguez'];
+export const NOT_ON_BOARD_YET = [];
 
 const MAX = { marathon: 100000, flipper: 2000000000, spx: 200000, merguez: 2000000 };
 const FIRST_DAY = Date.UTC(2026, 10, 1);
