@@ -151,6 +151,23 @@ export function createOnline({ url = ONLINE_URL, key = ONLINE_KEY, fetch = globa
       const at = Date.parse(await res.json());
       return Number.isFinite(at) ? at : 0;
     },
+    /**
+     * When this player's records were reset for single games ({ game: ms }), e.g.
+     * one wrong Golden Merguez record. {} if none, or if the database is older
+     * than this (no panda_game_since). Throws when offline.
+     */
+    async gameSince(playerId) {
+      if (!configured) throw new Error('offline');
+      const res = await call('rpc/panda_game_since', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ pid: playerId }) });
+      if (res.status === 404) return {};
+      if (!res.ok) throw new Error(String(res.status));
+      const out = {};
+      for (const [game, at] of Object.entries((await res.json()) || {})) {
+        const ms = Date.parse(at);
+        if (GAMES.includes(game) && Number.isFinite(ms)) out[game] = ms;
+      }
+      return out;
+    },
     /** The gang's board for a game, best first. */
     async board(game, limit = 50) {
       if (!configured) throw new Error('offline');
@@ -172,7 +189,9 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
   const rows = seed.map((r, i) => ({ ...r, created_at: now() - (seed.length - i) * 60000 }));
   /** player id → records reset time (ms) */
   const resets = new Map();
-  const counts = (r) => Date.parse(r.played_at) >= (resets.get(r.player_id) || 0);
+  /** "player id|game" → that game's records reset time (ms) */
+  const gameResets = new Map();
+  const counts = (r) => Date.parse(r.played_at) >= Math.max(resets.get(r.player_id) || 0, gameResets.get(`${r.player_id}|${r.game}`) || 0);
   const reply = (status, body) => ({ ok: status < 300, status, json: async () => body });
   function board(game) {
     const names = new Map();
@@ -211,6 +230,12 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
       const at = resets.get(JSON.parse(init.body).pid);
       return reply(200, at ? new Date(at).toISOString() : null);
     }
+    if (u.pathname.endsWith('/rpc/panda_game_since')) {
+      const pid = JSON.parse(init.body).pid;
+      const out = {};
+      for (const [key, at] of gameResets) if (key.startsWith(`${pid}|`)) out[key.split('|')[1]] = new Date(at).toISOString();
+      return reply(200, out);
+    }
     if (u.pathname.endsWith('/panda_board')) {
       const game = (u.searchParams.get('game') || '').replace(/^eq\./, '');
       const limit = Number(u.searchParams.get('limit')) || 50;
@@ -218,5 +243,5 @@ export function memoryBackend(seed = [], now = () => Date.now()) {
     }
     return reply(404, null);
   }
-  return { fetch, rows, resets };
+  return { fetch, rows, resets, gameResets };
 }

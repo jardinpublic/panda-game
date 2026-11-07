@@ -1625,7 +1625,22 @@ function syncScores() {
     if (!resetChecked && A.meta.online.id) {
       try {
         const since = await net.since(A.meta.online.id);
+        const perGame = await net.gameSince(A.meta.online.id);
         resetChecked = true;
+        // A single game reset (one wrong record): forget that game's older runs only
+        let changed = false;
+        for (const [game, at] of Object.entries(perGame)) {
+          if (at > (A.meta.online.gameSince[game] || 0)) {
+            A.meta.online.gameSince[game] = at;
+            A.meta.online.sent[game] = 0;
+            changed = true;
+          }
+        }
+        if (changed && !(since > A.meta.online.since)) {
+          dropOldRecords(A.meta);
+          persist();
+          if (A.screen === 'home' && !document.querySelector('.m-sheet')) renderUI();
+        }
         if (since > A.meta.online.since) {
           A.meta.online.since = since;
           A.meta.online.sent = { marathon: 0, flipper: 0, spx: 0, merguez: 0 };

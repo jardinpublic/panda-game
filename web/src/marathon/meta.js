@@ -46,7 +46,7 @@ export function emptyMeta() {
 
 /** The online Hall of Fame profile: a random id for this phone, the name typed once, what was sent. */
 export function emptyOnline() {
-  return { id: '', name: '', avatar: '', asked: false, since: 0, sent: { marathon: 0, flipper: 0, spx: 0, merguez: 0 } };
+  return { id: '', name: '', avatar: '', asked: false, since: 0, gameSince: {}, sent: { marathon: 0, flipper: 0, spx: 0, merguez: 0 } };
 }
 
 function normalizeOnline(raw) {
@@ -59,6 +59,8 @@ function normalizeOnline(raw) {
     asked: !!o.asked,
     // Records reset on the board at this time (ms): older runs no longer count
     since: num(o.since),
+    // Single-game resets ({ game: ms }): only that game's older runs are forgotten
+    gameSince: Object.fromEntries(Object.entries(o.gameSince && typeof o.gameSince === 'object' ? o.gameSince : {}).filter(([, v]) => Number.isFinite(v) && v > 0)),
     sent: { marathon: num(sent.marathon), flipper: num(sent.flipper), spx: num(sent.spx), merguez: num(sent.merguez) },
   };
 }
@@ -101,15 +103,16 @@ export function normalizeMeta(raw) {
  */
 export function dropOldRecords(m) {
   const since = m.online?.since || 0;
-  if (!since) return m;
-  const keep = (list) => list.filter((x) => (x.at || 0) >= since);
-  m.scores = keep(m.scores);
+  const per = m.online?.gameSince || {};
+  if (!since && !Object.keys(per).length) return m;
+  const keep = (list, game) => list.filter((x) => (x.at || 0) >= Math.max(since, per[game] || 0));
+  m.scores = keep(m.scores, 'marathon');
   m.best = m.scores[0]?.score || 0;
-  m.pinball.scores = keep(m.pinball.scores);
+  m.pinball.scores = keep(m.pinball.scores, 'flipper');
   m.pinball.best = m.pinball.scores[0]?.score || 0;
-  m.spx.scores = keep(m.spx.scores);
+  m.spx.scores = keep(m.spx.scores, 'spx');
   m.spx.best = m.spx.scores[0]?.score || 0;
-  m.merguez.scores = keep(m.merguez.scores);
+  m.merguez.scores = keep(m.merguez.scores, 'merguez');
   m.merguez.best = m.merguez.scores[0]?.score || 0;
   // A "sent" mark above what is left is an old record's: the new best must go out
   // (merging with an older copy of the save brings those marks back, hence here)
@@ -177,6 +180,7 @@ export function mergeMeta(a, b) {
     avatar: no.avatar || oo.avatar,
     asked: oo.asked || no.asked,
     since: Math.max(oo.since, no.since),
+    gameSince: Object.fromEntries([...new Set([...Object.keys(oo.gameSince), ...Object.keys(no.gameSince)])].map((g) => [g, Math.max(oo.gameSince[g] || 0, no.gameSince[g] || 0)])),
     sent: { marathon: Math.max(oo.sent.marathon, no.sent.marathon), flipper: Math.max(oo.sent.flipper, no.sent.flipper), spx: Math.max(oo.sent.spx, no.sent.spx), merguez: Math.max(oo.sent.merguez, no.sent.merguez) },
   };
   m.updated = Math.max(older.updated || 0, newer.updated || 0);

@@ -84,6 +84,29 @@ $$;
 revoke all on function public.panda_since(uuid) from public;
 grant execute on function public.panda_since(uuid) to anon, authenticated;
 
+-- Single-game resets: one game's scores of a player played before `since` no
+-- longer count (e.g. one wrong Golden Merguez record); their other games stay.
+-- Add one by hand in the SQL Editor:
+--   insert into public.panda_game_resets (player_id, game) values ('<player id>', 'merguez')
+--     on conflict (player_id, game) do update set since = now();
+-- The old rows stay in the table (hidden from the board, nothing deleted); the
+-- phone reads them (panda_game_since) and forgets that game's runs from before.
+create table if not exists public.panda_game_resets (
+  player_id uuid not null,
+  game text not null,
+  since timestamptz not null default now(),
+  primary key (player_id, game)
+);
+alter table public.panda_game_resets enable row level security;
+revoke all on public.panda_game_resets from anon, authenticated;
+
+create or replace function public.panda_game_since(pid uuid) returns json
+language sql stable security definer set search_path = public as $$
+  select coalesce(json_object_agg(game, since), '{}'::json) from public.panda_game_resets where player_id = pid
+$$;
+revoke all on function public.panda_game_since(uuid) from public;
+grant execute on function public.panda_game_since(uuid) to anon, authenticated;
+
 -- No more than one send per player and game every 10 seconds, and nothing played
 -- before the player's records reset
 create or replace function public.panda_scores_slow_down() returns trigger
@@ -91,6 +114,11 @@ language plpgsql security definer set search_path = public as $$
 begin
   if exists (
     select 1 from public.panda_resets where player_id = new.player_id and new.played_at < since
+  ) then
+    raise exception 'before reset';
+  end if;
+  if exists (
+    select 1 from public.panda_game_resets where player_id = new.player_id and game = new.game and new.played_at < since
   ) then
     raise exception 'before reset';
   end if;
@@ -115,7 +143,7 @@ revoke all on public.panda_scores from anon, authenticated;
 grant insert (player_id, name, game, score, level, streak, hero, ride_time, home, played_at)
   on public.panda_scores to anon, authenticated;
 
--- The board: each name's best per game (since the records reset), with the name and face (hero) the player uses now.
+-- The board: each name's best per game (since the records resets, the player's and the game's), with the name and face (hero) the player uses now.
 -- Scores are still recorded per device (player id); only the board merges them by name.
 create or replace view public.panda_board as
 with best as (
@@ -123,12 +151,12 @@ with best as (
     game, player_id, score, level, streak, hero, ride_time, home, played_at
   from public.panda_scores s
   where not exists (select 1 from public.panda_resets r where r.player_id = s.player_id and s.played_at < r.since)
+    and not exists (select 1 from public.panda_game_resets g where g.player_id = s.player_id and g.game = s.game and s.played_at < g.since)
   order by game, player_id, score desc, played_at asc
 ), names as (
   select distinct on (player_id) player_id, name, hero
   from public.panda_scores
   order by player_id, created_at desc
-)
 ), per_player as (
   select b.game, n.name, b.score, b.level, b.streak, coalesce(n.hero, b.hero) as hero, b.ride_time, b.home, b.played_at
   from best b join names n using (player_id)

@@ -251,3 +251,38 @@ it('sends Golden Merguez records to the board (the database accepts them since 2
   expect(toSend(meta)).toContain('merguez');
   expect(meta.merguez.best).toBe(12000);
 });
+
+it('a single-game reset forgets only that game, and the old record is not sent again', async () => {
+  const { createOnline, memoryBackend, toSend, rowFor } = await import('../src/marathon/online.js');
+  const { emptyMeta, applyMerguez, applySpx, dropOldRecords } = await import('../src/marathon/meta.js');
+  let now = Date.parse('2026-11-06T21:00:00Z');
+  const backend = memoryBackend([], () => now);
+  const net = createOnline({ url: 'https://x.supabase.co', key: 'k', fetch: backend.fetch });
+  let meta = emptyMeta();
+  meta.online = { ...meta.online, id: 'p-cous', name: 'Cous l’infâme' };
+  meta = applyMerguez(meta, { score: 174350, hero: 'cous', level: 5, finished: true, time: 600, at: now }).meta;
+  meta = applySpx(meta, { score: 40000, hero: 'cous', time: 120, finished: true, at: now }).meta;
+  for (const g of toSend(meta)) {
+    expect(await net.send(rowFor(meta, g))).toBe('sent');
+    meta.online.sent[g] = rowFor(meta, g).score;
+    now += 11000;
+  }
+  // The Golden Merguez record is erased on the board, for that game only
+  now = Date.parse('2026-11-07T06:00:00Z');
+  backend.gameResets.set('p-cous|merguez', now);
+  expect((await net.board('merguez')).length).toBe(0);
+  expect((await net.board('spx')).length).toBe(1);
+  // The phone learns it: forgets its Golden Merguez runs before, keeps the 103 RCX
+  const per = await net.gameSince('p-cous');
+  expect(per.merguez).toBe(now);
+  meta.online.gameSince = per;
+  meta.online.sent.merguez = 0;
+  dropOldRecords(meta);
+  expect(meta.merguez.best).toBe(0);
+  expect(meta.spx.best).toBe(40000);
+  expect(toSend(meta)).not.toContain('merguez');
+  // And if an old copy tried to send it again, the board refuses it
+  const old = { player_id: 'p-cous', name: 'Cous l’infâme', game: 'merguez', score: 174350, level: 5, ride_time: 600, home: true, hero: 'cous', played_at: '2026-11-06T21:00:00.000Z' };
+  now += 20000;
+  expect(await net.send(old)).toBe('refused');
+});
