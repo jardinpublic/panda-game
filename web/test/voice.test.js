@@ -1,6 +1,6 @@
 // Panda's recorded "Hoho": which lines trigger it, and only once per appearance.
 import { describe, it, expect } from 'vitest';
-import { hasHoho, createVoice, CLIPS } from '../src/core/voice.js';
+import { hasHoho, hasCuite, clipFor, createVoice, CLIPS } from '../src/core/voice.js';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -53,7 +53,19 @@ describe('Hoho voice', () => {
     expect(played.length).toBe(2);
   });
 
+  it('plays Romain’s « la merguez est bien cuite » for that line, the plain Hoho otherwise', () => {
+    expect(hasCuite('Hoho, bah la merguez est bien cuite là !')).toBe(true);
+    expect(hasCuite('Hoho, well, the merguez is well done now!')).toBe(true);
+    expect(clipFor('Hoho, bah la merguez est bien cuite là !')).toBe('cuite');
+    expect(clipFor('Hoho les merguez !')).toBe('hoho');
+    expect(clipFor('Allez Panda !')).toBe(null);
+    const { v, played, at } = rig();
+    at(1);
+    v.heard('Hoho, bah la merguez est bien cuite là !');
+    expect(played).toEqual(['cuite']);
+  });
+
   it('has the recorded clips in the game files', () => {
-    for (const url of CLIPS.hoho) expect(existsSync(fileURLToPath(new URL('../public/' + url, import.meta.url)))).toBe(true);
+    for (const url of [...CLIPS.hoho, ...CLIPS.cuite]) expect(existsSync(fileURLToPath(new URL('../public/' + url, import.meta.url)))).toBe(true);
   });
 });

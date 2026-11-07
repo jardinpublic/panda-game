@@ -1,7 +1,9 @@
 /*
  * The gang's own voices, recorded by them (web/public/voices/<who>/), played
- * when one of their catchphrases shows on screen. For now: Panda's "Hoho"
- * (voices/panda/hoho-*.wav), for any line with "Hoho" in it, in every game.
+ * when one of their catchphrases shows on screen: Panda's "Hoho"
+ * (voices/panda/hoho-*.wav) for any line with "Hoho" in it, and "Hoho bah la
+ * merguez est bien cuite là" (voices/panda/merguez-cuite.wav, Romain doing
+ * Panda) for any line about the merguez being well cooked, in every game.
  *
  *   heard(text)        // call wherever a line is drawn or shown, even every frame:
  *                      // it plays once when the line appears, not while it stays
@@ -13,7 +15,20 @@
 /** Recorded clips by catchphrase; one is picked at random each time. */
 export const CLIPS = {
   hoho: ['voices/panda/hoho-1.wav'],
+  cuite: ['voices/panda/merguez-cuite.wav'],
 };
+
+/** Does this line say the merguez is well cooked ("bien cuite" / "well done")? */
+export function hasCuite(text) {
+  return /merguez (est|is) (bien cuite|well done)/i.test(String(text || ''));
+}
+
+/** Which recorded clip a line calls for: the longer catchphrase first, then "Hoho". */
+export function clipFor(text) {
+  if (hasCuite(text)) return 'cuite';
+  if (hasHoho(text)) return 'hoho';
+  return null;
+}
 
 /** Does this line say "Hoho" (Hoho, HOHO, Hohoho…)? */
 export function hasHoho(text) {
@@ -37,7 +52,8 @@ export function createVoice({ play, now = () => performance.now() / 1000, gap = 
       return muted;
     },
     heard(text) {
-      if (!hasHoho(text)) return false;
+      const clip = clipFor(text);
+      if (!clip) return false;
       const t = now();
       const key = String(text);
       const before = seen.get(key);
@@ -50,7 +66,7 @@ export function createVoice({ play, now = () => performance.now() / 1000, gap = 
       if (before !== undefined && t - before < forget) return false;
       if (muted || t - last < gap) return false;
       last = t;
-      play('hoho');
+      play(clip);
       return true;
     },
   };

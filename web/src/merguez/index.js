@@ -14,6 +14,7 @@ export { WEAPON_OF } from './rules.js';
 import { createView } from './view.js';
 import { NAMES, WEAPON_NAMES, BONUS_NAMES, KO_LINES } from './names.js';
 import { STRINGS } from '../core/strings.js';
+import { heard } from '../core/voice.js';
 import { loadHeads } from '../marathon/art.js';
 import { sfx } from '../marathon/sound.js';
 import { paintFace } from '../spx/faces.js';
@@ -85,7 +86,7 @@ const T = {
   fr: {
     quit: 'Quitter', hold: 'Tape sur quelqu’un pour y lancer un coup d’{w} ! Après, te r’tournes à couvert tout seul.',
     tuto1: 'Tape sur <b>quelqu’un</b> pour y lancer un coup d’{w} !', tuto2: 'Un <b>!</b> rouge ? Y va lancer : attends à couvert… pis tape-le quand y ressort !', tuto3: 'Vise <b>la tête</b> : en pleine poire, ça paie double !', go: 'C’est parti !',
-    soon: 'À suivre…', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
+    soon: 'À suivre…', cuite: 'Hoho, bah la merguez est bien cuite là !', up: 'DEBOUT', down: 'À\nCOUVERT', standFirst: 'Lève-toi pour lancer !',
     advance: 'Avance !', head: 'En pleine poire !', ko: '{name} KO !', reload: 'Planque-toi pour recharger !', cleared: '{level} nettoyé !\n⏱ +{time}  ❤ +{hearts}',
     end: 'Mission accomplie !', over: 'T’es KO !', proie: 'Je suis une proie facile !', lamoule: 'Vous allez bouffer du poulet !',
     romain: 'Un sac d’os dans ta poire !', jose: 'Sardines à volonté !', babar: 'Héhéhé… un p’tit coup d’rouge ?', rudy: 'Bienvenue dans mon CRAPA !',
@@ -95,7 +96,7 @@ const T = {
   en: {
     quit: 'Quit', hold: 'Tap someone to throw your {w} at them! You duck back into cover by yourself.',
     tuto1: 'Tap <b>someone</b> to throw your {w} at them!', tuto2: 'A red <b>!</b>? They’re about to throw: wait in cover… then tap them when they come out!', tuto3: 'Aim for <b>the head</b>: right in the face pays double!', go: 'Go!',
-    soon: 'To be continued…', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
+    soon: 'To be continued…', cuite: 'Hoho, well, the merguez is well done now!', up: 'STAND', down: 'TAKE\nCOVER', standFirst: 'Stand up to throw!',
     advance: 'Move up!', head: 'Right in the face!', ko: '{name} is out!', reload: 'Take cover to reload!', cleared: '{level} cleared!\n⏱ +{time}  ❤ +{hearts}',
     end: 'Mission accomplished!', over: 'You’re out!', proie: 'I’m easy prey!', lamoule: 'You’re gonna eat chicken!',
     romain: 'A bag of bones in your face!', jose: 'All-you-can-eat sardines!', babar: 'Hehehe… fancy a glass of red?', rudy: 'Welcome to my CRAPA!',
@@ -216,6 +217,7 @@ export async function startMerguez(options) {
     const p = el('p', '', chat);
     el('b', '', p, NAMES[who] || who);
     p.append(text);
+    heard(text); // the gang's recorded voices (Panda's Hoho, his well-cooked merguez)
     chat.hidden = false;
     clearTimeout(chatTimer);
     chatTimer = later(() => (chat.hidden = true), 2200);
@@ -288,6 +290,8 @@ export async function startMerguez(options) {
       showPop(`${tx('level', { n: e.index + 1 })}\n${rules.levels[e.index].name[lang]}`, 2400);
       sfx.speedup();
     } else if (e.type === 'level') {
+      // Playing Panda: a level done is a merguez well cooked
+      if (rules.hero === 'panda') sayLine('panda', tx('cuite'));
       sfx.good();
       showPop(tx('cleared', { level: rules.levels[e.index].name[lang], time: fmt(e.timeBonus), hearts: fmt(e.heartBonus) }), 2600);
     } else if (e.type === 'over') {

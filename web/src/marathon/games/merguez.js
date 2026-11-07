@@ -34,7 +34,8 @@ export default {
     const n = g.boss ? 4 : g.speed < 1.45 ? 2 : 3;
     const grillY = g.H * 0.6;
     const rate = g.speed / 3.1;
-    const friend = g.friend();
+    // Panda is always at the barbecue: the hero, or the friend next to them.
+    const friend = g.hero === 'panda' ? g.friend() : 'panda';
     const sausages = Array.from({ length: n }, (_, i) => ({
       x: 200 + (i - (n - 1) / 2) * (n > 3 ? 78 : 95),
       y: grillY + 10,
@@ -47,8 +48,9 @@ export default {
 
     function verdict() {
       if (sausages.every((m) => m.flipped)) {
-        g.say(110, grillY - 170, g.tr({ en: 'Hoho, the merguez!', fr: 'Hoho les merguez !' }));
-        g.sfx.hoho();
+        // Panda's line, in Romain's recording of him (core/voice.js plays it when the bubble shows)
+        g.say(g.hero === 'panda' ? 110 : 300, grillY - 170, g.tr({ en: 'Hoho, well, the merguez is well done now!', fr: 'Hoho, bah la merguez est bien cuite là !' }), 2.6);
+        g.sfx.good();
         g.fx.burst(200, grillY - 20, { kind: 'confetti', n: 30 });
         g.win();
       }
